@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::{GripVertical, X};
 use dioxus_primitives::drag_and_drop_list::{
     self, DragAndDropContext, DragAndDropDropIndicatorProps, DragAndDropItemContext,
     DragAndDropListItemProps, DragAndDropListItemsProps,
 };
-use dioxus_primitives::icon::Icon;
 
 #[css_module("/src/components/drag_and_drop_list/style.css")]
 struct Styles;
@@ -129,20 +129,10 @@ pub fn DragAndDropDropIndicator(props: DragAndDropDropIndicatorProps) -> Element
 #[component]
 fn DragIcon() -> Element {
     rsx! {
-        Icon {
-            // grip-vertical from lucide https://lucide.dev/icons/grip-vertical
+        GripVertical {
             class: Styles::dx_item_icon,
-            aria_hidden: "true",
-            width: "16px",
-            height: "16px",
-            fill: "currentColor",
-            stroke: "none",
-            circle { cx: "9", cy: "5", r: "1.25" }
-            circle { cx: "9", cy: "12", r: "1.25" }
-            circle { cx: "9", cy: "19", r: "1.25" }
-            circle { cx: "15", cy: "5", r: "1.25" }
-            circle { cx: "15", cy: "12", r: "1.25" }
-            circle { cx: "15", cy: "19", r: "1.25" }
+            "aria-hidden": "true",
+            size: "16px",
         }
     }
 }
@@ -176,13 +166,7 @@ pub fn RemoveButton(
             },
             ..attributes,
             {children}
-            Icon {
-                // X icon from lucide https://lucide.dev/icons/x
-                width: "14px",
-                height: "14px",
-                path { d: "M18 6 6 18" }
-                path { d: "m6 6 12 12" }
-            }
+            X { size: "14px" }
         }
     }
 }

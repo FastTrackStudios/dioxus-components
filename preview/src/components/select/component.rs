@@ -1,9 +1,10 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::{Check, ChevronDown};
 use dioxus_primitives::select::{
     self, SelectGroupLabelProps, SelectGroupProps, SelectListProps, SelectMultiProps,
     SelectOptionProps, SelectProps, SelectTriggerProps, SelectValueProps,
 };
-use dioxus_primitives::{dioxus_attributes::attributes, icon, merge_attributes};
+use dioxus_primitives::{dioxus_attributes::attributes, merge_attributes};
 
 #[css_module("/src/components/select/style.css")]
 struct Styles;
@@ -62,12 +63,10 @@ pub fn SelectTrigger(props: SelectTriggerProps) -> Element {
     rsx! {
         select::SelectTrigger { attributes: merged,
             {props.children}
-            icon::Icon {
+            ChevronDown {
                 class: "dx-select-expand-icon",
-                width: "20px",
-                height: "20px",
+                size: "20px",
                 stroke: "var(--primary-color-7)",
-                polyline { points: "6 9 12 15 18 9" }
             }
         }
     }
@@ -147,11 +146,9 @@ pub fn SelectOption<T: Clone + PartialEq + 'static>(props: SelectOptionProps<T>)
 pub fn SelectItemIndicator() -> Element {
     rsx! {
         select::SelectItemIndicator {
-            icon::Icon {
-                width: "1rem",
-                height: "1rem",
+            Check {
+                size: "1rem",
                 stroke: "var(--secondary-color-5)",
-                path { d: "M5 13l4 4L19 7" }
             }
         }
     }

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_primitives::icon;
+use dioxus_icons::lucide::{ChevronLeft, ChevronRight, Ellipsis};
 #[css_module("/src/components/pagination/style.css")]
 struct Styles;
 
@@ -150,12 +150,7 @@ pub fn PaginationPrevious(
             onmousedown,
             onmouseup,
             attributes,
-            // ChevronLeft icon from lucide https://lucide.dev/icons/chevron-left
-            icon::Icon {
-                width: "1rem",
-                height: "1rem",
-                polyline { points: "15 6 9 12 15 18" }
-            }
+            ChevronLeft { size: "1rem" }
             span { class: Styles::dx_pagination_label, "Previous" }
         }
     }
@@ -180,12 +175,7 @@ pub fn PaginationNext(
             onmouseup,
             attributes,
             span { class: Styles::dx_pagination_label, "Next" }
-            // ChevronRight icon from lucide https://lucide.dev/icons/chevron-right
-            icon::Icon {
-                width: "1rem",
-                height: "1rem",
-                polyline { points: "9 6 15 12 9 18" }
-            }
+            ChevronRight { size: "1rem" }
         }
     }
 }
@@ -200,15 +190,7 @@ pub fn PaginationEllipsis(
             "data-slot": "pagination-ellipsis",
             aria_hidden: "true",
             ..attributes,
-            // MoreHorizontal icon from lucide https://lucide.dev/icons/more-horizontal
-            icon::Icon {
-                width: "1rem",
-                height: "1rem",
-                fill: "currentColor",
-                circle { cx: "5", cy: "12", r: "1.5" }
-                circle { cx: "12", cy: "12", r: "1.5" }
-                circle { cx: "19", cy: "12", r: "1.5" }
-            }
+            Ellipsis { size: "1rem" }
             span { class: Styles::dx_sr_only, "More pages" }
         }
     }

@@ -8,7 +8,9 @@ use dioxus_code::{
     Code, CodeTheme, Theme,
 };
 use dioxus_i18n::prelude::*;
-use dioxus_primitives::icon::Icon;
+use dioxus_icons::lucide::{
+    Check, ChevronDown, ChevronLeft, ChevronUp, Copy, ExternalLink, Plus, Search, SquarePen,
+};
 
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
@@ -245,11 +247,9 @@ fn Navbar() -> Element {
                         to: Route::home(),
                         class: "dx-navbar-brand",
                         aria_label: "Back",
-                        Icon {
-                            width: "2rem",
-                            height: "2rem",
+                        ChevronLeft {
+                            size: "2rem",
                             stroke: "var(--secondary-color-4)",
-                            path { d: "M15 18 L9 12 L15 6" }
                         }
                     }
                 }
@@ -272,22 +272,6 @@ fn Navbar() -> Element {
                     class: "dx-demos-link",
                     "Demos"
                 }
-                // TODO: restore once the primitives crate is published
-                // Link {
-                //     to: "https://crates.io/crates/dioxus-components",
-                //     class: "dx-navbar-link",
-                //     aria_label: "Dioxus components crates.io",
-                //     Icon {
-                //         width: "24px",
-                //         height: "24px",
-                //         viewBox: ViewBox::new(0, 0, 576, 512),
-                //         path {
-                //             d: "M290.8 48.6l78.4 29.7L288 109.5 206.8 78.3l78.4-29.7c1.8-.7 3.8-.7 5.7 0zM136 92.5l0 112.2c-1.3 .4-2.6 .8-3.9 1.3l-96 36.4C14.4 250.6 0 271.5 0 294.7L0 413.9c0 22.2 13.1 42.3 33.5 51.3l96 42.2c14.4 6.3 30.7 6.3 45.1 0L288 457.5l113.5 49.9c14.4 6.3 30.7 6.3 45.1 0l96-42.2c20.3-8.9 33.5-29.1 33.5-51.3l0-119.1c0-23.3-14.4-44.1-36.1-52.4l-96-36.4c-1.3-.5-2.6-.9-3.9-1.3l0-112.2c0-23.3-14.4-44.1-36.1-52.4l-96-36.4c-12.8-4.8-26.9-4.8-39.7 0l-96 36.4C150.4 48.4 136 69.3 136 92.5zM392 210.6l-82.4 31.2 0-89.2L392 121l0 89.6zM154.8 250.9l78.4 29.7L152 311.7 70.8 280.6l78.4-29.7c1.8-.7 3.8-.7 5.7 0zm18.8 204.4l0-100.5L256 323.2l0 95.9-82.4 36.2zM421.2 250.9c1.8-.7 3.8-.7 5.7 0l78.4 29.7L424 311.7l-81.2-31.1 78.4-29.7zM523.2 421.2l-77.6 34.1 0-100.5L528 323.2l0 90.7c0 3.2-1.9 6-4.8 7.3z",
-                //             fill: "currentColor",
-                //             fill_rule: "nonzero",
-                //         }
-                //     }
-                // }
                 Link {
                     to: "https://github.com/DioxusLabs/components",
                     class: "dx-navbar-link",
@@ -369,15 +353,9 @@ fn CopyButton(#[props(extends=GlobalAttributes)] attributes: Vec<Attribute>) -> 
 #[component]
 fn CopyIcon() -> Element {
     rsx! {
-        Icon {
+        Copy {
             width: "24px",
             height: "25px",
-            fill: "currentColor",
-            stroke: "none",
-            stroke_width: 1.5,
-            // Clipboard image from octicons (MIT) https://github.com/primer/octicons/blob/v2.0.0/svg/clippy.svg
-            path { d: "M18 20h2v3c0 1-1 2-2 2H2c-.998 0-2-1-2-2V5c0-.911.755-1.667 1.667-1.667h5A3.323 3.323 0 0110 0a3.323 3.323 0 013.333 3.333h5C19.245 3.333 20 4.09 20 5v8.333h-2V9H2v14h16v-3zM3 7h14c0-.911-.793-1.667-1.75-1.667H13.5c-.957 0-1.75-.755-1.75-1.666C11.75 2.755 10.957 2 10 2s-1.75.755-1.75 1.667c0 .911-.793 1.666-1.75 1.666H4.75C3.793 5.333 3 6.09 3 7z" }
-            path { d: "M4 19h6v2H4zM12 11H4v2h8zM4 17h4v-2H4zM15 15v-3l-4.5 4.5L15 21v-3l8.027-.032L23 15z" }
         }
     }
 }
@@ -385,10 +363,9 @@ fn CopyIcon() -> Element {
 #[component]
 fn CheckIcon() -> Element {
     rsx! {
-        Icon {
+        Check {
             width: "24px",
             height: "25px",
-            path { d: "M5 13l4 4L19 7" }
         }
     }
 }
@@ -397,11 +374,9 @@ fn CheckIcon() -> Element {
 #[component]
 fn PlusIcon() -> Element {
     rsx! {
-        Icon {
-            width: "2rem",
-            height: "2rem",
+        Plus {
+            size: "2rem",
             "aria-label": "Add",
-            path { d: "M5 12h14m-7-7v14", }
         }
     }
 }
@@ -410,14 +385,9 @@ fn PlusIcon() -> Element {
 #[component]
 fn SearchIcon() -> Element {
     rsx! {
-        Icon {
-            width: "2rem",
-            height: "2rem",
+        Search {
+            size: "2rem",
             "aria-label": "Search",
-            g {
-                path { d: "m21 21l-4.34-4.34" }
-                circle { cx: "11", cy: "11", r: "8" }
-            }
         }
     }
 }
@@ -426,14 +396,9 @@ fn SearchIcon() -> Element {
 #[component]
 fn EditIcon() -> Element {
     rsx! {
-        Icon {
-            width: "2rem",
-            height: "2rem",
+        SquarePen {
+            size: "2rem",
             "aria-label": "Edit",
-            g {
-                path { d: "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" }
-                path { d: "M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z" }
-            }
         }
     }
 }
@@ -509,12 +474,10 @@ fn LanguageSelect() -> Element {
                 }
                 span { class: "dx-language-select-value",
                     {current_lang.read().flag()}
-                    Icon {
+                    ChevronDown {
                         class: "dx-select-expand-icon",
-                        width: "20px",
-                        height: "20px",
+                        size: "20px",
                         stroke: "var(--secondary-color-4)",
-                        polyline { points: "6 9 12 15 18 9" }
                     }
                 }
             }
@@ -544,14 +507,15 @@ fn ComponentCode(
             onclick: move |_| {
                 collapsed.toggle();
             },
-            Icon {
-                width: "20px",
-                height: "20px",
-                stroke: "var(--secondary-color-4)",
-                if collapsed() {
-                    polyline { points: "6 9 12 15 18 9" }
-                } else {
-                    polyline { points: "6 15 12 9 18 15" }
+            if collapsed() {
+                ChevronDown {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
+                }
+            } else {
+                ChevronUp {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
                 }
             }
         }
@@ -627,14 +591,15 @@ fn CollapsibleCodeBlock(highlighted: HighlightedCode) -> Element {
             onclick: move |_| {
                 collapsed.toggle();
             },
-            Icon {
-                width: "20px",
-                height: "20px",
-                stroke: "var(--secondary-color-4)",
-                if collapsed() {
-                    polyline { points: "6 9 12 15 18 9" }
-                } else {
-                    polyline { points: "6 15 12 9 18 15" }
+            if collapsed() {
+                ChevronDown {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
+                }
+            } else {
+                ChevronUp {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
                 }
             }
         }
@@ -1016,12 +981,10 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
                     " components for Dioxus."
                 }
                 Explanation {}
-                Icon {
+                ChevronDown {
                     id: "scroll-down-icon",
-                    width: "20px",
-                    height: "20px",
+                    size: "20px",
                     stroke: "var(--secondary-color-4)",
-                    polyline { points: "6 9 12 15 18 9" }
                 }
             }
             Separator {
@@ -1126,15 +1089,9 @@ fn ComponentGalleryPreview(component: ComponentDemoData) -> Element {
 #[component]
 fn GotoIcon(mut props: LinkProps) -> Element {
     props.children = rsx! {
-        Icon {
-            width: "20px",
-            height: "20px",
+        ExternalLink {
+            size: "20px",
             stroke: "var(--secondary-color-4)",
-            stroke_width: 0.25,
-            path {
-                d: "M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h7v2H5v14h14v-7h2v7q0 .825-.587 1.413T19 21zm4.7-5.3l-1.4-1.4L17.6 5H14V3h7v7h-2V6.4z",
-                fill: "var(--secondary-color-4)",
-            }
         }
     };
     Link(props)

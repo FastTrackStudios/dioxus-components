@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use dioxus_primitives::icon;
+use dioxus_icons::lucide::ChevronDown;
 use dioxus_primitives::{
     calendar::DateRange,
     date_picker::{
@@ -373,12 +373,10 @@ pub(crate) fn DatePickerPopoverTrigger(props: PopoverTriggerProps) -> Element {
             class: Styles::dx_date_picker_popover_trigger,
             aria_label: "Show Calendar",
             attributes: props.attributes,
-            icon::Icon {
+            ChevronDown {
                 class: Styles::dx_date_picker_trigger,
-                width: "20px",
-                height: "20px",
+                size: "20px",
                 stroke: "var(--primary-color-7)",
-                polyline { points: "6 9 12 15 18 9" }
             }
         }
     }

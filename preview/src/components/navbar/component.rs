@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::ChevronDown;
 use dioxus_primitives::navbar::{
     self, NavbarContentProps, NavbarItemProps, NavbarNavProps, NavbarProps, NavbarTriggerProps,
 };
-use dioxus_primitives::icon;
 #[css_module("/src/components/navbar/style.css")]
 struct Styles;
 
@@ -37,12 +37,10 @@ pub fn NavbarTrigger(props: NavbarTriggerProps) -> Element {
     rsx! {
         navbar::NavbarTrigger { class: Styles::dx_navbar_trigger, attributes: props.attributes,
             {props.children}
-            icon::Icon {
+            ChevronDown {
                 class: Styles::dx_navbar_expand_icon,
-                width: "20px",
-                height: "20px",
+                size: "20px",
                 stroke: "var(--secondary-color-4)",
-                polyline { points: "6 9 12 15 18 9" }
             }
         }
     }

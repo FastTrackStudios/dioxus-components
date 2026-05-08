@@ -1,9 +1,9 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::X;
 use dioxus_primitives::dioxus_attributes::attributes;
 use dioxus_primitives::dialog::{
     self, DialogCtx, DialogDescriptionProps, DialogRootProps, DialogTitleProps,
 };
-use dioxus_primitives::icon;
 use dioxus_primitives::merge_attributes;
 
 #[css_module("/src/components/sheet/style.css")]
@@ -94,12 +94,7 @@ pub fn SheetContentClose(#[props(extends = GlobalAttributes)] attributes: Vec<At
 
     rsx! {
         SheetClose { attributes,
-            icon::Icon {
-                width: "20px",
-                height: "20px",
-                path { d: "M18 6 6 18" }
-                path { d: "m6 6 12 12" }
-            }
+            X { size: "20px" }
         }
     }
 }

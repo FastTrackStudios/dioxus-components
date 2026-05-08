@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::{ChevronDown, ChevronLeft, ChevronRight};
 use dioxus_primitives::calendar::{
     self, CalendarDayProps, CalendarGridBodyProps, CalendarGridCellProps,
     CalendarGridDayHeaderProps, CalendarGridHeadProps, CalendarGridHeaderRowProps,
@@ -7,7 +8,6 @@ use dioxus_primitives::calendar::{
     CalendarSelectYearProps, CalendarSelectYearSelectProps, CalendarSelectYearValueProps,
     CalendarViewProps,
 };
-use dioxus_primitives::icon::Icon;
 use dioxus_primitives::{dioxus_attributes::attributes, merge_attributes};
 use time::{Date, Month, UtcDateTime, Weekday};
 
@@ -310,11 +310,7 @@ fn CalendarPreviousMonthButton(
 ) -> Element {
     rsx! {
         calendar::CalendarPreviousMonthButton { class: Styles::dx_calendar_nav_prev, attributes,
-            Icon {
-                width: "20px",
-                height: "20px",
-                path { d: "m15 18-6-6 6-6" }
-            }
+            ChevronLeft { size: "20px" }
         }
     }
 }
@@ -325,11 +321,7 @@ fn CalendarNextMonthButton(
 ) -> Element {
     rsx! {
         calendar::CalendarNextMonthButton { class: Styles::dx_calendar_nav_next, attributes,
-            Icon {
-                width: "20px",
-                height: "20px",
-                path { d: "m9 18 6-6-6-6" }
-            }
+            ChevronRight { size: "20px" }
         }
     }
 }
@@ -534,11 +526,9 @@ fn CalendarDay(props: CalendarDayProps) -> Element {
 #[component]
 fn DropDownIcon() -> Element {
     rsx! {
-        Icon {
-            width: "20px",
-            height: "20px",
+        ChevronDown {
+            size: "20px",
             stroke: "var(--secondary-color-4)",
-            path { d: "m6 9 6 6 6-6" }
         }
     }
 }

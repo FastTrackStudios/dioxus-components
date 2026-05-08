@@ -29,7 +29,6 @@ pub mod drag_and_drop_list;
 pub mod dropdown_menu;
 mod focus;
 pub mod hover_card;
-pub mod icon;
 pub mod label;
 mod listbox;
 pub mod menubar;
