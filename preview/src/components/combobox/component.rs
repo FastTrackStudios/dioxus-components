@@ -1,9 +1,10 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::{Check, ChevronsUpDown};
 use dioxus_primitives::combobox::{
     self, ComboboxEmptyProps, ComboboxInputProps, ComboboxListProps, ComboboxOptionProps,
     ComboboxProps,
 };
-use dioxus_primitives::{dioxus_attributes::attributes, icon, merge_attributes};
+use dioxus_primitives::{dioxus_attributes::attributes, merge_attributes};
 
 #[css_module("/src/components/combobox/style.css")]
 struct Styles;
@@ -43,12 +44,9 @@ pub fn ComboboxInput(props: ComboboxInputProps) -> Element {
                 id: props.id,
                 attributes: props.attributes,
             }
-            icon::Icon {
+            ChevronsUpDown {
                 class: Styles::dx_combobox_expand_icon,
-                width: "16px",
-                height: "16px",
-                path { d: "m7 15 5 5 5-5" }
-                path { d: "m7 9 5-5 5 5" }
+                size: "16px",
             }
         }
     }
@@ -105,11 +103,9 @@ pub fn ComboboxOption<T: Clone + PartialEq + 'static>(props: ComboboxOptionProps
 pub fn ComboboxItemIndicator() -> Element {
     rsx! {
         combobox::ComboboxItemIndicator {
-            icon::Icon {
+            Check {
                 class: Styles::dx_combobox_check_icon,
-                width: "16px",
-                height: "16px",
-                path { d: "M20 6 9 17l-5-5" }
+                size: "16px",
             }
         }
     }

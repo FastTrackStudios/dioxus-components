@@ -7,10 +7,10 @@ use crate::components::skeleton::Skeleton;
 use crate::components::tooltip::{Tooltip, TooltipContent, TooltipTrigger};
 use dioxus::core::use_drop;
 use dioxus::prelude::*;
+use dioxus_icons::lucide::PanelLeft;
 use dioxus_primitives::dioxus_attributes::attributes;
 use dioxus_primitives::merge_attributes;
 use dioxus_primitives::use_controlled;
-use dioxus_primitives::icon;
 
 #[css_module("/src/components/sidebar/style.css")]
 struct Styles;
@@ -372,18 +372,9 @@ pub fn SidebarTrigger(
                 ctx.toggle();
             },
             attributes: merged,
-            icon::Icon {
+            PanelLeft {
                 class: Styles::dx_sidebar_trigger_icon,
-                width: "1rem",
-                height: "1rem",
-                rect {
-                    x: "3",
-                    y: "3",
-                    width: "18",
-                    height: "18",
-                    rx: "2",
-                }
-                path { d: "M9 3v18" }
+                size: "1rem",
             }
             span { class: Styles::dx_sr_only, "Toggle Sidebar" }
         }

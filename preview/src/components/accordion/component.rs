@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::ChevronDown;
 use dioxus_primitives::accordion::{
     self, AccordionContentProps, AccordionItemProps, AccordionProps, AccordionTriggerProps,
 };
-use dioxus_primitives::icon;
 // Each `css_module` macro will expand the annotated struct in the current scope
 #[css_module("/src/components/accordion/style.css")]
 struct Styles;
@@ -48,12 +48,10 @@ pub fn AccordionTrigger(props: AccordionTriggerProps) -> Element {
             id: props.id,
             attributes: props.attributes,
             {props.children}
-            icon::Icon {
+            ChevronDown {
                 class: Styles::dx_accordion_expand_icon,
-                width: "20px",
-                height: "20px",
+                size: "20px",
                 stroke: "var(--secondary-color-4)",
-                polyline { points: "6 9 12 15 18 9" }
             }
         }
     }

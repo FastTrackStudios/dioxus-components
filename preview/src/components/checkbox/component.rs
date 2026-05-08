@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::Check;
 use dioxus_primitives::checkbox::{self, CheckboxProps};
-use dioxus_primitives::icon;
 
 #[css_module("/src/components/checkbox/style.css")]
 struct Styles;
@@ -19,11 +19,7 @@ pub fn Checkbox(props: CheckboxProps) -> Element {
             on_checked_change: props.on_checked_change,
             attributes: props.attributes,
             checkbox::CheckboxIndicator { class: Styles::dx_checkbox_indicator,
-                icon::Icon {
-                    width: "1rem",
-                    height: "1rem",
-                    path { d: "M5 13l4 4L19 7" }
-                }
+                Check { size: "1rem" }
             }
         }
     }

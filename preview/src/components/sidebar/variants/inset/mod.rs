@@ -13,7 +13,7 @@ use crate::components::sidebar::{
     SidebarTrigger, SidebarVariant,
 };
 use crate::components::skeleton::Skeleton;
-use dioxus_primitives::icon;
+use dioxus_icons::lucide::{ChevronRight, Circle};
 use dioxus::prelude::*;
 
 #[css_module("/src/components/sidebar/variants/demo.css")]
@@ -216,7 +216,7 @@ fn TeamSwitcher(teams: &'static [Team]) -> Element {
                         as: move |attributes: Vec<Attribute>| rsx! {
                             SidebarMenuButton { class: DemoStyles::dx_sidebar_menu_disclosure_button, size: SidebarMenuButtonSize::Lg, attributes,
                                 div { style: "display:flex; flex-shrink:0; align-items:center; justify-content:center; width:2rem; height:2rem; aspect-ratio:1; border-radius:0.5rem; background:var(--dx-sidebar-accent); color:var(--dx-sidebar-accent-foreground);",
-                                    Icon {}
+                                    DemoIcon {}
                                 }
                                 div { class: DemoStyles::dx_sidebar_info_block,
                                     span { class: DemoStyles::dx_sidebar_info_title, {teams[active_team()].name} }
@@ -235,7 +235,7 @@ fn TeamSwitcher(teams: &'static [Team]) -> Element {
                                 index: idx,
                                 value: idx,
                                 on_select: move |v: usize| active_team.set(v),
-                                Icon {}
+                                DemoIcon {}
                                 {team.name}
                                 span { style: "margin-left:auto; font-size:0.75rem; opacity:0.7;",
                                     "⌘{idx + 1}"
@@ -247,7 +247,7 @@ fn TeamSwitcher(teams: &'static [Team]) -> Element {
                             index: teams.len(),
                             value: 999usize,
                             on_select: move |_: usize| {},
-                            Icon {}
+                            DemoIcon {}
                             div { style: "opacity:0.7; font-weight:500;", "Add team" }
                         }
                     }
@@ -276,7 +276,7 @@ fn NavMain(items: &'static [NavMainItem]) -> Element {
                                                 {item.title}
                                             },
                                             attributes,
-                                            Icon {}
+                                            DemoIcon {}
                                             span { {item.title} }
                                             ChevronIcon {}
                                         }
@@ -317,7 +317,7 @@ fn NavProjects(projects: &'static [Project]) -> Element {
                         SidebarMenuButton {
                             as: move |attributes: Vec<Attribute>| rsx! {
                                 a { href: project.url, ..attributes,
-                                    Icon {}
+                                    DemoIcon {}
                                     span { {project.name} }
                                 }
                             },
@@ -326,7 +326,7 @@ fn NavProjects(projects: &'static [Project]) -> Element {
                             DropdownMenuTrigger { class: Styles::dx_sidebar_dropdown_menu_trigger,
                                 as: move |attributes: Vec<Attribute>| rsx! {
                                     SidebarMenuAction { show_on_hover: true, attributes,
-                                        Icon {}
+                                        DemoIcon {}
                                         span { class: Styles::dx_sr_only, "More" }
                                     }
                                 },
@@ -336,14 +336,14 @@ fn NavProjects(projects: &'static [Project]) -> Element {
                                     index: 0usize,
                                     value: "view".to_string(),
                                     on_select: move |_: String| {},
-                                    Icon {}
+                                    DemoIcon {}
                                     span { "View Project" }
                                 }
                                 DropdownMenuItem {
                                     index: 1usize,
                                     value: "share".to_string(),
                                     on_select: move |_: String| {},
-                                    Icon {}
+                                    DemoIcon {}
                                     span { "Share Project" }
                                 }
                                 Separator { class: Styles::dx_sidebar_dropdown_separator, decorative: true }
@@ -351,7 +351,7 @@ fn NavProjects(projects: &'static [Project]) -> Element {
                                     index: 2usize,
                                     value: "delete".to_string(),
                                     on_select: move |_: String| {},
-                                    Icon {}
+                                    DemoIcon {}
                                     span { "Delete Project" }
                                 }
                             }
@@ -360,7 +360,7 @@ fn NavProjects(projects: &'static [Project]) -> Element {
                 }
                 SidebarMenuItem {
                     SidebarMenuButton { style: "opacity:0.7; font-weight:500;",
-                        Icon {}
+                        DemoIcon {}
                         span { "More" }
                     }
                     SidebarMenuBadge { "+99" }
@@ -415,7 +415,7 @@ fn NavUser() -> Element {
                             index: 0usize,
                             value: "upgrade".to_string(),
                             on_select: move |_: String| {},
-                            Icon {}
+                            DemoIcon {}
                             "Upgrade to Pro"
                         }
                         Separator { class: Styles::dx_sidebar_dropdown_separator, decorative: true }
@@ -423,21 +423,21 @@ fn NavUser() -> Element {
                             index: 1usize,
                             value: "account".to_string(),
                             on_select: move |_: String| {},
-                            Icon {}
+                            DemoIcon {}
                             "Account"
                         }
                         DropdownMenuItem {
                             index: 2usize,
                             value: "billing".to_string(),
                             on_select: move |_: String| {},
-                            Icon {}
+                            DemoIcon {}
                             "Billing"
                         }
                         DropdownMenuItem {
                             index: 3usize,
                             value: "notifications".to_string(),
                             on_select: move |_: String| {},
-                            Icon {}
+                            DemoIcon {}
                             "Notifications"
                         }
                         Separator { class: Styles::dx_sidebar_dropdown_separator, decorative: true }
@@ -445,7 +445,7 @@ fn NavUser() -> Element {
                             index: 4usize,
                             value: "logout".to_string(),
                             on_select: move |_: String| {},
-                            Icon {}
+                            DemoIcon {}
                             "Log out"
                         }
                     }
@@ -511,13 +511,11 @@ fn DemoSettingControls(
 }
 
 #[component]
-fn Icon() -> Element {
+fn DemoIcon() -> Element {
     rsx! {
-        icon::Icon {
+        Circle {
             class: DemoStyles::dx_sidebar_icon,
-            width: "24px",
-            height: "24px",
-            circle { cx: "12", cy: "12", r: "10" }
+            size: "24px",
         }
     }
 }
@@ -525,11 +523,9 @@ fn Icon() -> Element {
 #[component]
 fn ChevronIcon() -> Element {
     rsx! {
-        icon::Icon {
+        ChevronRight {
             class: format!("{} {}", DemoStyles::dx_sidebar_icon, DemoStyles::dx_sidebar_chevron),
-            width: "24px",
-            height: "24px",
-            path { d: "m9 18 6-6-6-6" }
+            size: "24px",
         }
     }
 }

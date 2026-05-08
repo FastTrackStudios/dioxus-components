@@ -1,6 +1,6 @@
 use super::super::component::*;
 use dioxus::prelude::*;
-use dioxus_primitives::icon::Icon;
+use dioxus_icons::lucide::ArrowUpRight;
 
 #[component]
 pub fn Demo() -> Element {
@@ -81,9 +81,6 @@ const SIZE_DEMO_STYLE: &str = r#"
 #[component]
 fn ArrowUpRightIcon() -> Element {
     rsx! {
-        Icon {
-            path { d: "M7 17 17 7" }
-            path { d: "M7 7h10v10" }
-        }
+        ArrowUpRight {}
     }
 }

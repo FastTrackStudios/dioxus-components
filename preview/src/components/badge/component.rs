@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_primitives::icon;
+use dioxus_icons::lucide::BadgeCheck;
 
 #[css_module("/src/components/badge/style.css")]
 struct Styles;
@@ -66,13 +66,9 @@ fn BadgeElement(props: BadgeProps) -> Element {
 #[component]
 pub fn VerifiedIcon() -> Element {
     rsx! {
-        // Badge icon from lucide https://lucide.dev/icons/badge-check
-        icon::Icon {
-            width: "12px",
-            height: "12px",
+        BadgeCheck {
+            size: "12px",
             stroke: "var(--secondary-color-4)",
-            path { d: "M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" }
-            path { d: "m9 12 2 2 4-4" }
         }
     }
 }
