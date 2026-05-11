@@ -27,13 +27,11 @@ fn SettingRow(label: String, initial: bool) -> Element {
             gap: "1rem",
             cursor: "pointer",
             span { "{label}" }
-            div { class: "dx-switch-example",
-                Switch {
-                    checked: checked(),
-                    aria_label: label,
-                    on_checked_change: move |v| checked.set(v),
-                    SwitchThumb {}
-                }
+            Switch {
+                checked: checked(),
+                aria_label: label,
+                on_checked_change: move |v| checked.set(v),
+                SwitchThumb {}
             }
         }
     }

@@ -2,11 +2,14 @@ use dioxus::prelude::*;
 
 use super::super::component::*;
 
+#[css_module("/src/components/badge/style.css")]
+struct Styles;
+
 #[component]
 pub fn Demo() -> Element {
     rsx! {
         div {
-            class: "dx-badge-example",
+            class: Styles::dx_badge_example,
             display: "flex",
             flex_wrap: "wrap",
             justify_content: "center",

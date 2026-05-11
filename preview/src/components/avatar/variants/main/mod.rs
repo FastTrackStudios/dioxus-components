@@ -1,6 +1,9 @@
 use super::super::component::*;
 use dioxus::prelude::*;
 
+#[css_module("/src/components/avatar/style.css")]
+struct Styles;
+
 #[component]
 pub fn Demo() -> Element {
     rsx! {
@@ -44,11 +47,11 @@ fn AvatarItem(name: String, src: String, fallback: String, shape: AvatarShape) -
                 shape,
                 aria_label: name.clone(),
                 AvatarImage {
-                    class: "dx-avatar-image",
+                    class: Styles::dx_avatar_image,
                     src,
                     alt: name.clone(),
                 }
-                AvatarFallback { class: "dx-avatar-fallback", "{fallback}" }
+                AvatarFallback { class: Styles::dx_avatar_fallback, "{fallback}" }
             }
             div {
                 font_size: "0.85rem",
