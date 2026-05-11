@@ -307,16 +307,90 @@ body {
   transition: none !important;
 }
 
-/* Home shell (mirrors the email-client demo's topbar + scrollable main) */
+/* App shell — fixed topbar at the top, sidebar tucks underneath.
+   This selector overrides SidebarProvider's flex-row default so the topbar
+   stacks above the sidebar + content row. */
+.dx-app-shell {
+  display: flex !important;
+  box-sizing: border-box;
+  width: 100%;
+  height: auto !important;
+  min-height: 100svh !important;
+  padding-top: 3.5rem;
+  flex-direction: column !important;
+  overflow: visible !important;
+}
+
+.dx-app-body {
+  position: relative;
+  display: flex;
+  width: 100%;
+  flex: 1 1 auto;
+  align-items: stretch;
+  min-height: 0;
+}
+
+/* Right-side sidebars reverse the row, mirroring the wrapper's default */
+.dx-app-body:has([data-slot="sidebar"][data-side="right"]) {
+  flex-direction: row-reverse;
+}
+
 .dx-home-topbar {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  right: 0;
+  left: 0;
   display: flex;
   height: 3.5rem;
   flex-shrink: 0;
   align-items: center;
   padding: 0 1rem;
   border-bottom: 1px solid var(--primary-color-6);
-  background: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
   gap: 0.75rem;
+}
+
+.dx-topbar-end {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: 1rem;
+}
+
+/* "dioxus-components" wordmark next to the logo — desktop only */
+.dx-brand-label {
+  display: none;
+  margin-left: 0.55rem;
+  color: var(--secondary-color-3);
+  font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+.dx-brand-label::before {
+  margin-right: 0.55rem;
+  color: var(--primary-color-7);
+  content: "/";
+  font-weight: 400;
+}
+
+@media (width >= 768px) {
+  .dx-brand-label {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* Push the sidebar's fixed container down so it doesn't cover the topbar.
+   `data-slot` selectors are stable; the sidebar's internal class names are
+   hashed by css_module so we can't target them by class from outside. */
+.dx-app-shell [data-slot="sidebar-container"] {
+  top: 3.5rem !important;
+  height: calc(100svh - 3.5rem) !important;
 }
 
 .dx-app-main {
@@ -325,28 +399,38 @@ body {
   flex: 1 1 auto;
   flex-direction: column;
   background: var(--primary-color);
-  overflow-y: auto;
 }
 
-/* Gallery section header */
+.dx-sidebar-empty {
+  padding: 0.75rem 1rem;
+  color: var(--secondary-color-5);
+  font-size: 0.85rem;
+}
+
+/* Gallery section header — one per category */
 .dx-gallery-section {
-  padding: 1rem 0 4rem;
+  padding: 2rem 0 0.5rem;
+}
+
+.dx-gallery-section:last-of-type {
+  padding-bottom: 3rem;
 }
 
 .dx-gallery-header {
   display: flex;
-  flex-direction: column;
-  padding: 1.5rem 1.5rem 0.5rem;
-  gap: 0.25rem;
+  align-items: baseline;
+  padding: 1rem 1.5rem 0.5rem;
+  gap: 0.6rem;
 }
 
 .dx-gallery-title {
   margin: 0;
   color: var(--secondary-color-1);
-  font-size: 1.75rem;
+  font-size: 1.35rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
 }
+
 
 /* Component card grid */
 .dx-component-gallery {
@@ -371,10 +455,13 @@ body {
   box-shadow: 0 4px 18px -8px rgb(0 0 0 / 18%);
 }
 
-/* Fixed-height preview. Note: no overflow:hidden — popovers/tooltips/menus
-   need to escape the box. Each demo's content is sized to fit naturally. */
+/* Fixed-height preview. Clip overflow so dense demos (calendars, virtual
+   lists, dropdowns) don't bleed past the card frame. The stage inside
+   handles centering, and we use a fade mask so tall content trails off. */
 .dx-gallery-card-preview {
+  position: relative;
   display: flex;
+  overflow: hidden;
   height: 240px;
   flex: 0 0 240px;
   align-items: center;
@@ -383,16 +470,36 @@ body {
   border-bottom: 1px solid var(--primary-color-6);
   border-radius: 14px 14px 0 0;
   background-color: var(--primary-color-1);
+  contain: paint;
+}
+
+.dx-gallery-card-preview::after {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2.25rem;
+  background: linear-gradient(to bottom, transparent, var(--primary-color-1));
+  content: "";
+  pointer-events: none;
 }
 
 /* The stage isolates a transform-origin so per-component scaling works
    without affecting layout or the preview's clipping behavior. */
 .dx-gallery-card-preview-stage {
   display: flex;
+  max-width: 100%;
+  max-height: 100%;
   align-items: center;
   justify-content: center;
-  max-width: 100%;
   transform-origin: center center;
+}
+
+/* Constrain demos that naturally render wider than the card — keeps every
+   tile feeling like a uniform thumbnail rather than a clipped runaway. */
+.dx-gallery-card-preview-stage > * {
+  max-width: 100%;
 }
 
 

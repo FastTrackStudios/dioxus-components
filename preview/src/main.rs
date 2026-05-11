@@ -261,52 +261,55 @@ fn NavigationLayout() -> Element {
 
     rsx! {
         {stylesheets}
-        SidebarProvider {
-            Sidebar { collapsible: SidebarCollapsible::Offcanvas,
-                AppSidebarBody { search }
-            }
-            SidebarInset {
-                header { class: "dx-home-topbar",
-                    SidebarTrigger {}
-                    Separator { horizontal: false, decorative: true }
-                    Link { to: Route::home(), class: "dx-navbar-brand",
-                        img {
-                            src: asset!("/assets/dioxus_color.svg"),
-                            alt: "Dioxus Logo",
-                            width: "32",
-                            height: "32",
-                        }
+        SidebarProvider { class: "dx-app-shell",
+            header { class: "dx-home-topbar",
+                SidebarTrigger {}
+                Separator { horizontal: false, decorative: true }
+                Link { to: Route::home(), class: "dx-navbar-brand",
+                    img {
+                        src: asset!("/assets/dioxus_color.svg"),
+                        alt: "Dioxus Logo",
+                        width: "32",
+                        height: "32",
                     }
-                    div { style: "margin-left: auto; display: flex; align-items: center; gap: 1rem;",
-                        Link {
-                            to: Route::EmailClientDashboard { dark_mode: Route::in_dark_mode() },
-                            class: "dx-demos-link",
-                            "Demos"
-                        }
-                        Link {
-                            to: "https://github.com/DioxusLabs/components",
-                            class: "dx-navbar-link",
-                            img {
-                                class: "dx-light-mode-only",
-                                src: asset!("/assets/github-mark/github-mark.svg"),
-                                alt: "GitHub",
-                                width: "24",
-                                height: "24",
-                            }
-                            img {
-                                class: "dx-dark-mode-only",
-                                src: asset!("/assets/github-mark/github-mark-white.svg"),
-                                alt: "GitHub",
-                                width: "24",
-                                height: "24",
-                            }
-                        }
-                        theme::DarkModeToggle {}
-                        LanguageSelect {}
-                    }
+                    span { class: "dx-brand-label", "dioxus-components" }
                 }
-                div { class: "dx-app-main",
-                    Outlet::<Route> {}
+                div { class: "dx-topbar-end",
+                    Link {
+                        to: Route::EmailClientDashboard { dark_mode: Route::in_dark_mode() },
+                        class: "dx-demos-link",
+                        "Demos"
+                    }
+                    Link {
+                        to: "https://github.com/DioxusLabs/components",
+                        class: "dx-navbar-link",
+                        img {
+                            class: "dx-light-mode-only",
+                            src: asset!("/assets/github-mark/github-mark.svg"),
+                            alt: "GitHub",
+                            width: "24",
+                            height: "24",
+                        }
+                        img {
+                            class: "dx-dark-mode-only",
+                            src: asset!("/assets/github-mark/github-mark-white.svg"),
+                            alt: "GitHub",
+                            width: "24",
+                            height: "24",
+                        }
+                    }
+                    theme::DarkModeToggle {}
+                    LanguageSelect {}
+                }
+            }
+            div { class: "dx-app-body",
+                Sidebar { collapsible: SidebarCollapsible::Offcanvas,
+                    AppSidebarBody { search }
+                }
+                SidebarInset {
+                    div { class: "dx-app-main",
+                        Outlet::<Route> {}
+                    }
                 }
             }
         }
@@ -953,12 +956,7 @@ fn ComponentBlockDemo(name: String, variant: Option<String>, dark_mode: Option<b
 fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
     rsx! {
         Hero {}
-        section { class: "dx-gallery-section",
-            div { class: "dx-gallery-header",
-                h2 { class: "dx-gallery-title", "All components" }
-            }
-            ComponentGallery {}
-        }
+        ComponentGallery {}
         CtaStrip {}
     }
 }
@@ -966,41 +964,27 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
 #[component]
 fn Hero() -> Element {
     rsx! {
-        div { class: "hero-snippet",
-            div { class: "hero-snippet-text",
-                h1 { class: "hero-snippet-title", "Dioxus Components" }
-                p { class: "hero-snippet-tagline",
-                    "Accessible components that just feel nice."
-                }
-                div { class: "hero-snippet-actions",
-                    a { href: "#components", class: "hero-snippet-cta",
-                        "Browse components"
-                        span { aria_hidden: true, " →" }
+        section { class: "hero-snippet",
+            div { class: "hero-snippet-inner",
+                div { class: "hero-snippet-text",
+                    h1 { class: "hero-snippet-title", "Dioxus Components" }
+                    p { class: "hero-snippet-tagline",
+                        "Accessible components that just feel nice."
                     }
-                    a {
-                        href: "https://github.com/DioxusLabs/components",
-                        class: "hero-snippet-cta hero-snippet-cta-ghost",
-                        "GitHub"
+                    div { class: "hero-snippet-actions",
+                        a { href: "#components", class: "hero-snippet-cta",
+                            "Browse components"
+                            span { aria_hidden: true, " →" }
+                        }
+                        a {
+                            href: "https://github.com/DioxusLabs/components",
+                            class: "hero-snippet-cta hero-snippet-cta-ghost",
+                            "GitHub"
+                        }
                     }
                 }
-            }
-            div { class: "hero-snippet-code",
-                div { class: "hero-snippet-code-tab", "src/main.rs" }
-                pre { class: "hero-snippet-code-block",
-                    span { class: "hero-snippet-tok-kw", "use " }
-                    "dioxus::prelude::*;\n"
-                    span { class: "hero-snippet-tok-kw", "use " }
-                    "components::"
-                    span { class: "hero-snippet-tok-type", "{{Button, ButtonVariant}}" }
-                    ";\n\n"
-                    span { class: "hero-snippet-tok-kw", "rsx! " }
-                    "{{\n    "
-                    span { class: "hero-snippet-tok-type", "Button" }
-                    " {{\n        variant: ButtonVariant::"
-                    span { class: "hero-snippet-tok-prop", "Primary" }
-                    ",\n        "
-                    span { class: "hero-snippet-tok-str", "\"Get started\"" }
-                    "\n    }}\n}}"
+                div { class: "hero-snippet-code",
+                    PreviewCode { source: HERO_SNIPPET.source }
                 }
             }
         }
@@ -1008,14 +992,84 @@ fn Hero() -> Element {
 }
 
 
+const SIDEBAR_CATEGORIES: &[(&str, &[&str])] = &[
+    (
+        "Forms",
+        &[
+            "button",
+            "checkbox",
+            "color_picker",
+            "combobox",
+            "calendar",
+            "date_picker",
+            "input",
+            "label",
+            "radio_group",
+            "select",
+            "slider",
+            "switch",
+            "textarea",
+            "toggle",
+            "toggle_group",
+        ],
+    ),
+    (
+        "Overlays",
+        &[
+            "alert_dialog",
+            "dialog",
+            "context_menu",
+            "dropdown_menu",
+            "hover_card",
+            "popover",
+            "sheet",
+            "toast",
+            "tooltip",
+        ],
+    ),
+    (
+        "Navigation",
+        &[
+            "menubar",
+            "navbar",
+            "pagination",
+            "sidebar",
+            "tabs",
+            "toolbar",
+        ],
+    ),
+    (
+        "Data Display",
+        &[
+            "accordion",
+            "avatar",
+            "badge",
+            "card",
+            "collapsible",
+            "item",
+            "drag_and_drop_list",
+            "virtual_list",
+        ],
+    ),
+    ("Layout", &["aspect_ratio", "scroll_area", "separator"]),
+    ("Feedback", &["progress", "skeleton"]),
+];
+
 #[component]
 fn AppSidebarBody(search: Signal<String>) -> Element {
     let needle = search.read().to_lowercase();
-    let matches: Vec<&ComponentDemoData> = components::DEMOS
+    let matches_for = |names: &[&str]| -> Vec<&ComponentDemoData> {
+        names
+            .iter()
+            .filter_map(|name| components::DEMOS.iter().find(|c| c.name == *name))
+            .filter(|c| needle.is_empty() || c.name.to_lowercase().contains(&needle))
+            .collect()
+    };
+
+    let total: usize = SIDEBAR_CATEGORIES
         .iter()
-        .filter(|c| needle.is_empty() || c.name.to_lowercase().contains(&needle))
-        .collect();
-    let count = matches.len();
+        .map(|(_, names)| matches_for(names).len())
+        .sum();
 
     rsx! {
         SidebarHeader {
@@ -1030,26 +1084,42 @@ fn AppSidebarBody(search: Signal<String>) -> Element {
             }
         }
         SidebarContent {
-            SidebarGroup {
-                SidebarGroupLabel { "Components ({count})" }
-                SidebarGroupContent {
-                    if matches.is_empty() {
-                        div { "No matches" }
-                    } else {
-                        SidebarMenu {
-                            for component in matches.iter() {
-                                SidebarMenuItem { key: "{component.name}",
-                                    SidebarMenuButton {
-                                        as: {
-                                            let name = component.name;
-                                            move |attrs: Vec<Attribute>| rsx! {
-                                                Link {
-                                                    to: Route::component(name),
-                                                    attributes: attrs,
-                                                    {name.replace("_", " ")}
+            if total == 0 {
+                SidebarGroup {
+                    SidebarGroupContent {
+                        div { class: "dx-sidebar-empty", "No matches" }
+                    }
+                }
+            } else {
+                for (category, names) in SIDEBAR_CATEGORIES.iter() {
+                    {
+                        let category = *category;
+                        let components = matches_for(names);
+                        if components.is_empty() {
+                            rsx! {}
+                        } else {
+                            rsx! {
+                                SidebarGroup { key: "{category}",
+                                    SidebarGroupLabel { "{category}" }
+                                    SidebarGroupContent {
+                                        SidebarMenu {
+                                            for component in components.iter() {
+                                                SidebarMenuItem { key: "{component.name}",
+                                                    SidebarMenuButton {
+                                                        as: {
+                                                            let name = component.name;
+                                                            move |attrs: Vec<Attribute>| rsx! {
+                                                                Link {
+                                                                    to: Route::component(name),
+                                                                    attributes: attrs,
+                                                                    {name.replace("_", " ")}
+                                                                }
+                                                            }
+                                                        },
+                                                    }
                                                 }
                                             }
-                                        },
+                                        }
                                     }
                                 }
                             }
@@ -1104,9 +1174,32 @@ fn CtaStrip() -> Element {
 #[component]
 fn ComponentGallery() -> Element {
     rsx! {
-        div { class: "dx-component-gallery",
-            for component in components::DEMOS.iter().cloned() {
-                ComponentGalleryPreview { component }
+        for (category, names) in SIDEBAR_CATEGORIES.iter() {
+            ComponentGalleryCategory { category: *category, names: *names }
+        }
+    }
+}
+
+#[component]
+fn ComponentGalleryCategory(category: &'static str, names: &'static [&'static str]) -> Element {
+    let components: Vec<ComponentDemoData> = names
+        .iter()
+        .filter_map(|name| components::DEMOS.iter().find(|c| c.name == *name).cloned())
+        .collect();
+    if components.is_empty() {
+        return rsx! {};
+    }
+    let anchor = category.to_lowercase().replace(' ', "-");
+
+    rsx! {
+        section { class: "dx-gallery-section", id: "{anchor}",
+            div { class: "dx-gallery-header",
+                h2 { class: "dx-gallery-title", "{category}" }
+            }
+            div { class: "dx-component-gallery",
+                for component in components {
+                    ComponentGalleryPreview { component }
+                }
             }
         }
     }
@@ -1232,4 +1325,8 @@ fn GotoIcon(mut props: LinkProps) -> Element {
 
 const THEME_CSS: HighlightedCode = HighlightedCode {
     source: dioxus_code::code!("/assets/dx-components-theme.css"),
+};
+
+const HERO_SNIPPET: HighlightedCode = HighlightedCode {
+    source: dioxus_code::code!("/snippets/hero.rs"),
 };

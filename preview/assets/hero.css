@@ -138,24 +138,40 @@
 }
 
 
-/* Variant 2 — rsx! snippet */
+/* Hero — fills the viewport below the topbar */
 .hero-snippet {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100svh - 3.5rem);
+    padding: clamp(2rem, 6vh, 5rem) clamp(1.5rem, 5vw, 4rem);
+    background: var(--primary-color);
+}
+
+.hero-snippet-inner {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    width: 100%;
+    max-width: 80rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     align-items: center;
     gap: clamp(2rem, 5vw, 4rem);
-    max-width: 80rem;
-    margin: 0 auto;
 }
-.hero-snippet-text { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.hero-snippet-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
 .hero-snippet-title {
     margin: 0;
+    color: var(--secondary-color-4);
     font-size: clamp(2.5rem, 5vw, 3.75rem);
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -0.025em;
-    color: var(--secondary-color-4);
 }
+
 .hero-snippet-tagline {
     margin: 0;
     max-width: 32rem;
@@ -163,25 +179,13 @@
     font-size: 1.05rem;
     line-height: 1.5;
 }
-.hero-snippet-tagline-soft { color: var(--secondary-color-5); }
-.hero-snippet-title em {
-    color: var(--secondary-color-5);
-    font-style: italic;
-    font-weight: 600;
+
+.hero-snippet-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
 }
-.hero-snippet-title code,
-.hero-snippet-tagline code,
-.hero-snippet-inline-code {
-    padding: 0.05em 0.4em;
-    border: 1px solid var(--primary-color-6);
-    border-radius: 0.3rem;
-    background: var(--primary-color-2);
-    color: var(--secondary-color-4);
-    font-family: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
-    font-size: 0.82em;
-    font-weight: 500;
-}
-.hero-snippet-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
+
 .hero-snippet-cta {
     display: inline-flex;
     align-items: center;
@@ -196,13 +200,18 @@
     text-decoration: none;
     transition: opacity 0.15s ease;
 }
+
 .hero-snippet-cta:hover { opacity: 0.92; }
+
 .hero-snippet-cta-ghost {
     background: transparent;
     color: var(--secondary-color-4);
     border-color: var(--primary-color-6);
 }
+
 .hero-snippet-cta-ghost:hover { background: var(--primary-color-2); }
+
+/* Code panel — clean window around the dioxus_code rendering, no fake tabs */
 .hero-snippet-code {
     overflow: hidden;
     border: 1px solid var(--primary-color-6);
@@ -210,29 +219,28 @@
     background: var(--primary-color-2);
     box-shadow: 0 12px 40px -20px rgb(0 0 0 / 30%);
 }
-.hero-snippet-code-tab {
-    padding: 0.6rem 1rem;
-    border-bottom: 1px solid var(--primary-color-6);
-    background: var(--primary-color-1);
-    color: var(--secondary-color-5);
-    font-family: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
-    font-size: 0.78rem;
-}
-.hero-snippet-code-block {
-    margin: 0;
-    padding: 1.25rem;
-    color: var(--secondary-color-4);
-    font-family: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
-    font-size: 0.92rem;
+
+.hero-snippet-code .dx-preview-code-theme {
+    font-size: 0.88rem;
     line-height: 1.55;
-    white-space: pre;
-    overflow-x: auto;
 }
-.hero-snippet-tok-kw   { color: #b07cff; font-weight: 500; }
-.hero-snippet-tok-type { color: #f3a13e; }
-.hero-snippet-tok-prop { color: #4dc4ff; }
-.hero-snippet-tok-str  { color: #4ade80; }
-@media (max-width: 880px) { .hero-snippet { grid-template-columns: 1fr; } }
+
+/* stylelint-disable-next-line selector-class-pattern */
+.hero-snippet-code .dx-preview-code-theme .dxc {
+    padding: 1.1rem 1.2rem;
+    border-radius: 0;
+    background: transparent !important;
+}
+
+.hero-snippet-code .dx-preview-code-theme pre {
+    margin: 0;
+    background: transparent !important;
+}
+
+@media (max-width: 880px) {
+    .hero-snippet-inner { grid-template-columns: 1fr; }
+    .hero-snippet { min-height: auto; padding-top: 3rem; padding-bottom: 3rem; }
+}
 
 
 /* Variant 3 — Install command */
