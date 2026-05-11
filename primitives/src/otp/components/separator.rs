@@ -7,7 +7,7 @@ pub struct OneTimePasswordSeparatorProps {
     #[props(extends = GlobalAttributes)]
     pub attributes: Vec<Attribute>,
 
-    /// Optional children that replace the default separator content.
+    /// Decorative content rendered inside the separator (for example, an icon or dash).
     pub children: Element,
 }
 

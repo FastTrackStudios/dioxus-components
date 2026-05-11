@@ -48,9 +48,9 @@ pub struct OneTimePasswordInputProps {
     #[props(default)]
     pub aria_labelledby: ReadSignal<Option<String>>,
 
-    /// Optional validator. Called with the prospective new value; return `false` to reject
-    /// the keystroke or paste. When `None`, every character is accepted. The validator is
-    /// the only built-in input filter — `Backspace`/`Delete` always shrink the value.
+    /// Optional validator. Called with the prospective new value when inserting characters
+    /// (keystrokes and paste); return `false` to reject the change. `Backspace` and `Delete`
+    /// bypass the validator and always shrink the value.
     #[props(default)]
     pub validate: Option<Callback<String, bool>>,
 
