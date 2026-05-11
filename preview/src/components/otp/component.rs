@@ -4,12 +4,14 @@ use dioxus_primitives::otp::{
     OneTimePasswordSlotProps,
 };
 
+#[css_module("/src/components/otp/style.css")]
+struct Styles;
+
 #[component]
 pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
         otp::OneTimePasswordInput {
-            class: "dx-otp",
+            class: Styles::dx_otp,
             value: props.value,
             default_value: props.default_value,
             maxlength: props.maxlength,
@@ -34,7 +36,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
 pub fn OneTimePasswordGroup(props: OneTimePasswordGroupProps) -> Element {
     rsx! {
         otp::OneTimePasswordGroup {
-            class: "dx-otp-group",
+            class: Styles::dx_otp_group,
             attributes: props.attributes,
             {props.children}
         }
@@ -45,10 +47,10 @@ pub fn OneTimePasswordGroup(props: OneTimePasswordGroupProps) -> Element {
 pub fn OneTimePasswordSlot(props: OneTimePasswordSlotProps) -> Element {
     rsx! {
         otp::OneTimePasswordSlot {
-            class: "dx-otp-slot",
+            class: Styles::dx_otp_slot,
             index: props.index,
             attributes: props.attributes,
-            span { class: "dx-otp-caret", aria_hidden: "true" }
+            span { class: Styles::dx_otp_caret, aria_hidden: "true" }
             {props.children}
         }
     }
@@ -58,7 +60,7 @@ pub fn OneTimePasswordSlot(props: OneTimePasswordSlotProps) -> Element {
 pub fn OneTimePasswordSeparator(props: OneTimePasswordSeparatorProps) -> Element {
     rsx! {
         otp::OneTimePasswordSeparator {
-            class: "dx-otp-separator",
+            class: Styles::dx_otp_separator,
             attributes: props.attributes,
             svg {
                 width: "10",

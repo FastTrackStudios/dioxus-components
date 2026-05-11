@@ -58,8 +58,8 @@ pub struct OneTimePasswordInputProps {
     pub aria_labelledby: ReadSignal<Option<String>>,
 
     /// Optional validator. Called with the prospective new value; return `false` to reject
-    /// the keystroke or paste. When `None`, every character is accepted — pass an HTML
-    /// `pattern` attribute via the attribute spread if you also want form-submit validation.
+    /// the keystroke or paste. When `None`, every character is accepted. The validator is
+    /// the only built-in input filter — `Backspace`/`Delete` always shrink the value.
     #[props(default)]
     pub validate: Option<Callback<String, bool>>,
 
@@ -142,7 +142,8 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         if max == 0 {
             return None;
         }
-        Some(cursor().min(max - 1))
+        let len = value.read().chars().count();
+        Some(cursor().min(len).min(max - 1))
     });
 
     use_context_provider(|| OtpCtx {
@@ -196,7 +197,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                             e.prevent_default();
                         }
                         Key::ArrowRight => {
-                            if new_cursor < max {
+                            if new_cursor < chars.len() {
                                 new_cursor += 1;
                             }
                             e.prevent_default();
@@ -249,23 +250,14 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 } else {
                                     next_chars.push(c);
                                 }
-                                if next_chars.len() > max {
-                                    next_chars.truncate(max);
-                                }
+                                next_chars.truncate(max);
                                 let next_value: String = next_chars.iter().copied().collect();
                                 if let Some(validate) = validate {
                                     if !validate.call(next_value.clone()) {
                                         return;
                                     }
                                 }
-                                if insert_at < chars.len() {
-                                    chars[insert_at] = c;
-                                } else {
-                                    chars.push(c);
-                                }
-                                if chars.len() > max {
-                                    chars.truncate(max);
-                                }
+                                chars = next_chars;
                                 new_cursor = (insert_at + 1).min(max);
                                 value_changed = true;
                             }
