@@ -1,9 +1,9 @@
 //! Component definitions for the one-time-password primitive.
 
-pub mod group;
-pub mod input;
-pub mod separator;
-pub mod slot;
+mod group;
+mod input;
+mod separator;
+mod slot;
 
 pub use group::{OneTimePasswordGroup, OneTimePasswordGroupProps};
 pub use input::{OneTimePasswordInput, OneTimePasswordInputProps};
