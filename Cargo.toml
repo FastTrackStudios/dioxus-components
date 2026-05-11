@@ -1,6 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["primitives", "preview", "test-harness", "dioxus-attributes"]
+members = ["primitives", "preview", "dioxus-attributes"]
+# `test-harness` is its own workspace so it can pin every dioxus crate to the
+# PR https://github.com/DioxusLabs/dioxus/pull/5323 fork without disturbing
+# the existing crates.io-based resolution used by `primitives` and `preview`.
+exclude = ["test-harness"]
 
 [workspace.dependencies]
 dioxus-primitives = { path = "primitives" }

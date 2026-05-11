@@ -3,15 +3,46 @@ name = "test-harness"
 version = "0.1.0"
 authors = ["Evan Almloff <evanalmloff@gmail.com>"]
 edition = "2021"
+publish = false
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+path = "src/lib.rs"
 
 [dependencies]
-dioxus = { version = "0.7.0-rc.1", features = [] }
-dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false, features = ["router"] }
+dioxus = { version = "0.7", default-features = false }
+dioxus-primitives = { path = "../primitives", default-features = false }
 
-[features]
-default = ["web"]
-web = ["dioxus/web"]
-desktop = ["dioxus/desktop"]
-mobile = ["dioxus/mobile"]
+[dev-dependencies]
+dioxus-test = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/test" }
+tokio = { version = "1.48", features = ["rt", "macros", "time"] }
+
+# Standalone workspace so the PR's dioxus crates do not have to share a
+# resolver with the rest of the components repo. See top-level Cargo.toml.
+[workspace]
+
+# Patch every dioxus-* crate to the local clone of PR #5323 so we can iterate
+# on the testing library in-place. Once the upstream changes land, swap this
+# for the git rev pin (see commented block below).
+[patch.crates-io]
+dioxus = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/dioxus" }
+dioxus-asset-resolver = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/asset-resolver" }
+dioxus-cli-config = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/cli-config" }
+dioxus-config-macro = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/config-macro" }
+dioxus-config-macros = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/config-macros" }
+dioxus-core = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/core" }
+dioxus-core-macro = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/core-macro" }
+dioxus-core-types = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/core-types" }
+dioxus-devtools = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/devtools" }
+dioxus-devtools-types = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/devtools-types" }
+dioxus-document = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/document" }
+dioxus-history = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/history" }
+dioxus-hooks = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/hooks" }
+dioxus-html = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/html" }
+dioxus-html-internal-macro = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/html-internal-macro" }
+dioxus-interpreter-js = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/interpreter" }
+dioxus-logger = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/logger" }
+dioxus-native-dom = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/native-dom" }
+dioxus-rsx = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/rsx" }
+dioxus-signals = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/signals" }
+dioxus-stores = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/stores" }
+dioxus-stores-macro = { path = "/Users/evanalmloff/dev/dioxus-test-pr/packages/stores-macro" }
