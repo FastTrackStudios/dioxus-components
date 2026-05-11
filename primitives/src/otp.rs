@@ -1,7 +1,7 @@
 //! Defines the [`OneTimePasswordInput`] component and its sub-components for building
 //! accessible, composable one-time-password (OTP) inputs.
 
-use crate::{use_controlled, use_unique_id};
+use crate::{use_controlled, use_id_or, use_unique_id};
 use dioxus::prelude::*;
 
 #[derive(Clone, Copy)]
@@ -9,96 +9,6 @@ struct OtpCtx {
     value: Memo<String>,
     disabled: ReadSignal<bool>,
     active_index: Memo<Option<usize>>,
-}
-
-#[derive(Clone)]
-struct PatternMatcher {
-    pattern: String,
-    class: Option<Vec<CharMatcher>>,
-}
-
-#[derive(Clone, PartialEq)]
-enum CharMatcher {
-    Char(char),
-    Range(char, char),
-    Digit,
-}
-
-impl PatternMatcher {
-    fn new(pattern: &str) -> Self {
-        Self {
-            pattern: pattern.to_string(),
-            class: parse_full_value_char_class(pattern),
-        }
-    }
-
-    fn matches(&self, value: &str) -> bool {
-        value.is_empty()
-            || self.class.as_ref().map_or(true, |class| {
-                value.chars().all(|c| {
-                    class.iter().any(|matcher| match matcher {
-                        CharMatcher::Char(expected) => *expected == c,
-                        CharMatcher::Range(start, end) => *start <= c && c <= *end,
-                        CharMatcher::Digit => c.is_ascii_digit(),
-                    })
-                })
-            })
-    }
-}
-
-impl PartialEq for PatternMatcher {
-    fn eq(&self, other: &Self) -> bool {
-        self.pattern == other.pattern
-    }
-}
-
-fn parse_full_value_char_class(pattern: &str) -> Option<Vec<CharMatcher>> {
-    let pattern = pattern
-        .strip_prefix('^')
-        .unwrap_or(pattern)
-        .strip_suffix('$')
-        .unwrap_or(pattern);
-    let pattern = pattern
-        .strip_suffix('*')
-        .or_else(|| pattern.strip_suffix('+'))
-        .unwrap_or(pattern);
-
-    match pattern {
-        r"\d" => Some(vec![CharMatcher::Digit]),
-        _ if pattern.starts_with('[') && pattern.ends_with(']') => {
-            parse_char_class(&pattern[1..pattern.len() - 1])
-        }
-        _ => None,
-    }
-}
-
-fn parse_char_class(class: &str) -> Option<Vec<CharMatcher>> {
-    let mut chars = class.chars().peekable();
-    let mut matchers = Vec::new();
-
-    while let Some(start) = chars.next() {
-        let start = if start == '\\' {
-            match chars.next()? {
-                'd' => {
-                    matchers.push(CharMatcher::Digit);
-                    continue;
-                }
-                escaped => escaped,
-            }
-        } else {
-            start
-        };
-
-        if chars.peek() == Some(&'-') {
-            chars.next();
-            let end = chars.next()?;
-            matchers.push(CharMatcher::Range(start, end));
-        } else {
-            matchers.push(CharMatcher::Char(start));
-        }
-    }
-
-    Some(matchers)
 }
 
 /// The props for the [`OneTimePasswordInput`] component.
@@ -113,10 +23,6 @@ pub struct OneTimePasswordInputProps {
 
     /// The maximum number of characters the input accepts (the total number of slots).
     pub maxlength: ReadSignal<usize>,
-
-    /// HTML pattern attribute applied to the underlying input. Defaults to digits only.
-    #[props(default = ReadSignal::new(Signal::new(String::from("[0-9]*"))))]
-    pub pattern: ReadSignal<String>,
 
     /// Hint for the on-screen keyboard. Defaults to `"numeric"`.
     #[props(default = ReadSignal::new(Signal::new(String::from("numeric"))))]
@@ -137,6 +43,25 @@ pub struct OneTimePasswordInputProps {
     /// The name attribute used for form submission.
     #[props(default)]
     pub name: ReadSignal<String>,
+
+    /// Optional id for the inner `<input>`. When omitted, a stable id is generated.
+    /// Use this to associate an external `<label for=...>`.
+    #[props(default)]
+    pub id: ReadSignal<Option<String>>,
+
+    /// Accessible name for the input. Forwarded as `aria-label` on the underlying `<input>`.
+    #[props(default)]
+    pub aria_label: ReadSignal<Option<String>>,
+
+    /// ID of an element labelling the input. Forwarded as `aria-labelledby` on the underlying `<input>`.
+    #[props(default)]
+    pub aria_labelledby: ReadSignal<Option<String>>,
+
+    /// Optional validator. Called with the prospective new value; return `false` to reject
+    /// the keystroke or paste. When `None`, every character is accepted — pass an HTML
+    /// `pattern` attribute via the attribute spread if you also want form-submit validation.
+    #[props(default)]
+    pub validate: Option<Callback<String, bool>>,
 
     /// Callback fired whenever the value changes.
     #[props(default)]
@@ -198,23 +123,16 @@ pub struct OneTimePasswordInputProps {
 #[component]
 pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
     let maxlength = props.maxlength;
-    let pattern = props.pattern;
     let on_complete = props.on_complete;
-    let pattern_matcher = use_memo(move || PatternMatcher::new(&pattern()));
+    let validate = props.validate;
 
     let (value, set_value) =
         use_controlled(props.value, props.default_value, props.on_value_change);
 
-    let input_id = use_unique_id();
+    let generated_id = use_unique_id();
+    let input_id = use_id_or(generated_id, props.id);
     let mut is_focused = use_signal(|| false);
     let mut cursor = use_signal(|| 0usize);
-    let (input_label_attributes, wrapper_attributes): (Vec<_>, Vec<_>) =
-        props.attributes.iter().cloned().partition(|attr| {
-            matches!(
-                attr.name,
-                "aria-label" | "aria_label" | "aria-labelledby" | "aria_labelledby"
-            )
-        });
 
     let active_index = use_memo(move || {
         if !is_focused() {
@@ -239,7 +157,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
             position: "relative",
             "data-disabled": props.disabled,
             "data-focused": is_focused,
-            ..wrapper_attributes,
+            ..props.attributes,
 
             {props.children}
 
@@ -248,11 +166,11 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                 r#type: "text",
                 inputmode: props.inputmode,
                 autocomplete: props.autocomplete,
-                pattern,
                 name: props.name,
                 disabled: props.disabled,
-                aria_required: props.required,
                 required: props.required,
+                aria_label: props.aria_label,
+                aria_labelledby: props.aria_labelledby,
                 maxlength: maxlength() as i64,
                 value,
 
@@ -335,8 +253,10 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                     next_chars.truncate(max);
                                 }
                                 let next_value: String = next_chars.iter().copied().collect();
-                                if !pattern_matcher.read().matches(&next_value) {
-                                    return;
+                                if let Some(validate) = validate {
+                                    if !validate.call(next_value.clone()) {
+                                        return;
+                                    }
                                 }
                                 if insert_at < chars.len() {
                                     chars[insert_at] = c;
@@ -370,8 +290,10 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     let raw = e.value();
                     let max = maxlength();
                     let filtered: String = raw.chars().take(max).collect();
-                    if !pattern_matcher.read().matches(&filtered) {
-                        return;
+                    if let Some(validate) = validate {
+                        if !validate.call(filtered.clone()) {
+                            return;
+                        }
                     }
                     let len = filtered.chars().count();
                     if filtered != *value.read() {
@@ -388,7 +310,6 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     cursor.set(value.read().chars().count());
                 },
                 onblur: move |_| is_focused.set(false),
-                ..input_label_attributes,
             }
         }
     }

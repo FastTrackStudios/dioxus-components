@@ -8,7 +8,7 @@ pub fn Demo() -> Element {
         OneTimePasswordInput {
             maxlength: 6usize,
             value: value(),
-            pattern: "[0-9]*",
+            validate: |s: String| s.chars().all(|c| c.is_ascii_digit()),
             on_value_change: move |v| value.set(v),
             aria_label: "One-time password",
             OneTimePasswordGroup {
@@ -23,5 +23,6 @@ pub fn Demo() -> Element {
                 OneTimePasswordSlot { index: 5usize }
             }
         }
+        div { id: "otp-value", "{value}" }
     }
 }

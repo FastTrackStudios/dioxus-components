@@ -9,6 +9,9 @@ composition, and screen readers all continue to work.
 // The wrapper holds the hidden input and provides shared state to all slots.
 OneTimePasswordInput {
     maxlength: 6,
+    aria_label: "One-time password",
+    // Reject anything that isn't a digit (paste, autofill, and keystrokes).
+    validate: |s: String| s.chars().all(|c| c.is_ascii_digit()),
     // A visual grouping of contiguous slots.
     OneTimePasswordGroup {
         // Each slot displays the character at its `index`.
