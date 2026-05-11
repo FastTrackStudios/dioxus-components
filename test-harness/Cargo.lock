@@ -870,6 +870,8 @@ dependencies = [
  "dioxus-core",
  "dioxus-html",
  "dioxus-native-dom",
+ "stylo",
+ "stylo_static_prefs",
  "tokio",
  "tracing",
 ]
