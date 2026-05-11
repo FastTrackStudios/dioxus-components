@@ -245,11 +245,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                             if insert_at < max {
                                 let c = s.chars().next().unwrap();
                                 let mut next_chars = chars.clone();
-                                if insert_at < next_chars.len() {
-                                    next_chars[insert_at] = c;
-                                } else {
-                                    next_chars.push(c);
-                                }
+                                next_chars.insert(insert_at, c);
                                 next_chars.truncate(max);
                                 let next_value: String = next_chars.iter().copied().collect();
                                 if let Some(validate) = validate {
