@@ -73,6 +73,25 @@ test('otp on_complete fires only when the value reaches maxlength', async ({ pag
   await expect(complete).toHaveText('123456');
 });
 
+test('otp on_complete does not re-fire when editing a full buffer', async ({ page }) => {
+  await page.goto('http://127.0.0.1:8080/component/?name=otp&', { timeout: 20 * 60 * 1000 });
+
+  const input = page.getByRole('textbox', { name: 'One-time password' });
+  const complete = page.locator('#otp-complete');
+
+  await input.focus();
+  await page.keyboard.type('123456');
+  await expect(complete).toHaveText('123456');
+
+  // Move into the middle of the full buffer and type. The keydown handler inserts
+  // and truncates, keeping length at maxlength but changing the value. This is
+  // NOT a transition to maxlength, so on_complete must not fire again.
+  await page.keyboard.press('Home');
+  await page.keyboard.press('9');
+  await expect(page.locator('#otp-value')).toHaveText('912345');
+  await expect(complete).toHaveText('123456');
+});
+
 test('otp disabled state blocks input', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/?name=otp&', { timeout: 20 * 60 * 1000 });
 

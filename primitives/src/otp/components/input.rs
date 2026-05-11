@@ -110,7 +110,6 @@ pub struct OneTimePasswordInputProps {
 ///
 /// The wrapper sets the following data attributes:
 /// - `data-disabled`: `true` or `false` depending on the `disabled` prop.
-/// - `data-focused`: `true` or `false` depending on whether the underlying input has focus.
 #[component]
 pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
     let maxlength = props.maxlength;
@@ -133,8 +132,12 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         if max == 0 {
             return None;
         }
+        let c = cursor();
+        if c >= max {
+            return None;
+        }
         let len = value.read().chars().count();
-        Some(cursor().min(len).min(max - 1))
+        Some(c.min(len))
     });
 
     use_context_provider(|| OtpCtx {
@@ -148,7 +151,6 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
             role: "group",
             position: "relative",
             "data-disabled": props.disabled,
-            "data-focused": is_focused,
             ..props.attributes,
 
             {props.children}
@@ -179,6 +181,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     }
                     let mods = e.modifiers();
                     let mut chars: Vec<char> = value.read().chars().collect();
+                    let old_len = chars.len();
                     let mut new_cursor = cursor();
                     let mut value_changed = false;
 
@@ -234,19 +237,21 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                             e.prevent_default();
                             let insert_at = new_cursor.min(chars.len());
                             if insert_at < max {
-                                let c = s.chars().next().unwrap();
-                                let mut next_chars = chars.clone();
-                                next_chars.insert(insert_at, c);
-                                next_chars.truncate(max);
-                                let next_value: String = next_chars.iter().copied().collect();
-                                if let Some(validate) = validate {
-                                    if !validate.call(next_value.clone()) {
-                                        return;
+                                if let Some(c) = s.chars().next() {
+                                    let mut next_chars = chars.clone();
+                                    next_chars.insert(insert_at, c);
+                                    next_chars.truncate(max);
+                                    let next_value: String =
+                                        next_chars.iter().copied().collect();
+                                    if let Some(validate) = validate {
+                                        if !validate.call(next_value.clone()) {
+                                            return;
+                                        }
                                     }
+                                    chars = next_chars;
+                                    new_cursor = (insert_at + 1).min(max);
+                                    value_changed = true;
                                 }
-                                chars = next_chars;
-                                new_cursor = (insert_at + 1).min(max);
-                                value_changed = true;
                             }
                         }
                         _ => {}
@@ -254,8 +259,9 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
 
                     if value_changed {
                         let new_value: String = chars.into_iter().collect();
+                        let new_len = new_value.chars().count();
                         set_value.call(new_value.clone());
-                        if new_value.chars().count() == max {
+                        if old_len < max && new_len == max {
                             on_complete.call(new_value);
                         }
                     }
@@ -274,9 +280,10 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                         }
                     }
                     let len = filtered.chars().count();
+                    let old_len = value.read().chars().count();
                     if filtered != *value.read() {
                         set_value.call(filtered.clone());
-                        if max > 0 && len == max {
+                        if max > 0 && old_len < max && len == max {
                             on_complete.call(filtered);
                         }
                     }

@@ -3,15 +3,17 @@ use dioxus_primitives::otp::{
     self, OneTimePasswordGroupProps, OneTimePasswordInputProps, OneTimePasswordSeparatorProps,
     OneTimePasswordSlotProps,
 };
+use dioxus_primitives::{dioxus_attributes::attributes, merge_attributes};
 
 #[css_module("/src/components/otp/style.css")]
 struct Styles;
 
 #[component]
 pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
+    let base = attributes!(div { class: Styles::dx_otp });
+    let merged = merge_attributes(vec![base, props.attributes]);
     rsx! {
         otp::OneTimePasswordInput {
-            class: Styles::dx_otp,
             value: props.value,
             default_value: props.default_value,
             maxlength: props.maxlength,
@@ -26,7 +28,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
             validate: props.validate,
             on_value_change: props.on_value_change,
             on_complete: props.on_complete,
-            attributes: props.attributes,
+            attributes: merged,
             {props.children}
         }
     }
@@ -34,10 +36,11 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
 
 #[component]
 pub fn OneTimePasswordGroup(props: OneTimePasswordGroupProps) -> Element {
+    let base = attributes!(div { class: Styles::dx_otp_group });
+    let merged = merge_attributes(vec![base, props.attributes]);
     rsx! {
         otp::OneTimePasswordGroup {
-            class: Styles::dx_otp_group,
-            attributes: props.attributes,
+            attributes: merged,
             {props.children}
         }
     }
@@ -45,11 +48,12 @@ pub fn OneTimePasswordGroup(props: OneTimePasswordGroupProps) -> Element {
 
 #[component]
 pub fn OneTimePasswordSlot(props: OneTimePasswordSlotProps) -> Element {
+    let base = attributes!(div { class: Styles::dx_otp_slot });
+    let merged = merge_attributes(vec![base, props.attributes]);
     rsx! {
         otp::OneTimePasswordSlot {
-            class: Styles::dx_otp_slot,
             index: props.index,
-            attributes: props.attributes,
+            attributes: merged,
             span { class: Styles::dx_otp_caret, aria_hidden: "true" }
             {props.children}
         }
@@ -58,10 +62,11 @@ pub fn OneTimePasswordSlot(props: OneTimePasswordSlotProps) -> Element {
 
 #[component]
 pub fn OneTimePasswordSeparator(props: OneTimePasswordSeparatorProps) -> Element {
+    let base = attributes!(div { class: Styles::dx_otp_separator });
+    let merged = merge_attributes(vec![base, props.attributes]);
     rsx! {
         otp::OneTimePasswordSeparator {
-            class: Styles::dx_otp_separator,
-            attributes: props.attributes,
+            attributes: merged,
             svg {
                 width: "10",
                 height: "10",
