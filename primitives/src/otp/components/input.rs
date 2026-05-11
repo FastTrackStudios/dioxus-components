@@ -1,15 +1,6 @@
-//! Defines the [`OneTimePasswordInput`] component and its sub-components for building
-//! accessible, composable one-time-password (OTP) inputs.
-
+use super::super::context::OtpCtx;
 use crate::{use_controlled, use_id_or, use_unique_id};
 use dioxus::prelude::*;
-
-#[derive(Clone, Copy)]
-struct OtpCtx {
-    value: Memo<String>,
-    disabled: ReadSignal<bool>,
-    active_index: Memo<Option<usize>>,
-}
 
 /// The props for the [`OneTimePasswordInput`] component.
 #[derive(Props, Clone, PartialEq)]
@@ -75,8 +66,8 @@ pub struct OneTimePasswordInputProps {
     #[props(extends = GlobalAttributes)]
     pub attributes: Vec<Attribute>,
 
-    /// The children of the input — typically [`OneTimePasswordGroup`], [`OneTimePasswordSlot`],
-    /// and [`OneTimePasswordSeparator`] components.
+    /// The children of the input — typically [`super::OneTimePasswordGroup`],
+    /// [`super::OneTimePasswordSlot`], and [`super::OneTimePasswordSeparator`] components.
     pub children: Element,
 }
 
@@ -84,8 +75,8 @@ pub struct OneTimePasswordInputProps {
 ///
 /// The `OneTimePasswordInput` is the root of an OTP entry. It renders a single, accessible
 /// `<input>` element overlaid on top of its children so paste, autofill (`autocomplete="one-time-code"`),
-/// IME composition, and screen readers continue to work, while child [`OneTimePasswordSlot`]s render
-/// the visual representation of each character.
+/// IME composition, and screen readers continue to work, while child [`super::OneTimePasswordSlot`]s
+/// render the visual representation of each character.
 ///
 /// ## Example
 ///
@@ -274,7 +265,6 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                 },
 
                 oninput: move |e| {
-                    // Catches paste, autofill, IME, and on-screen keyboards.
                     let raw = e.value();
                     let max = maxlength();
                     let filtered: String = raw.chars().take(max).collect();
@@ -299,117 +289,6 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                 },
                 onblur: move |_| is_focused.set(false),
             }
-        }
-    }
-}
-
-/// The props for the [`OneTimePasswordGroup`] component.
-#[derive(Props, Clone, PartialEq)]
-pub struct OneTimePasswordGroupProps {
-    /// Additional attributes applied to the group element.
-    #[props(extends = GlobalAttributes)]
-    pub attributes: Vec<Attribute>,
-
-    /// The slots inside the group.
-    pub children: Element,
-}
-
-/// # OneTimePasswordGroup
-///
-/// A visual grouping of [`OneTimePasswordSlot`]s. Used to render contiguous slots
-/// separated by [`OneTimePasswordSeparator`]s.
-#[component]
-pub fn OneTimePasswordGroup(props: OneTimePasswordGroupProps) -> Element {
-    rsx! {
-        div {
-            role: "presentation",
-            ..props.attributes,
-            {props.children}
-        }
-    }
-}
-
-/// The props for the [`OneTimePasswordSlot`] component.
-#[derive(Props, Clone, PartialEq)]
-pub struct OneTimePasswordSlotProps {
-    /// The position of this slot in the value (zero-based).
-    pub index: ReadSignal<usize>,
-
-    /// Additional attributes applied to the slot element.
-    #[props(extends = GlobalAttributes)]
-    pub attributes: Vec<Attribute>,
-
-    /// Optional children rendered after the character (for example, a custom caret element).
-    /// The current character is exposed via the `data-char` attribute.
-    pub children: Element,
-}
-
-/// # OneTimePasswordSlot
-///
-/// A single slot within a [`OneTimePasswordInput`]. Renders the character at `index` from the
-/// shared value. Must be used inside a [`OneTimePasswordInput`].
-///
-/// ## Styling
-///
-/// The slot element exposes:
-/// - `data-active`: `true` when this slot is the next one to receive input.
-/// - `data-empty`: `true` when no character has been entered at this position.
-/// - `data-disabled`: mirrors the parent's disabled state.
-/// - `data-char`: the current character at this position (empty when none).
-#[component]
-pub fn OneTimePasswordSlot(props: OneTimePasswordSlotProps) -> Element {
-    let ctx: OtpCtx = use_context();
-    let index = props.index;
-
-    let char_at = use_memo(move || {
-        ctx.value
-            .read()
-            .chars()
-            .nth(index())
-            .map(|c| c.to_string())
-            .unwrap_or_default()
-    });
-    let is_active = use_memo(move || ctx.active_index.cloned() == Some(index()));
-    let is_empty = use_memo(move || char_at.read().is_empty());
-
-    rsx! {
-        div {
-            role: "presentation",
-            aria_hidden: "true",
-            "data-active": is_active,
-            "data-empty": is_empty,
-            "data-disabled": ctx.disabled,
-            "data-char": char_at,
-            ..props.attributes,
-
-            {char_at}
-            {props.children}
-        }
-    }
-}
-
-/// The props for the [`OneTimePasswordSeparator`] component.
-#[derive(Props, Clone, PartialEq)]
-pub struct OneTimePasswordSeparatorProps {
-    /// Additional attributes applied to the separator element.
-    #[props(extends = GlobalAttributes)]
-    pub attributes: Vec<Attribute>,
-
-    /// Optional children that replace the default separator content.
-    pub children: Element,
-}
-
-/// # OneTimePasswordSeparator
-///
-/// A purely decorative separator placed between [`OneTimePasswordGroup`]s.
-#[component]
-pub fn OneTimePasswordSeparator(props: OneTimePasswordSeparatorProps) -> Element {
-    rsx! {
-        div {
-            role: "separator",
-            aria_hidden: "true",
-            ..props.attributes,
-            {props.children}
         }
     }
 }
