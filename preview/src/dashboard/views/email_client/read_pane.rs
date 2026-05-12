@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::Check;
+use dioxus_primitives::select as primitive_select;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::rc::Rc;
 
@@ -6,7 +8,6 @@ use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
 use crate::components::badge::{Badge, BadgeVariant};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::card::{Card, CardContent, CardDescription, CardHeader, CardTitle};
-use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
 use crate::components::textarea::Textarea;
 use crate::components::toolbar::component::{
     Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator,
@@ -153,22 +154,38 @@ pub(super) fn ReadPane(
                                         span {
                                             "{selected_static.thread_count} message{(selected_static.thread_count > 1).then(|| \"s\").unwrap_or(\"\")} in this thread"
                                         }
-                                        SelectMulti::<MessageTag> {
+                                        primitive_select::SelectMulti::<MessageTag> {
                                             class: "ec-tag-select",
                                             values: Some(selected_tags.clone()),
                                             default_values: selected_tags.clone(),
                                             on_values_change: move |values: Vec<MessageTag>| {
                                                 state.set_message_tags(tag_edit_uid.clone(), values);
                                             },
-                                            SelectGroup {
-                                                SelectGroupLabel { "Tags" }
-                                                for (index, tag) in MessageTag::ALL.iter().enumerate() {
-                                                    SelectOption::<MessageTag> {
-                                                        key: "{tag.label()}",
-                                                        index,
-                                                        value: *tag,
-                                                        text_value: "{tag.label()}",
-                                                        {tag.label()}
+                                            primitive_select::SelectTrigger {
+                                                class: "ec-tag-edit-trigger",
+                                                aria_label: "Add tag",
+                                                "+ Tag"
+                                            }
+                                            primitive_select::SelectList {
+                                                class: "ec-tag-list",
+                                                aria_label: "Edit tags",
+                                                primitive_select::SelectGroup {
+                                                    primitive_select::SelectGroupLabel { class: "ec-tag-group-label", "Tags" }
+                                                    for (index, tag) in MessageTag::ALL.iter().enumerate() {
+                                                        primitive_select::SelectOption::<MessageTag> {
+                                                            class: "ec-tag-option",
+                                                            key: "{tag.label()}",
+                                                            index,
+                                                            value: *tag,
+                                                            text_value: "{tag.label()}",
+                                                            {tag.label()}
+                                                            primitive_select::SelectItemIndicator {
+                                                                Check {
+                                                                    class: "ec-tag-check-icon",
+                                                                    size: "1rem",
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
