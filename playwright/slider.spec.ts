@@ -56,44 +56,29 @@ test('drag survives pointercancel (iPad system gesture)', async ({ page }) => {
 
   await expect(thumb).toHaveAttribute('aria-valuenow', '50');
 
-  const startDrag = async (frac: number, pointerId: number) => {
+  const startDrag = async (frac: number) => {
     // Re-measure each time — focusing the thumb can scroll the page, which
     // shifts the slider's viewport coordinates between taps.
     const box = await slider.boundingBox();
     if (!box) throw new Error('slider has no bounding box');
     const x = box.x + box.width * frac;
     const y = box.y + box.height / 2;
-    await slider.evaluate((el, { x, y, pointerId }) => {
-      const event = new PointerEvent('pointerdown', {
-        pointerId,
-        pointerType: 'touch',
-        isPrimary: true,
-        clientX: x,
-        clientY: y,
-        button: 0,
-        buttons: 1,
-        bubbles: true,
-        cancelable: true,
-      });
-      // Keep synthetic touch coordinates stable across Firefox runners.
-      Object.defineProperty(event, 'clientX', { value: x });
-      Object.defineProperty(event, 'clientY', { value: y });
-      el.dispatchEvent(event);
-    }, { x, y, pointerId });
+    await page.mouse.move(x, y);
+    await page.mouse.down();
 
-    return { x, y, pointerId };
+    return { x, y };
   };
 
   // First tap at 30% sets the value normally.
-  const firstDrag = await startDrag(0.3, 1);
+  const firstDrag = await startDrag(0.3);
   await expect(thumb).toHaveAttribute('aria-valuenow', '30');
 
   // OS gesture: pointercancel fires without a matching pointerup. Dispatch it
   // through window so the shared pointer tracker observes the cancellation.
-  await page.evaluate(({ x, y, pointerId }) => {
+  await page.evaluate(({ x, y }) => {
     window.dispatchEvent(new PointerEvent('pointercancel', {
-      pointerId,
-      pointerType: 'touch',
+      pointerId: 1,
+      pointerType: 'mouse',
       isPrimary: true,
       clientX: x,
       clientY: y,
@@ -102,20 +87,12 @@ test('drag survives pointercancel (iPad system gesture)', async ({ page }) => {
     }));
   }, firstDrag);
   await expect(thumb).toHaveAttribute('data-dragging', 'false');
+  await page.mouse.up();
 
   // New tap at 70% with a fresh pointer — should still update the slider.
-  const secondDrag = await startDrag(0.7, 2);
+  await startDrag(0.7);
   await expect(thumb).toHaveAttribute('aria-valuenow', '70');
-  await page.evaluate(({ x, y, pointerId }) => {
-    window.dispatchEvent(new PointerEvent('pointerup', {
-      pointerId,
-      pointerType: 'touch',
-      isPrimary: true,
-      clientX: x,
-      clientY: y,
-      bubbles: true,
-    }));
-  }, secondDrag);
+  await page.mouse.up();
   await expect(thumb).toHaveAttribute('data-dragging', 'false');
   await expect(thumb).toHaveAttribute('aria-valuenow', '70');
 });
