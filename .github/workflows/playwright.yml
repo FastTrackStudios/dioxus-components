@@ -58,6 +58,10 @@ jobs:
       - name: Install dependencies
         run: cd ./playwright && npm ci
       - name: Run Playwright tests
+        env:
+          CARGO_HOME: /github/home/.cargo
+          HOME: /root
+          RUSTUP_HOME: /github/home/.rustup
         run: cd ./playwright && npx playwright test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
