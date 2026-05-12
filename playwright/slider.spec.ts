@@ -56,43 +56,54 @@ test('drag survives pointercancel (iPad system gesture)', async ({ page }) => {
 
   await expect(thumb).toHaveAttribute('aria-valuenow', '50');
 
-  const startDrag = async (frac: number) => {
+  const dispatchPointerDown = async (frac: number, pointerId: number) => {
     // Re-measure each time — focusing the thumb can scroll the page, which
     // shifts the slider's viewport coordinates between taps.
-    const box = await slider.boundingBox();
-    if (!box) throw new Error('slider has no bounding box');
+    const box = await sliderTrack(slider).boundingBox();
+    if (!box) throw new Error('slider track has no bounding box');
     const x = box.x + box.width * frac;
     const y = box.y + box.height / 2;
-    await page.mouse.move(x, y);
-    await page.mouse.down();
+
+    await slider.evaluate((el, { x, y, pointerId }) => {
+      el.dispatchEvent(new PointerEvent('pointerdown', {
+        pointerId,
+        pointerType: 'touch',
+        isPrimary: true,
+        clientX: x,
+        clientY: y,
+        button: 0,
+        buttons: 1,
+        bubbles: true,
+        cancelable: true,
+      }));
+    }, { x, y, pointerId });
 
     return { x, y };
   };
 
-  // First tap at 30% sets the value normally.
-  const firstDrag = await startDrag(0.3);
-  await expect(thumb).toHaveAttribute('aria-valuenow', '30');
+  // Start a drag so the slider records an active pointer.
+  const firstPointerId = 99;
+  const firstDrag = await dispatchPointerDown(0.5, firstPointerId);
+  await expect(thumb).toHaveAttribute('data-dragging', 'true');
 
   // OS gesture: pointercancel fires without a matching pointerup. Dispatch it
   // through window so the shared pointer tracker observes the cancellation.
-  await page.evaluate(({ x, y }) => {
+  await page.evaluate(({ x, y, pointerId }) => {
     window.dispatchEvent(new PointerEvent('pointercancel', {
-      pointerId: 1,
-      pointerType: 'mouse',
+      pointerId,
+      pointerType: 'touch',
       isPrimary: true,
       clientX: x,
       clientY: y,
       bubbles: true,
       cancelable: true,
     }));
-  }, firstDrag);
+  }, { ...firstDrag, pointerId: firstPointerId });
   await expect(thumb).toHaveAttribute('data-dragging', 'false');
-  await page.mouse.up();
 
-  // New tap at 70% with a fresh pointer — should still update the slider.
-  await startDrag(0.7);
+  // New tap at 70% with a fresh pointer should still update the slider.
+  await clickSliderTrack(page, sliderTrack(slider), 0.7);
   await expect(thumb).toHaveAttribute('aria-valuenow', '70');
-  await page.mouse.up();
   await expect(thumb).toHaveAttribute('data-dragging', 'false');
   await expect(thumb).toHaveAttribute('aria-valuenow', '70');
 });
