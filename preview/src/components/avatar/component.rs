@@ -94,6 +94,7 @@ pub fn Avatar(props: AvatarProps) -> Element {
                 class: Styles::dx_avatar_image,
                 src: props.src,
                 alt: props.alt,
+                draggable: "false",
             }
             avatar::AvatarFallback {
                 class: Styles::dx_avatar_fallback,

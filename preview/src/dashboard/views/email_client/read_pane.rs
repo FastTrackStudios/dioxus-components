@@ -6,8 +6,9 @@ use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
 use crate::components::badge::{Badge, BadgeVariant};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::card::{Card, CardContent, CardDescription, CardHeader, CardTitle};
-use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
-use dioxus_primitives::select::{SelectList, SelectTrigger};
+use crate::components::select::{
+    SelectGroup, SelectGroupLabel, SelectList, SelectOption, SelectTrigger,
+};
 use crate::components::textarea::Textarea;
 use crate::components::toolbar::component::{
     Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator,
@@ -16,6 +17,7 @@ use crate::dashboard::common::{
     lookup_message, IconKind, LucideIcon, MessageState, MessageStateStoreExt, MessageTag,
     AVATAR_PROFILE_OPTIONS, LOREM_IPSUM,
 };
+use dioxus_primitives::select::SelectMulti;
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
@@ -155,6 +157,7 @@ pub(super) fn ReadPane(
                                             "{selected_static.thread_count} message{(selected_static.thread_count > 1).then(|| \"s\").unwrap_or(\"\")} in this thread"
                                         }
                                         SelectMulti::<MessageTag> {
+                                            class: "ec-tag-select",
                                             values: Some(selected_tags.clone()),
                                             default_values: selected_tags.clone(),
                                             on_values_change: move |values: Vec<MessageTag>| {

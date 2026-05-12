@@ -3,7 +3,8 @@ use std::time::Duration;
 use dioxus::prelude::*;
 use dioxus_icons::lucide::{Check, ChevronDown};
 use dioxus_primitives::select::{
-    self, SelectGroupLabelProps, SelectGroupProps, SelectOptionProps,
+    self, SelectGroupLabelProps, SelectGroupProps, SelectListProps, SelectOptionProps,
+    SelectTriggerProps,
 };
 use dioxus_primitives::{dioxus_attributes::attributes, merge_attributes};
 
@@ -206,6 +207,37 @@ pub fn SelectMulti<T: Clone + PartialEq + 'static>(props: SelectMultiProps<T>) -
                 aria_label: props.aria_label,
                 {props.children}
             }
+        }
+    }
+}
+
+#[component]
+pub fn SelectTrigger(props: SelectTriggerProps) -> Element {
+    let base = attributes!(button { class: Styles::dx_select_trigger });
+    let merged = merge_attributes(vec![base, props.attributes]);
+
+    rsx! {
+        select::SelectTrigger { attributes: merged,
+            {props.children}
+            ChevronDown {
+                class: "dx-select-expand-icon",
+                size: "20px",
+                stroke: "var(--primary-color-7)",
+            }
+        }
+    }
+}
+
+#[component]
+pub fn SelectList(props: SelectListProps) -> Element {
+    let base = attributes!(div { class: Styles::dx_select_list });
+    let merged = merge_attributes(vec![base, props.attributes]);
+
+    rsx! {
+        select::SelectList {
+            id: props.id,
+            attributes: merged,
+            {props.children}
         }
     }
 }

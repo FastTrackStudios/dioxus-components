@@ -5,14 +5,16 @@ use crate::components::button::{Button, ButtonVariant};
 use crate::components::item::{
     Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle,
 };
-use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
-use dioxus_primitives::select::{SelectList, SelectTrigger};
+use crate::components::select::{
+    SelectGroup, SelectGroupLabel, SelectList, SelectOption, SelectTrigger,
+};
 use crate::components::tabs::component::{TabList, TabTrigger, Tabs};
 use crate::components::virtual_list::VirtualList;
 use crate::dashboard::common::{
     lookup_message, IconKind, LucideIcon, MessageState, MessageStateStoreExt, MessageTag, TabId,
     LOREM_IPSUM, TABS,
 };
+use dioxus_primitives::select::SelectMulti;
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
@@ -81,6 +83,7 @@ pub(super) fn ListPane(
                     }
                 }
                 SelectMulti::<MessageTag> {
+                    class: "ec-tag-select",
                     values: Some(tags.clone()),
                     default_values: vec![],
                     on_values_change: move |values| {
