@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_icons::lucide::Check;
+use dioxus_icons::lucide::{Check, ChevronDown};
 use dioxus_primitives::select as primitive_select;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::rc::Rc;
@@ -19,6 +19,9 @@ use crate::dashboard::common::{
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
+
+#[css_module("/src/components/select/style.css")]
+struct SelectStyles;
 
 #[component]
 pub(super) fn ReadPane(
@@ -155,25 +158,30 @@ pub(super) fn ReadPane(
                                             "{selected_static.thread_count} message{(selected_static.thread_count > 1).then(|| \"s\").unwrap_or(\"\")} in this thread"
                                         }
                                         primitive_select::SelectMulti::<MessageTag> {
-                                            class: "ec-tag-select",
+                                            class: SelectStyles::dx_select,
                                             values: Some(selected_tags.clone()),
                                             default_values: selected_tags.clone(),
                                             on_values_change: move |values: Vec<MessageTag>| {
                                                 state.set_message_tags(tag_edit_uid.clone(), values);
                                             },
                                             primitive_select::SelectTrigger {
-                                                class: "ec-tag-edit-trigger",
+                                                class: format!("{} ec-tag-edit-trigger", SelectStyles::dx_select_trigger),
                                                 aria_label: "Add tag",
                                                 "+ Tag"
+                                                ChevronDown {
+                                                    class: "dx-select-expand-icon",
+                                                    size: "20px",
+                                                    stroke: "var(--primary-color-7)",
+                                                }
                                             }
                                             primitive_select::SelectList {
-                                                class: "ec-tag-list",
+                                                class: format!("{} ec-filter-list", SelectStyles::dx_select_list),
                                                 aria_label: "Edit tags",
                                                 primitive_select::SelectGroup {
-                                                    primitive_select::SelectGroupLabel { class: "ec-tag-group-label", "Tags" }
+                                                    primitive_select::SelectGroupLabel { class: SelectStyles::dx_select_group_label, "Tags" }
                                                     for (index, tag) in MessageTag::ALL.iter().enumerate() {
                                                         primitive_select::SelectOption::<MessageTag> {
-                                                            class: "ec-tag-option",
+                                                            class: SelectStyles::dx_select_option,
                                                             key: "{tag.label()}",
                                                             index,
                                                             value: *tag,
@@ -181,8 +189,8 @@ pub(super) fn ReadPane(
                                                             {tag.label()}
                                                             primitive_select::SelectItemIndicator {
                                                                 Check {
-                                                                    class: "ec-tag-check-icon",
                                                                     size: "1rem",
+                                                                    stroke: "var(--secondary-color-5)",
                                                                 }
                                                             }
                                                         }
