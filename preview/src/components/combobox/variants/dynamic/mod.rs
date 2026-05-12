@@ -23,8 +23,6 @@ pub fn Demo() -> Element {
                 }
             }
             Combobox::<String> {
-                placeholder: "Select framework...",
-                aria_label: "Dynamic frameworks",
                 ComboboxEmpty { "No framework found." }
                 ComboboxOption::<String> {
                     index: 0usize,

@@ -295,7 +295,7 @@ pub fn Sidebar(
             Sheet {
                 open: open_mobile(),
                 on_open_change: move |v| ctx.set_open_mobile(v),
-                side: sheet_side,
+                "data-side": sheet_side.as_str(),
                 class: Styles::dx_sidebar_sheet.to_string(),
                 "data-sidebar": "sidebar",
                 "data-slot": "sidebar",

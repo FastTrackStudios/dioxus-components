@@ -39,8 +39,6 @@ pub fn Demo() -> Element {
                 open,
                 on_value_change: move |next| value.set(next),
                 on_open_change: move |next| open.set(Some(next)),
-                placeholder: "Select framework...",
-                aria_label: "Controlled frameworks",
                 ComboboxEmpty { "No framework found." }
                 for (i , (value , label)) in frameworks.iter().enumerate() {
                     ComboboxOption::<String> {

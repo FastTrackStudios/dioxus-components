@@ -18,8 +18,6 @@ pub fn Demo() -> Element {
         Combobox::<String> {
             query: Some(query()),
             on_query_change: move |next| query.set(next),
-            placeholder: "Select framework...",
-            aria_label: "Frameworks",
             ComboboxEmpty { "No framework found." }
             for (i , (value , label)) in frameworks.iter().enumerate() {
                 ComboboxOption::<String> {

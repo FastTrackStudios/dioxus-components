@@ -1,7 +1,9 @@
 use dioxus::prelude::*;
 use dioxus_icons::lucide::X;
-use dioxus_primitives::dialog::{self, DialogCtx, DialogDescriptionProps, DialogTitleProps};
 use dioxus_primitives::dioxus_attributes::attributes;
+use dioxus_primitives::dialog::{
+    self, DialogCtx, DialogDescriptionProps, DialogRootProps, DialogTitleProps,
+};
 use dioxus_primitives::merge_attributes;
 
 #[css_module("/src/components/sheet/style.css")]
@@ -27,39 +29,12 @@ impl SheetSide {
     }
 }
 
-#[derive(Props, Clone, PartialEq)]
-pub struct SheetProps {
-    #[props(default)]
-    pub id: ReadSignal<Option<String>>,
-
-    #[props(default = ReadSignal::new(Signal::new(true)))]
-    pub is_modal: ReadSignal<bool>,
-
-    pub open: ReadSignal<Option<bool>>,
-
-    #[props(default)]
-    pub default_open: bool,
-
-    #[props(default)]
-    pub on_open_change: Callback<bool>,
-
-    /// Which edge of the viewport the sheet slides in from.
-    #[props(default)]
-    pub side: SheetSide,
-
-    /// Additional attributes applied to the sheet content panel.
-    #[props(extends = GlobalAttributes)]
-    pub attributes: Vec<Attribute>,
-
-    pub children: Element,
-}
-
 #[component]
-pub fn Sheet(props: SheetProps) -> Element {
+pub fn Sheet(props: DialogRootProps) -> Element {
     let content_base = attributes!(div {
         class: Styles::dx_sheet,
         "data-slot": "sheet-content",
-        "data-side": props.side.as_str(),
+        "data-side": SheetSide::Right.as_str(),
     });
     let content_attributes = merge_attributes(vec![content_base, props.attributes]);
 

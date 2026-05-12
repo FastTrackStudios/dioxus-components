@@ -8,9 +8,6 @@ Select::<String> {
     on_value_change: |value: String| {
         // Handle the change in selected value.
     },
-    placeholder: "Select a value...",
-    trigger_aria_label: "Select a value",
-    aria_label: "Options",
     SelectGroup {
         SelectGroupLabel { "Group A" }
         SelectOption::<String> {
@@ -21,6 +18,3 @@ Select::<String> {
     }
 }
 ```
-
-For advanced cases (custom trigger UI, no placeholder), drop down to the primitive
-`dioxus_primitives::select::*` components directly.

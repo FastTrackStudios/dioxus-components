@@ -6,7 +6,7 @@ The sheet component is a panel that slides in from the edge of the screen. It ca
 Sheet {
     open: open(),
     // Which edge to slide in from. Available sides: Top, Right (default), Bottom, Left.
-    side: SheetSide::Right,
+    "data-side": SheetSide::Right.as_str(),
     SheetContentClose {}
     SheetHeader {
         SheetTitle { "Edit Profile" }

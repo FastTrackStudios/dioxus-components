@@ -5,16 +5,13 @@ use crate::components::button::{Button, ButtonVariant};
 use crate::components::item::{
     Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle,
 };
-use crate::components::select::{
-    SelectGroup, SelectGroupLabel, SelectList, SelectOption, SelectTrigger,
-};
+use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
 use crate::components::tabs::component::{TabList, TabTrigger, Tabs};
 use crate::components::virtual_list::VirtualList;
 use crate::dashboard::common::{
     lookup_message, IconKind, LucideIcon, MessageState, MessageStateStoreExt, MessageTag, TabId,
     LOREM_IPSUM, TABS,
 };
-use dioxus_primitives::select::SelectMulti;
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
@@ -89,25 +86,15 @@ pub(super) fn ListPane(
                     on_values_change: move |values| {
                         state.set_selected_tags(values);
                     },
-                    SelectTrigger {
-                        class: "ec-filter-trigger",
-                        aria_label: "Filter by tag",
-                        LucideIcon { kind: IconKind::Filter }
-                        if !tags.is_empty() {
-                            span { class: "ec-filter-count", "{tags.len()}" }
-                        }
-                    }
-                    SelectList { class: "ec-filter-list", aria_label: "Filter by tag",
-                        SelectGroup {
-                            SelectGroupLabel { "Tags" }
-                            for (index, tag) in MessageTag::ALL.iter().enumerate() {
-                                SelectOption::<MessageTag> {
-                                    key: "{tag.label()}",
-                                    index,
-                                    value: *tag,
-                                    text_value: "{tag.label()}",
-                                    {tag.label()}
-                                }
+                    SelectGroup {
+                        SelectGroupLabel { "Tags" }
+                        for (index, tag) in MessageTag::ALL.iter().enumerate() {
+                            SelectOption::<MessageTag> {
+                                key: "{tag.label()}",
+                                index,
+                                value: *tag,
+                                text_value: "{tag.label()}",
+                                {tag.label()}
                             }
                         }
                     }

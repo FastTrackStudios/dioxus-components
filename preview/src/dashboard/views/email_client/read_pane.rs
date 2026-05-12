@@ -6,9 +6,7 @@ use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
 use crate::components::badge::{Badge, BadgeVariant};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::card::{Card, CardContent, CardDescription, CardHeader, CardTitle};
-use crate::components::select::{
-    SelectGroup, SelectGroupLabel, SelectList, SelectOption, SelectTrigger,
-};
+use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
 use crate::components::textarea::Textarea;
 use crate::components::toolbar::component::{
     Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator,
@@ -17,7 +15,6 @@ use crate::dashboard::common::{
     lookup_message, IconKind, LucideIcon, MessageState, MessageStateStoreExt, MessageTag,
     AVATAR_PROFILE_OPTIONS, LOREM_IPSUM,
 };
-use dioxus_primitives::select::SelectMulti;
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
@@ -163,24 +160,15 @@ pub(super) fn ReadPane(
                                             on_values_change: move |values: Vec<MessageTag>| {
                                                 state.set_message_tags(tag_edit_uid.clone(), values);
                                             },
-                                            SelectTrigger {
-                                                class: "ec-tag-edit-trigger",
-                                                aria_label: "Add tag",
-                                                "+ Tag"
-                                            }
-                                            SelectList {
-                                                class: "ec-filter-list",
-                                                aria_label: "Edit tags",
-                                                SelectGroup {
-                                                    SelectGroupLabel { "Tags" }
-                                                    for (index, tag) in MessageTag::ALL.iter().enumerate() {
-                                                        SelectOption::<MessageTag> {
-                                                            key: "{tag.label()}",
-                                                            index,
-                                                            value: *tag,
-                                                            text_value: "{tag.label()}",
-                                                            {tag.label()}
-                                                        }
+                                            SelectGroup {
+                                                SelectGroupLabel { "Tags" }
+                                                for (index, tag) in MessageTag::ALL.iter().enumerate() {
+                                                    SelectOption::<MessageTag> {
+                                                        key: "{tag.label()}",
+                                                        index,
+                                                        value: *tag,
+                                                        text_value: "{tag.label()}",
+                                                        {tag.label()}
                                                     }
                                                 }
                                             }
