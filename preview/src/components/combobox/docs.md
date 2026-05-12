@@ -17,6 +17,9 @@ Combobox::<String> {
     },
     query: Some(query()),
     on_query_change: move |next| query.set(next),
+    placeholder: "Select framework...",
+    aria_label: "Select framework",
+    list_aria_label: "Frameworks",
     ComboboxEmpty { "No framework found." }
     ComboboxOption::<String> {
         index: 0usize,

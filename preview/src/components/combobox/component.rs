@@ -1,10 +1,65 @@
 use dioxus::prelude::*;
 use dioxus_icons::lucide::{Check, ChevronsUpDown};
-use dioxus_primitives::combobox::{self, ComboboxEmptyProps, ComboboxOptionProps, ComboboxProps};
+use dioxus_primitives::combobox::{
+    self, default_combobox_filter, ComboboxEmptyProps, ComboboxOptionProps,
+};
 use dioxus_primitives::{dioxus_attributes::attributes, merge_attributes};
 
 #[css_module("/src/components/combobox/style.css")]
 struct Styles;
+
+#[derive(Props, Clone, PartialEq)]
+pub struct ComboboxProps<T: Clone + PartialEq + 'static = String> {
+    #[props(default)]
+    pub value: Option<ReadSignal<Option<T>>>,
+
+    #[props(default)]
+    pub default_value: Option<T>,
+
+    #[props(default)]
+    pub on_value_change: Callback<Option<T>>,
+
+    #[props(default)]
+    pub disabled: ReadSignal<bool>,
+
+    #[props(default)]
+    pub open: ReadSignal<Option<bool>>,
+
+    #[props(default)]
+    pub default_open: ReadSignal<bool>,
+
+    #[props(default)]
+    pub on_open_change: Callback<bool>,
+
+    #[props(default)]
+    pub query: ReadSignal<Option<String>>,
+
+    #[props(default)]
+    pub default_query: ReadSignal<String>,
+
+    #[props(default)]
+    pub on_query_change: Callback<String>,
+
+    #[props(default = ReadSignal::new(Signal::new(true)))]
+    pub roving_loop: ReadSignal<bool>,
+
+    #[props(default = Callback::new(|(q, t): (String, String)| default_combobox_filter(&q, &t)))]
+    pub filter: Callback<(String, String), bool>,
+
+    #[props(default)]
+    pub placeholder: ReadSignal<String>,
+
+    #[props(default)]
+    pub aria_label: Option<String>,
+
+    #[props(default)]
+    pub list_aria_label: Option<String>,
+
+    #[props(extends = GlobalAttributes)]
+    pub attributes: Vec<Attribute>,
+
+    pub children: Element,
+}
 
 #[component]
 pub fn Combobox<T: Clone + PartialEq + 'static>(props: ComboboxProps<T>) -> Element {
@@ -29,6 +84,8 @@ pub fn Combobox<T: Clone + PartialEq + 'static>(props: ComboboxProps<T>) -> Elem
             div { class: Styles::dx_combobox_input_wrapper,
                 combobox::ComboboxInput {
                     class: Styles::dx_combobox_input,
+                    placeholder: props.placeholder,
+                    aria_label: props.aria_label.clone(),
                 }
                 ChevronsUpDown {
                     class: Styles::dx_combobox_expand_icon,
@@ -37,6 +94,7 @@ pub fn Combobox<T: Clone + PartialEq + 'static>(props: ComboboxProps<T>) -> Elem
             }
             combobox::ComboboxList {
                 class: Styles::dx_combobox_list,
+                aria_label: props.list_aria_label.clone(),
                 {props.children}
             }
         }
