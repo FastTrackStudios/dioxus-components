@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 use dioxus_icons::lucide::{
     AlarmClock, Archive as ArchiveIcon, ArrowLeft as ArrowLeftIcon, Flag as FlagIcon,
-    Inbox as InboxIcon, Paperclip as PaperclipIcon, Pencil, Send as SendIcon, Star,
-    Trash as TrashIcon, X as XIcon,
+    Funnel as FilterIcon, Inbox as InboxIcon, Paperclip as PaperclipIcon, Pencil, Send as SendIcon,
+    Star, Trash as TrashIcon, X as XIcon,
 };
 
 #[derive(Clone, Copy, PartialEq)]
@@ -15,6 +15,7 @@ pub enum IconKind {
     StarOutline,
     StarFilled,
     Paperclip,
+    Filter,
     ArrowLeft,
     Flag,
     Snooze,
@@ -48,6 +49,9 @@ pub fn LucideIcon(kind: IconKind, #[props(default = 16)] size: u32) -> Element {
         },
         IconKind::Paperclip => rsx! {
             PaperclipIcon { size, stroke_width: "1.75", "aria-hidden": "true" }
+        },
+        IconKind::Filter => rsx! {
+            FilterIcon { size, stroke_width: "1.75", "aria-hidden": "true" }
         },
         IconKind::ArrowLeft => rsx! {
             ArrowLeftIcon { size, stroke_width: "1.75", "aria-hidden": "true" }

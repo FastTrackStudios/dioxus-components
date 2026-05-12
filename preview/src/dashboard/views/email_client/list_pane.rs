@@ -1,11 +1,12 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::Check;
+use dioxus_primitives::select as primitive_select;
 
 use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::item::{
     Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle,
 };
-use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
 use crate::components::tabs::component::{TabList, TabTrigger, Tabs};
 use crate::components::virtual_list::VirtualList;
 use crate::dashboard::common::{
@@ -79,22 +80,41 @@ pub(super) fn ListPane(
                         }
                     }
                 }
-                SelectMulti::<MessageTag> {
+                primitive_select::SelectMulti::<MessageTag> {
                     class: "ec-tag-select",
                     values: Some(tags.clone()),
                     default_values: vec![],
                     on_values_change: move |values| {
                         state.set_selected_tags(values);
                     },
-                    SelectGroup {
-                        SelectGroupLabel { "Tags" }
-                        for (index, tag) in MessageTag::ALL.iter().enumerate() {
-                            SelectOption::<MessageTag> {
-                                key: "{tag.label()}",
-                                index,
-                                value: *tag,
-                                text_value: "{tag.label()}",
-                                {tag.label()}
+                    primitive_select::SelectTrigger {
+                        class: "ec-tag-trigger",
+                        aria_label: "Filter by tag",
+                        LucideIcon { kind: IconKind::Filter }
+                        if !tags.is_empty() {
+                            span { class: "ec-filter-count", "{tags.len()}" }
+                        }
+                    }
+                    primitive_select::SelectList {
+                        class: "ec-tag-list",
+                        aria_label: "Filter by tag",
+                        primitive_select::SelectGroup {
+                            primitive_select::SelectGroupLabel { class: "ec-tag-group-label", "Tags" }
+                            for (index, tag) in MessageTag::ALL.iter().enumerate() {
+                                primitive_select::SelectOption::<MessageTag> {
+                                    class: "ec-tag-option",
+                                    key: "{tag.label()}",
+                                    index,
+                                    value: *tag,
+                                    text_value: "{tag.label()}",
+                                    {tag.label()}
+                                    primitive_select::SelectItemIndicator {
+                                        Check {
+                                            class: "ec-tag-check-icon",
+                                            size: "1rem",
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
