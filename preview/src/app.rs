@@ -1119,93 +1119,17 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
     }
 }
 
-struct Widget {
-    name: &'static str,
-    label: &'static str,
-    demo: fn() -> Element,
-}
-
-const WIDGETS: &[Widget] = &[
-    Widget {
-        name: "calendar",
-        label: "Calendar",
-        demo: components::calendar::variants::main::Demo,
-    },
-    Widget {
-        name: "color_picker",
-        label: "Color picker",
-        demo: components::color_picker::variants::main::Demo,
-    },
-    Widget {
-        name: "tabs",
-        label: "Tabs",
-        demo: components::tabs::variants::main::Demo,
-    },
-    Widget {
-        name: "slider",
-        label: "Slider",
-        demo: components::slider::variants::main::Demo,
-    },
-    Widget {
-        name: "button",
-        label: "Button",
-        demo: components::button::variants::main::Demo,
-    },
-    Widget {
-        name: "switch",
-        label: "Switch",
-        demo: components::switch::variants::main::Demo,
-    },
-    Widget {
-        name: "checkbox",
-        label: "Checkbox",
-        demo: components::checkbox::variants::main::Demo,
-    },
-    Widget {
-        name: "radio_group",
-        label: "Radio group",
-        demo: components::radio_group::variants::main::Demo,
-    },
-    Widget {
-        name: "select",
-        label: "Select",
-        demo: components::select::variants::main::Demo,
-    },
-    Widget {
-        name: "input",
-        label: "Input",
-        demo: components::input::variants::main::Demo,
-    },
-    Widget {
-        name: "accordion",
-        label: "Accordion",
-        demo: components::accordion::variants::main::Demo,
-    },
-    Widget {
-        name: "progress",
-        label: "Progress",
-        demo: components::progress::variants::main::Demo,
-    },
-    Widget {
-        name: "avatar",
-        label: "Avatar",
-        demo: components::avatar::variants::main::Demo,
-    },
-    Widget {
-        name: "skeleton",
-        label: "Skeleton",
-        demo: components::skeleton::variants::main::Demo,
-    },
-    Widget {
-        name: "toggle_group",
-        label: "Toggle group",
-        demo: components::toggle_group::variants::main::Demo,
-    },
-    Widget {
-        name: "pagination",
-        label: "Pagination",
-        demo: components::pagination::variants::main::Demo,
-    },
+const BLOCKS: &[fn() -> Element] = &[
+    BlockSignIn,
+    BlockProfile,
+    BlockStats,
+    BlockNotifications,
+    BlockPlayer,
+    BlockPricing,
+    BlockFilters,
+    BlockColorPalette,
+    BlockTabs,
+    BlockSchedule,
 ];
 
 #[component]
@@ -1213,26 +1137,378 @@ fn WidgetMasonry() -> Element {
     rsx! {
         section { class: "dx-home-section dx-masonry-section",
             div { class: "dx-widget-masonry",
-                for widget in WIDGETS {
-                    div { class: "dx-widget-card",
-                        Link {
-                            to: Route::component(widget.name),
-                            class: "dx-widget-card-label",
-                            "{widget.label}"
-                            Icon {
-                                width: "14px",
-                                height: "14px",
-                                stroke: "currentColor",
-                                stroke_width: 1.8,
-                                path { d: "M7 7h10v10" }
-                                path { d: "M7 17 17 7" }
-                            }
-                        }
-                        div { class: "dx-widget-card-body", {(widget.demo)()} }
-                    }
+                for block in BLOCKS {
+                    MasonryCard { component: *block }
                 }
             }
         }
+    }
+}
+
+#[allow(unpredictable_function_pointer_comparisons)]
+#[component]
+fn MasonryCard(component: fn() -> Element) -> Element {
+    let Comp = component;
+    rsx! {
+        div { class: "dx-widget-card",
+            Comp {}
+        }
+    }
+}
+
+#[component]
+fn BlockSignIn() -> Element {
+    rsx! {
+        div { style: "display: grid; gap: 0.3rem; margin-bottom: 1.1rem;",
+            h3 { style: "margin: 0; font-size: 1.05rem; font-weight: 660; color: var(--secondary-color-3);", "Welcome back" }
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Sign in to your workspace." }
+        }
+        div { style: "display: grid; gap: 0.75rem; margin-bottom: 1rem;",
+            div { style: "display: grid; gap: 0.35rem;",
+                Label { html_for: "blk-signin-email", "Email" }
+                Input { id: "blk-signin-email", r#type: "email", placeholder: "you@example.com" }
+            }
+            div { style: "display: grid; gap: 0.35rem;",
+                div { style: "display: flex; align-items: center;",
+                    Label { html_for: "blk-signin-pw", "Password" }
+                    span { style: "margin-left: auto; font-size: 0.78rem; color: var(--secondary-color-5); text-decoration: underline; text-underline-offset: 3px;",
+                        "Forgot?"
+                    }
+                }
+                Input { id: "blk-signin-pw", r#type: "password", placeholder: "••••••••" }
+            }
+        }
+        div { style: "display: grid; gap: 0.5rem;",
+            Button { style: "width: 100%;", "Sign in" }
+            Button { variant: ButtonVariant::Outline, style: "width: 100%;", "Continue with Google" }
+        }
+    }
+}
+
+#[component]
+fn BlockProfile() -> Element {
+    rsx! {
+        div { style: "display: flex; align-items: center; gap: 0.75rem;",
+            Avatar { size: AvatarImageSize::Medium, aria_label: "Avatar",
+                AvatarImage {
+                    class: "dx-avatar-image",
+                    src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
+                    alt: "Avatar",
+                }
+                AvatarFallback { class: "dx-avatar-fallback", "JK" }
+            }
+            div { style: "flex: 1; display: grid; gap: 0.1rem; min-width: 0;",
+                div { style: "display: flex; align-items: center; gap: 0.4rem;",
+                    span { style: "font-weight: 600; color: var(--secondary-color-3);", "Jonathan Kelley" }
+                    Badge {
+                        variant: BadgeVariant::Secondary,
+                        style: "padding: 0.15rem 0.3rem; background-color: var(--focused-border-color); color: white;",
+                        VerifiedIcon {}
+                    }
+                }
+                span { style: "color: var(--secondary-color-5); font-size: 0.85rem;", "@jkelleyrtp" }
+            }
+            Button { variant: ButtonVariant::Outline, "Follow" }
+        }
+        p { style: "margin: 0.9rem 0 0; color: var(--secondary-color-5); font-size: 0.9rem; line-height: 1.55;",
+            "Working on Dioxus — fast Rust GUIs that ship to web, desktop, and mobile."
+        }
+        div { style: "display: flex; gap: 0.35rem; margin-top: 0.85rem; flex-wrap: wrap;",
+            Badge { variant: BadgeVariant::Outline, "Rust" }
+            Badge { variant: BadgeVariant::Outline, "WebAssembly" }
+            Badge { variant: BadgeVariant::Outline, "UI" }
+        }
+    }
+}
+
+#[component]
+fn BlockStats() -> Element {
+    rsx! {
+        div { style: "display: grid; gap: 0.45rem;",
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;",
+                "Active users · 30d"
+            }
+            div { style: "display: flex; align-items: baseline; gap: 0.6rem;",
+                span { style: "font-size: 2rem; font-weight: 720; color: var(--secondary-color-3); line-height: 1.1;",
+                    "24,815"
+                }
+                Badge {
+                    variant: BadgeVariant::Secondary,
+                    style: "background-color: rgba(34, 197, 94, 0.18); color: rgb(21, 128, 61);",
+                    "+12.4%"
+                }
+            }
+        }
+        div { style: "margin-top: 1rem;",
+            Progress {
+                value: 68.0,
+                aria_label: "Toward Q2 target",
+                style: "width: 100%;",
+                ProgressIndicator {}
+            }
+        }
+        p { style: "margin: 0.65rem 0 0; color: var(--secondary-color-5); font-size: 0.82rem;",
+            "On track for the 36k Q2 target."
+        }
+    }
+}
+
+#[component]
+fn BlockNotifications() -> Element {
+    rsx! {
+        div { style: "display: grid; gap: 0.3rem; margin-bottom: 1rem;",
+            h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Notifications" }
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Pick what we ping you about." }
+        }
+        div { style: "display: grid; gap: 0.95rem;",
+            NotificationRow { id: "blk-notif-comments", name: "Comments", description: "Replies on your posts", default_on: true }
+            NotificationRow { id: "blk-notif-mentions", name: "Mentions", description: "When someone @'s you", default_on: true }
+            NotificationRow { id: "blk-notif-weekly", name: "Weekly digest", description: "A Monday morning recap", default_on: false }
+            NotificationRow { id: "blk-notif-updates", name: "Product updates", description: "New features and releases", default_on: false }
+        }
+    }
+}
+
+#[component]
+fn NotificationRow(id: String, name: String, description: String, default_on: bool) -> Element {
+    let mut checked = use_signal(|| default_on);
+    rsx! {
+        div { style: "display: flex; align-items: center; gap: 0.75rem;",
+            div { style: "flex: 1; display: grid; gap: 0.1rem; min-width: 0;",
+                span { style: "font-weight: 540; font-size: 0.92rem; color: var(--secondary-color-3);", "{name}" }
+                span { style: "color: var(--secondary-color-5); font-size: 0.8rem;", "{description}" }
+            }
+            Switch {
+                id: "{id}",
+                checked: checked(),
+                aria_label: "{name}",
+                on_checked_change: move |v| checked.set(v),
+                SwitchThumb {}
+            }
+        }
+    }
+}
+
+#[component]
+fn BlockPlayer() -> Element {
+    let mut playing = use_signal(|| true);
+    rsx! {
+        div { style: "display: flex; gap: 0.85rem; align-items: center;",
+            div { style: "width: 64px; height: 64px; border-radius: 0.45rem; background: linear-gradient(135deg, #ff6b6b 0%, #845ec2 60%, #5e8bdf 100%); flex-shrink: 0; box-shadow: 0 6px 18px -8px rgba(0,0,0,0.35);" }
+            div { style: "flex: 1; min-width: 0;",
+                p { style: "margin: 0; font-weight: 600; color: var(--secondary-color-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+                    "Midnight City"
+                }
+                p { style: "margin: 0.15rem 0 0; color: var(--secondary-color-5); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+                    "M83 · Hurry Up, We're Dreaming"
+                }
+            }
+        }
+        div { style: "margin-top: 1.1rem;",
+            Slider {
+                horizontal: true,
+                min: 0.0,
+                max: 100.0,
+                step: 1.0,
+                default_value: 38.0,
+                aria_label: "Track progress",
+                SliderTrack { SliderRange {} SliderThumb {} }
+            }
+            div { style: "display: flex; justify-content: space-between; margin-top: 0.45rem; color: var(--secondary-color-5); font-size: 0.78rem;",
+                span { "1:24" }
+                span { "3:32" }
+            }
+        }
+        div { style: "display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.6rem;",
+            Button { variant: ButtonVariant::Ghost, aria_label: "Previous",
+                Icon { width: "18px", height: "18px", fill: "currentColor", stroke: "none",
+                    path { d: "M6 6h2v12H6zm3.5 6l8.5-6v12z" }
+                }
+            }
+            Button {
+                aria_label: "Play or pause",
+                onclick: move |_| { let v = !playing(); playing.set(v); },
+                Icon { width: "18px", height: "18px", fill: "currentColor", stroke: "none",
+                    if playing() {
+                        path { d: "M6 5h4v14H6zm8 0h4v14h-4z" }
+                    } else {
+                        path { d: "M8 5v14l11-7z" }
+                    }
+                }
+            }
+            Button { variant: ButtonVariant::Ghost, aria_label: "Next",
+                Icon { width: "18px", height: "18px", fill: "currentColor", stroke: "none",
+                    path { d: "M16 6h2v12h-2zM6 6l8.5 6L6 18z" }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn BlockPricing() -> Element {
+    rsx! {
+        div { style: "display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;",
+            h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Team" }
+            Badge { variant: BadgeVariant::Secondary, "Most popular" }
+        }
+        div { style: "display: flex; align-items: baseline; gap: 0.3rem; margin-bottom: 0.55rem;",
+            span { style: "font-size: 2.4rem; font-weight: 720; color: var(--secondary-color-3); line-height: 1;", "$12" }
+            span { style: "color: var(--secondary-color-5);", "/ seat / mo" }
+        }
+        p { style: "margin: 0 0 1rem; color: var(--secondary-color-5); font-size: 0.86rem; line-height: 1.55;",
+            "Everything in Pro, plus shared workspaces and audit logs."
+        }
+        ul { style: "list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.55rem; color: var(--secondary-color-4); font-size: 0.88rem;",
+            for feature in ["Unlimited projects", "Role-based access", "SSO + SAML", "Priority support"] {
+                li { style: "display: flex; align-items: center; gap: 0.55rem;",
+                    svg {
+                        width: "16",
+                        height: "16",
+                        view_box: "0 0 24 24",
+                        fill: "none",
+                        stroke: "var(--highlight-color-tertiary)",
+                        stroke_width: "2.5",
+                        polyline { points: "20 6 9 17 4 12" }
+                    }
+                    "{feature}"
+                }
+            }
+        }
+        Button { style: "width: 100%;", "Start free trial" }
+    }
+}
+
+#[component]
+fn BlockFilters() -> Element {
+    rsx! {
+        div { style: "display: grid; gap: 0.3rem; margin-bottom: 1rem;",
+            h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Filter results" }
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Narrow down what's shown below." }
+        }
+        div { style: "display: grid; gap: 1.1rem;",
+            div { style: "display: grid; gap: 0.45rem;",
+                span { style: "color: var(--secondary-color-5); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;",
+                    "Status"
+                }
+                RadioGroup { default_value: "active".to_string(),
+                    RadioItem { value: "active".to_string(), index: 0usize, "Active" }
+                    RadioItem { value: "draft".to_string(), index: 1usize, "Drafts" }
+                    RadioItem { value: "archived".to_string(), index: 2usize, "Archived" }
+                }
+            }
+            div { style: "display: grid; gap: 0.45rem;",
+                span { style: "color: var(--secondary-color-5); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;",
+                    "Tags"
+                }
+                div { style: "display: grid; gap: 0.4rem;",
+                    for tag in [("ft-design", "Design", true), ("ft-eng", "Engineering", false), ("ft-research", "Research", false)] {
+                        div { style: "display: flex; align-items: center; gap: 0.55rem;",
+                            Checkbox {
+                                id: tag.0,
+                                name: tag.0,
+                                default_checked: if tag.2 { dioxus_primitives::checkbox::CheckboxState::Checked } else { dioxus_primitives::checkbox::CheckboxState::Unchecked },
+                                aria_label: tag.1,
+                            }
+                            Label { html_for: tag.0, "{tag.1}" }
+                        }
+                    }
+                }
+            }
+            Button { style: "width: 100%; margin-top: 0.2rem;", "Apply filters" }
+        }
+    }
+}
+
+#[component]
+fn BlockColorPalette() -> Element {
+    let palette = [
+        "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#7c3aed", "#ec4899", "#10b981", "#3b82f6",
+        "#f97316", "#06b6d4",
+    ];
+    let mut selected = use_signal(|| 4usize);
+    rsx! {
+        div { style: "display: grid; gap: 0.3rem; margin-bottom: 0.9rem;",
+            h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Theme accent" }
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Pick the accent color for the workspace." }
+        }
+        div { style: "display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;",
+            for (idx, swatch) in palette.iter().enumerate() {
+                button {
+                    r#type: "button",
+                    aria_label: *swatch,
+                    onclick: move |_| selected.set(idx),
+                    style: format!(
+                        "aspect-ratio: 1; border-radius: 0.45rem; cursor: pointer; background-color: {}; box-shadow: {}; border: 0; padding: 0;",
+                        swatch,
+                        if idx == selected() { "inset 0 0 0 2px var(--primary-color-1), 0 0 0 2px var(--secondary-color-3)" } else { "inset 0 0 0 1px rgba(0,0,0,0.05)" },
+                    ),
+                }
+            }
+        }
+        div { style: "display: flex; align-items: center; gap: 0.55rem; margin-top: 0.95rem;",
+            div { style: format!("width: 1.15rem; height: 1.15rem; border-radius: 0.3rem; background-color: {};", palette[selected()]) }
+            code { style: "font-family: monospace; font-size: 0.85rem; color: var(--secondary-color-4); text-transform: uppercase;",
+                "{palette[selected()]}"
+            }
+            Badge { variant: BadgeVariant::Outline, style: "margin-left: auto;", "Active" }
+        }
+    }
+}
+
+#[component]
+fn BlockTabs() -> Element {
+    rsx! {
+        Tabs {
+            default_value: "overview".to_string(),
+            horizontal: true,
+            width: "100%",
+            TabList {
+                TabTrigger { value: "overview".to_string(), index: 0usize, "Overview" }
+                TabTrigger { value: "issues".to_string(), index: 1usize, "Issues" }
+                TabTrigger { value: "settings".to_string(), index: 2usize, "Settings" }
+            }
+            TabContent { index: 0usize, value: "overview".to_string(),
+                div { style: "padding: 1rem 0.25rem 0.25rem; display: grid; gap: 0.55rem;",
+                    div { style: "display: flex; justify-content: space-between; color: var(--secondary-color-5); font-size: 0.88rem;",
+                        span { "Stars" }
+                        span { style: "color: var(--secondary-color-3); font-weight: 600;", "2,318" }
+                    }
+                    div { style: "display: flex; justify-content: space-between; color: var(--secondary-color-5); font-size: 0.88rem;",
+                        span { "Forks" }
+                        span { style: "color: var(--secondary-color-3); font-weight: 600;", "184" }
+                    }
+                    div { style: "display: flex; justify-content: space-between; color: var(--secondary-color-5); font-size: 0.88rem;",
+                        span { "Open PRs" }
+                        span { style: "color: var(--secondary-color-3); font-weight: 600;", "12" }
+                    }
+                }
+            }
+            TabContent { index: 1usize, value: "issues".to_string(),
+                div { style: "padding: 1rem 0.25rem 0.25rem; color: var(--secondary-color-5); font-size: 0.88rem; line-height: 1.5;",
+                    "3 open issues, 1 awaiting triage. The router release is blocking #482."
+                }
+            }
+            TabContent { index: 2usize, value: "settings".to_string(),
+                div { style: "padding: 1rem 0.25rem 0.25rem; color: var(--secondary-color-5); font-size: 0.88rem; line-height: 1.5;",
+                    "Repository preferences live here. Toggle visibility, default branch, and integrations."
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn BlockSchedule() -> Element {
+    rsx! {
+        div { style: "display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.85rem;",
+            div { style: "flex: 1;",
+                h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Schedule" }
+                p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Pick a day for the standup." }
+            }
+            Badge { variant: BadgeVariant::Outline, "Mar 2026" }
+        }
+        components::calendar::variants::main::Demo {}
     }
 }
 
