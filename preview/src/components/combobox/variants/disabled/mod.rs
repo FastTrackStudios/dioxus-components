@@ -13,37 +13,28 @@ pub fn Demo() -> Element {
     rsx! {
         div { style: "display: grid; gap: 1rem; max-width: 20rem;",
             Combobox::<String> {
-                ComboboxInput {
-                    placeholder: "Select framework...",
-                    aria_label: "Framework with disabled option",
-                }
-                ComboboxList { aria_label: "Frameworks with disabled option",
-                    ComboboxEmpty { "No framework found." }
-                    for (i , (value , label , disabled)) in frameworks.iter().enumerate() {
-                        ComboboxOption::<String> {
-                            index: i,
-                            value: value.to_string(),
-                            text_value: label.to_string(),
-                            disabled: *disabled,
-                            {*label}
-                            ComboboxItemIndicator {}
-                        }
+                placeholder: "Select framework...",
+                aria_label: "Frameworks with disabled option",
+                ComboboxEmpty { "No framework found." }
+                for (i , (value , label , disabled)) in frameworks.iter().enumerate() {
+                    ComboboxOption::<String> {
+                        index: i,
+                        value: value.to_string(),
+                        text_value: label.to_string(),
+                        disabled: *disabled,
+                        {*label}
                     }
                 }
             }
             Combobox::<String> {
                 disabled: true,
-                ComboboxInput {
-                    placeholder: "Disabled combobox",
-                    aria_label: "Disabled combobox",
-                }
-                ComboboxList { aria_label: "Disabled list",
-                    ComboboxOption::<String> {
-                        index: 0usize,
-                        value: "disabled".to_string(),
-                        text_value: "Disabled option",
-                        "Disabled option"
-                    }
+                placeholder: "Disabled combobox",
+                aria_label: "Disabled list",
+                ComboboxOption::<String> {
+                    index: 0usize,
+                    value: "disabled".to_string(),
+                    text_value: "Disabled option",
+                    "Disabled option"
                 }
             }
         }

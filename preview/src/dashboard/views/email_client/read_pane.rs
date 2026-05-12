@@ -2,16 +2,12 @@ use dioxus::prelude::*;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::rc::Rc;
 
-use crate::components::avatar::{
-    Avatar, AvatarFallback, AvatarImage, AvatarImageSize, AvatarShape,
-};
+use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
 use crate::components::badge::{Badge, BadgeVariant};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::card::{Card, CardContent, CardDescription, CardHeader, CardTitle};
-use crate::components::select::{
-    SelectGroup, SelectGroupLabel, SelectItemIndicator, SelectList, SelectMulti, SelectOption,
-    SelectTrigger,
-};
+use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
+use dioxus_primitives::select::{SelectList, SelectTrigger};
 use crate::components::textarea::Textarea;
 use crate::components::toolbar::component::{
     Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator,
@@ -181,7 +177,6 @@ pub(super) fn ReadPane(
                                                             value: *tag,
                                                             text_value: "{tag.label()}",
                                                             {tag.label()}
-                                                            SelectItemIndicator {}
                                                         }
                                                     }
                                                 }
@@ -219,11 +214,9 @@ pub(super) fn ReadPane(
                             Avatar {
                                 size: AvatarImageSize::Small,
                                 shape: AvatarShape::Circle,
-                                AvatarImage {
-                                    src: "{avatar_profile_for_key(selected_static.sender.addr).src}",
-                                    alt: "{selected_static.sender.name}",
-                                }
-                                AvatarFallback { {selected_static.sender.initials} }
+                                src: "{avatar_profile_for_key(selected_static.sender.addr).src}",
+                                alt: "{selected_static.sender.name}",
+                                {selected_static.sender.initials}
                             }
                             div { class: "ec-thread-msg-meta",
                                 div { class: "ec-thread-msg-sender",
@@ -246,11 +239,9 @@ pub(super) fn ReadPane(
                                 Avatar {
                                     size: AvatarImageSize::Small,
                                     shape: AvatarShape::Circle,
-                                    AvatarImage {
-                                        src: "{AVATAR_PROFILE_OPTIONS[0].src}",
-                                        alt: "You",
-                                    }
-                                    AvatarFallback { "Y" }
+                                    src: "{AVATAR_PROFILE_OPTIONS[0].src}",
+                                    alt: "You",
+                                    "Y"
                                 }
                                 div { class: "ec-thread-msg-meta",
                                     div { class: "ec-thread-msg-sender",
@@ -275,11 +266,9 @@ pub(super) fn ReadPane(
                             Avatar {
                                 size: AvatarImageSize::Small,
                                 shape: AvatarShape::Circle,
-                                AvatarImage {
-                                    src: "{AVATAR_PROFILE_OPTIONS[0].src}",
-                                    alt: "You",
-                                }
-                                AvatarFallback { "Y" }
+                                src: "{AVATAR_PROFILE_OPTIONS[0].src}",
+                                alt: "You",
+                                "Y"
                             }
                             Textarea {
                                 key: "{selected_uid_value}-reply",

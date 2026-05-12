@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_primitives::avatar::{self, AvatarFallbackProps, AvatarImageProps, AvatarState};
+use dioxus_primitives::avatar::{self, AvatarState};
 
 #[css_module("/src/components/avatar/style.css")]
 struct Styles;
@@ -41,15 +41,22 @@ impl AvatarShape {
 /// The props for the [`Avatar`] component.
 #[derive(Props, Clone, PartialEq)]
 pub struct AvatarProps {
-    /// Callback when image loads successfully
+    /// The image source URL.
+    pub src: String,
+
+    /// The image alt text.
+    #[props(default)]
+    pub alt: String,
+
+    /// Callback when image loads successfully.
     #[props(default)]
     pub on_load: Option<EventHandler<()>>,
 
-    /// Callback when image fails to load
+    /// Callback when image fails to load.
     #[props(default)]
     pub on_error: Option<EventHandler<()>>,
 
-    /// Callback when the avatar state changes
+    /// Callback when the avatar state changes.
     #[props(default)]
     pub on_state_change: Option<EventHandler<AvatarState>>,
 
@@ -59,11 +66,11 @@ pub struct AvatarProps {
     #[props(default)]
     pub shape: AvatarShape,
 
-    /// Additional attributes for the avatar element
+    /// Additional attributes for the avatar element.
     #[props(extends = GlobalAttributes)]
     pub attributes: Vec<Attribute>,
 
-    /// The children of the Avatar component, which can include AvatarImage and AvatarFallback
+    /// The fallback content shown while the image is loading or if it fails to load.
     pub children: Element,
 }
 
@@ -83,26 +90,15 @@ pub fn Avatar(props: AvatarProps) -> Element {
             on_error: props.on_error,
             on_state_change: props.on_state_change,
             attributes: props.attributes,
-            {props.children}
+            avatar::AvatarImage {
+                class: Styles::dx_avatar_image,
+                src: props.src,
+                alt: props.alt,
+            }
+            avatar::AvatarFallback {
+                class: Styles::dx_avatar_fallback,
+                {props.children}
+            }
         }
-    }
-}
-
-#[component]
-pub fn AvatarImage(props: AvatarImageProps) -> Element {
-    rsx! {
-        avatar::AvatarImage {
-            class: Styles::dx_avatar_image,
-            src: props.src,
-            alt: props.alt,
-            attributes: props.attributes,
-        }
-    }
-}
-
-#[component]
-pub fn AvatarFallback(props: AvatarFallbackProps) -> Element {
-    rsx! {
-        avatar::AvatarFallback { class: Styles::dx_avatar_fallback, attributes: props.attributes, {props.children} }
     }
 }

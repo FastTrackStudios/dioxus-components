@@ -18,20 +18,15 @@ pub fn Demo() -> Element {
         Combobox::<String> {
             query: Some(query()),
             on_query_change: move |next| query.set(next),
-            ComboboxInput {
-                placeholder: "Select framework...",
-                aria_label: "Select framework",
-            }
-            ComboboxList { aria_label: "Frameworks",
-                ComboboxEmpty { "No framework found." }
-                for (i , (value , label)) in frameworks.iter().enumerate() {
-                    ComboboxOption::<String> {
-                        index: i,
-                        value: value.to_string(),
-                        text_value: label.to_string(),
-                        {*label}
-                        ComboboxItemIndicator {}
-                    }
+            placeholder: "Select framework...",
+            aria_label: "Frameworks",
+            ComboboxEmpty { "No framework found." }
+            for (i , (value , label)) in frameworks.iter().enumerate() {
+                ComboboxOption::<String> {
+                    index: i,
+                    value: value.to_string(),
+                    text_value: label.to_string(),
+                    {*label}
                 }
             }
         }

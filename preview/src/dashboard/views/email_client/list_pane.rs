@@ -1,16 +1,12 @@
 use dioxus::prelude::*;
 
-use crate::components::avatar::{
-    Avatar, AvatarFallback, AvatarImage, AvatarImageSize, AvatarShape,
-};
+use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::item::{
     Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle,
 };
-use crate::components::select::{
-    SelectGroup, SelectGroupLabel, SelectItemIndicator, SelectList, SelectMulti, SelectOption,
-    SelectTrigger,
-};
+use crate::components::select::{SelectGroup, SelectGroupLabel, SelectMulti, SelectOption};
+use dioxus_primitives::select::{SelectList, SelectTrigger};
 use crate::components::tabs::component::{TabList, TabTrigger, Tabs};
 use crate::components::virtual_list::VirtualList;
 use crate::dashboard::common::{
@@ -108,7 +104,6 @@ pub(super) fn ListPane(
                                     value: *tag,
                                     text_value: "{tag.label()}",
                                     {tag.label()}
-                                    SelectItemIndicator {}
                                 }
                             }
                         }
@@ -196,12 +191,12 @@ fn MessageRow(
             "data-selected": is_selected,
 
             ItemMedia { variant: ItemMediaVariant::Icon,
-                Avatar { size: AvatarImageSize::Small, shape: AvatarShape::Circle,
-                    AvatarImage {
-                        src: "{avatar_profile_for_key(m.sender.addr).src}",
-                        alt: "{m.sender.name}",
-                    }
-                    AvatarFallback { {m.sender.initials} }
+                Avatar {
+                    size: AvatarImageSize::Small,
+                    shape: AvatarShape::Circle,
+                    src: "{avatar_profile_for_key(m.sender.addr).src}",
+                    alt: "{m.sender.name}",
+                    {m.sender.initials}
                 }
             }
             ItemContent {

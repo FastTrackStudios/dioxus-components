@@ -1,6 +1,6 @@
 use crate::components::button::component::Button;
 
-use super::super::component::{DialogContent, DialogDescription, DialogRoot, DialogTitle};
+use super::super::component::{Dialog, DialogDescription, DialogTitle};
 use dioxus::prelude::*;
 
 #[css_module("/src/components/dialog/style.css")]
@@ -18,19 +18,17 @@ pub fn Demo() -> Element {
             onclick: move |_| open.set(true),
             "Show Dialog"
         }
-        DialogRoot { open: open(), on_open_change: move |v| open.set(v),
-            DialogContent {
-                button {
-                    class: Styles::dx_dialog_close,
-                    r#type: "button",
-                    aria_label: "Close",
-                    tabindex: if open() { "0" } else { "-1" },
-                    onclick: move |_| open.set(false),
-                    "×"
-                }
-                DialogTitle { "Item information" }
-                DialogDescription { "Here is some additional information about the item." }
+        Dialog { open: open(), on_open_change: move |v| open.set(v),
+            button {
+                class: Styles::dx_dialog_close,
+                r#type: "button",
+                aria_label: "Close",
+                tabindex: if open() { "0" } else { "-1" },
+                onclick: move |_| open.set(false),
+                "×"
             }
+            DialogTitle { "Item information" }
+            DialogDescription { "Here is some additional information about the item." }
         }
     }
 }
