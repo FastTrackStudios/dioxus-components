@@ -1,10 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const singleSelectTrigger = (page: Page) =>
-    page.getByRole("button", { name: "Select Trigger" }).filter({ hasText: /Select a fruit|Apple|Banana/ });
+    page.getByRole("button").filter({ hasText: /Select an option|Apple|Banana/ });
 
 const multiSelectTrigger = (page: Page) =>
-    page.getByRole("button", { name: "Select Trigger" }).filter({ hasText: /Pepperoni|Mushroom|Onion/ });
+    page.getByRole("button").filter({ hasText: /Pepperoni|Mushroom|Onion/ });
 
 test("test", async ({ page }) => {
     await page.goto("http://127.0.0.1:8080/component/?name=select&", {
