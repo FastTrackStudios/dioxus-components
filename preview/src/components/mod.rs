@@ -1,5 +1,55 @@
 use super::{ComponentDemoData, ComponentType, ComponentVariantDemoData, HighlightedCode};
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum ComponentCategory {
+    Forms,
+    Navigation,
+    Overlays,
+    Feedback,
+    Disclosure,
+    DataDisplay,
+}
+
+impl ComponentCategory {
+    pub const ALL: &'static [Self] = &[
+        Self::Forms,
+        Self::Navigation,
+        Self::Overlays,
+        Self::Feedback,
+        Self::Disclosure,
+        Self::DataDisplay,
+    ];
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::Forms => "Forms",
+            Self::Navigation => "Navigation",
+            Self::Overlays => "Overlays",
+            Self::Feedback => "Feedback",
+            Self::Disclosure => "Disclosure",
+            Self::DataDisplay => "Data display",
+        }
+    }
+}
+
+pub fn category_of(name: &str) -> ComponentCategory {
+    match name {
+        "button" | "input" | "textarea" | "label" | "checkbox" | "switch"
+        | "radio_group" | "toggle" | "toggle_group" | "select" | "slider"
+        | "calendar" | "date_picker" | "color_picker" => ComponentCategory::Forms,
+        "navbar" | "sidebar" | "tabs" | "pagination" | "menubar" | "toolbar"
+        | "context_menu" | "dropdown_menu" => ComponentCategory::Navigation,
+        "dialog" | "alert_dialog" | "sheet" | "popover" | "tooltip" | "hover_card" => {
+            ComponentCategory::Overlays
+        }
+        "toast" | "progress" | "skeleton" | "badge" => ComponentCategory::Feedback,
+        "accordion" | "collapsible" => ComponentCategory::Disclosure,
+        "avatar" | "card" | "separator" | "aspect_ratio" | "item" | "drag_and_drop_list"
+        | "virtual_list" | "scroll_area" => ComponentCategory::DataDisplay,
+        _ => ComponentCategory::DataDisplay,
+    }
+}
+
 macro_rules! examples {
     ($($name:ident $(($kind:ident))? $([$($variant:ident),*])?),* $(,)?) => {
         $(

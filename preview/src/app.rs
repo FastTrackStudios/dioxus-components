@@ -1,5 +1,17 @@
 use core::panic;
 
+use crate::components::{
+    avatar::{Avatar, AvatarFallback, AvatarImage, AvatarImageSize},
+    badge::{Badge, BadgeVariant, VerifiedIcon},
+    button::{Button, ButtonVariant},
+    checkbox::Checkbox,
+    input::Input,
+    label::Label,
+    progress::{Progress, ProgressIndicator},
+    radio_group::{RadioGroup, RadioItem},
+    slider::{Slider, SliderRange, SliderThumb, SliderTrack},
+    switch::{Switch, SwitchThumb},
+};
 use crate::{components, dashboard, dioxus_router::LinkProps, ComponentVariantDemoData};
 use crate::{components::tabs::component::*, ComponentType};
 use crate::{theme, ComponentDemoData};
@@ -19,8 +31,6 @@ pub fn App() -> Element {
     //         .with_locale((langid!("de-DE"), include_str!("i18n/de-DE.ftl")))
     // });
 
-    let abc = 232;
-
     rsx! {
         Router::<Route> {}
     }
@@ -37,6 +47,8 @@ pub enum Route {
     },
     #[route("/docs?:dark_mode")]
     Docs { dark_mode: Option<bool> },
+    #[route("/demos?:dark_mode")]
+    Demos { dark_mode: Option<bool> },
     #[route("/component/?:name&:iframe&:dark_mode")]
     ComponentDemo {
         name: String,
@@ -59,6 +71,7 @@ impl Route {
         match self {
             Route::Home { iframe, .. } => *iframe,
             Route::Docs { .. } => None,
+            Route::Demos { .. } => None,
             Route::ComponentDemo { iframe, .. } => *iframe,
             Route::ComponentBlockDemo { .. } => None,
             Route::EmailClientDashboard { .. } => None,
@@ -74,6 +87,7 @@ impl Route {
         match self {
             Route::Home { dark_mode, .. } => *dark_mode,
             Route::Docs { dark_mode, .. } => *dark_mode,
+            Route::Demos { dark_mode, .. } => *dark_mode,
             Route::ComponentDemo { dark_mode, .. } => *dark_mode,
             Route::ComponentBlockDemo { dark_mode, .. } => *dark_mode,
             Route::EmailClientDashboard { dark_mode, .. } => *dark_mode,
@@ -94,6 +108,11 @@ impl Route {
     pub fn docs() -> Self {
         let dark_mode = Self::in_dark_mode();
         Self::Docs { dark_mode }
+    }
+
+    pub fn demos() -> Self {
+        let dark_mode = Self::in_dark_mode();
+        Self::Demos { dark_mode }
     }
 
     pub fn component(name: impl ToString) -> Self {
@@ -182,8 +201,6 @@ fn Navbar() -> Element {
         };
     }
 
-    let abc = 1234;
-
     rsx! {
         nav { class: "dx-preview-navbar",
             div { class: "dx-navbar-inner",
@@ -195,14 +212,10 @@ fn Navbar() -> Element {
                             width: "28",
                             height: "28",
                         }
-                        span { "Dioxus-Components {abc}" }
+                        span { "Dioxus Components" }
                     }
                     Link { to: Route::docs(), class: "dx-navbar-link", "Docs" }
-                    Link {
-                        to: Route::EmailClientDashboard { dark_mode: Route::in_dark_mode() },
-                        class: "dx-navbar-link",
-                        "Demos"
-                    }
+                    Link { to: Route::demos(), class: "dx-navbar-link", "Demos" }
                 }
                 div { class: "dx-navbar-utilities",
                     // TODO: restore once the primitives crate is published
@@ -277,11 +290,7 @@ fn Footer() -> Element {
                         span { class: "dx-footer-nav-heading", "Library" }
                         Link { to: Route::home(), class: "dx-footer-link", "Components" }
                         Link { to: Route::docs(), class: "dx-footer-link", "Docs" }
-                        Link {
-                            to: Route::EmailClientDashboard { dark_mode: Route::in_dark_mode() },
-                            class: "dx-footer-link",
-                            "Demos"
-                        }
+                        Link { to: Route::demos(), class: "dx-footer-link", "Demos" }
                     }
                     div { class: "dx-footer-nav-group",
                         span { class: "dx-footer-nav-heading", "Project" }
@@ -606,9 +615,9 @@ fn Docs(dark_mode: Option<bool>) -> Element {
             article { class: "dx-docs-page dx-docs-prose",
                 header { class: "dx-docs-page-header",
                     p { class: "dx-docs-eyebrow", "Docs" }
-                    h1 { "Build with Dioxus-Components" }
+                    h1 { "Build with Dioxus Components" }
                     p {
-                        "Dioxus-Components is a collection of styled, accessible Dioxus components designed to be copied into your app. Use the CLI when you want the fastest path, or copy the source when you want complete ownership."
+                        "Dioxus Components is a collection of styled, accessible Dioxus components designed to be copied into your app. Use the CLI when you want the fastest path, or copy the source when you want complete ownership."
                     }
                 }
                 section { class: "dx-docs-section",
@@ -666,13 +675,91 @@ fn DocsSidebar(active_component: Option<&'static str>) -> Element {
                         "Overview"
                     }
                 }
-                div { class: "dx-docs-sidebar-section",
-                    p { class: "dx-docs-sidebar-heading", "Components" }
-                    for component in components::DEMOS {
-                        Link {
-                            to: Route::component(component.name),
-                            class: if active_component == Some(component.name) { "dx-docs-sidebar-link dx-docs-sidebar-link-active" } else { "dx-docs-sidebar-link" },
-                            {component.name.replace("_", " ")}
+                for cat in components::ComponentCategory::ALL.iter().copied() {
+                    div { class: "dx-docs-sidebar-section",
+                        p { class: "dx-docs-sidebar-heading", "{cat.label()}" }
+                        for component in components::DEMOS.iter().filter(|c| components::category_of(c.name) == cat) {
+                            Link {
+                                to: Route::component(component.name),
+                                class: if active_component == Some(component.name) { "dx-docs-sidebar-link dx-docs-sidebar-link-active" } else { "dx-docs-sidebar-link" },
+                                {component.name.replace("_", " ")}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct DemoEntry {
+    tag: &'static str,
+    title: &'static str,
+    description: &'static str,
+    route: fn() -> Route,
+    thumb: fn() -> Element,
+}
+
+fn email_client_thumb() -> Element {
+    rsx! {
+        Icon {
+            width: "56px",
+            height: "56px",
+            stroke: "currentColor",
+            stroke_width: 1.4,
+            path { d: "M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" }
+            path { d: "M3 7l9 6 9-6" }
+        }
+    }
+}
+
+const DEMO_ENTRIES: &[DemoEntry] = &[DemoEntry {
+    tag: "Dashboard",
+    title: "Email client",
+    description:
+        "Multi-pane mail app composed from the sidebar, item list, reading pane, and compose modal.",
+    route: || Route::EmailClientDashboard {
+        dark_mode: Route::in_dark_mode(),
+    },
+    thumb: email_client_thumb,
+}];
+
+#[component]
+fn Demos(dark_mode: Option<bool>) -> Element {
+    rsx! {
+        main { class: "dx-home-page", role: "main",
+            section { class: "dx-home-section",
+                header { class: "dx-section-header",
+                    span { class: "dx-section-eyebrow", "Demos" }
+                    h1 { class: "dx-section-title", "Apps built with Dioxus-Components" }
+                    p { class: "dx-section-summary",
+                        "End-to-end app demos assembled from these primitives. Open one to explore the layout and try it live."
+                    }
+                }
+                ul { class: "dx-demos-grid",
+                    for entry in DEMO_ENTRIES {
+                        li { class: "dx-demos-item",
+                            Link {
+                                to: (entry.route)(),
+                                class: "dx-demos-card",
+                                div { class: "dx-demos-card-thumb", {(entry.thumb)()} }
+                                div { class: "dx-demos-card-meta",
+                                    span { class: "dx-demos-card-tag", "{entry.tag}" }
+                                    h2 { class: "dx-demos-card-title", "{entry.title}" }
+                                    p { class: "dx-demos-card-description", "{entry.description}" }
+                                    span { class: "dx-demos-card-cta",
+                                        "Open demo"
+                                        Icon {
+                                            width: "16px",
+                                            height: "16px",
+                                            stroke: "currentColor",
+                                            stroke_width: 1.6,
+                                            path { d: "M5 12h14" }
+                                            path { d: "M13 5l7 7-7 7" }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1006,7 +1093,7 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
         main { class: "dx-home-page", role: "main",
             div { id: "hero",
                 div { class: "dx-hero-shell",
-                    h1 { "Dioxus-Components" }
+                    h1 { "Dioxus Components" }
                     p { class: "dx-hero-summary",
                         "Accessible, themeable interface pieces for Dioxus apps. Browse the catalog, copy the CLI command, and pull only what you need into your project."
                     }
@@ -1015,18 +1102,9 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
                         code { "cargo add dioxus-components" }
                         CopyCommandButton { command: "cargo add dioxus-components".to_string() }
                     }
-                    nav { class: "dx-hero-cloud", aria_label: "Component links",
-                        for component in components::DEMOS {
-                            Link {
-                                to: Route::component(component.name),
-                                class: "dx-hero-cloud-link",
-                                {component.name.replace("_", " ")}
-                            }
-                        }
-                    }
                 }
             }
-            Showcase {}
+            WidgetMasonry {}
             section { class: "dx-home-section dx-catalog-section",
                 header { class: "dx-section-header",
                     span { class: "dx-section-eyebrow", "Catalog" }
@@ -1041,41 +1119,116 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
     }
 }
 
+struct Widget {
+    name: &'static str,
+    label: &'static str,
+    demo: fn() -> Element,
+}
+
+const WIDGETS: &[Widget] = &[
+    Widget {
+        name: "calendar",
+        label: "Calendar",
+        demo: components::calendar::variants::main::Demo,
+    },
+    Widget {
+        name: "color_picker",
+        label: "Color picker",
+        demo: components::color_picker::variants::main::Demo,
+    },
+    Widget {
+        name: "tabs",
+        label: "Tabs",
+        demo: components::tabs::variants::main::Demo,
+    },
+    Widget {
+        name: "slider",
+        label: "Slider",
+        demo: components::slider::variants::main::Demo,
+    },
+    Widget {
+        name: "button",
+        label: "Button",
+        demo: components::button::variants::main::Demo,
+    },
+    Widget {
+        name: "switch",
+        label: "Switch",
+        demo: components::switch::variants::main::Demo,
+    },
+    Widget {
+        name: "checkbox",
+        label: "Checkbox",
+        demo: components::checkbox::variants::main::Demo,
+    },
+    Widget {
+        name: "radio_group",
+        label: "Radio group",
+        demo: components::radio_group::variants::main::Demo,
+    },
+    Widget {
+        name: "select",
+        label: "Select",
+        demo: components::select::variants::main::Demo,
+    },
+    Widget {
+        name: "input",
+        label: "Input",
+        demo: components::input::variants::main::Demo,
+    },
+    Widget {
+        name: "accordion",
+        label: "Accordion",
+        demo: components::accordion::variants::main::Demo,
+    },
+    Widget {
+        name: "progress",
+        label: "Progress",
+        demo: components::progress::variants::main::Demo,
+    },
+    Widget {
+        name: "avatar",
+        label: "Avatar",
+        demo: components::avatar::variants::main::Demo,
+    },
+    Widget {
+        name: "skeleton",
+        label: "Skeleton",
+        demo: components::skeleton::variants::main::Demo,
+    },
+    Widget {
+        name: "toggle_group",
+        label: "Toggle group",
+        demo: components::toggle_group::variants::main::Demo,
+    },
+    Widget {
+        name: "pagination",
+        label: "Pagination",
+        demo: components::pagination::variants::main::Demo,
+    },
+];
+
 #[component]
-fn Showcase() -> Element {
-    let dark_mode = Route::in_dark_mode();
-
-    let prefix = router().prefix().unwrap_or_default();
-    let email_route = Route::EmailClientDashboard { dark_mode }.to_string();
-    let email_src = format!("{prefix}{email_route}");
-
+fn WidgetMasonry() -> Element {
     rsx! {
-        section { class: "dx-home-section dx-showcase-section",
-            header { class: "dx-section-header",
-                span { class: "dx-section-eyebrow", "Showcase" }
-                h2 { class: "dx-section-title", "Built for real applications" }
-                p { class: "dx-section-summary",
-                    "Polished, opinionated layouts assembled from these primitives. Click through to explore the full demo."
-                }
-            }
-            Link {
-                to: Route::EmailClientDashboard { dark_mode },
-                class: "dx-showcase-card dx-showcase-card-feature",
-                div { class: "dx-showcase-frame",
-                    // iframe {
-                    //     src: "{email_src}",
-                    //     title: "Email client demo",
-                    //     "loading": "lazy",
-                    //     scrolling: "no",
-                    //     tabindex: "-1",
-                    //     "aria-hidden": "true",
-                    // }
-                }
-                div { class: "dx-showcase-meta",
-                    span { class: "dx-showcase-tag", "Dashboard" }
-                    h3 { class: "dx-showcase-title", "Email client" }
-                    p { class: "dx-showcase-description",
-                        "A multi-pane mail app composed from sidebar, list, reading pane, and compose dialog."
+        section { class: "dx-home-section dx-masonry-section",
+            div { class: "dx-widget-masonry",
+                for widget in WIDGETS {
+                    div { class: "dx-widget-card",
+                        Link {
+                            to: Route::component(widget.name),
+                            class: "dx-widget-card-label",
+                            "{widget.label}"
+                            Icon {
+                                width: "14px",
+                                height: "14px",
+                                stroke: "currentColor",
+                                stroke_width: 1.8,
+                                path { d: "M7 7h10v10" }
+                                path { d: "M7 17 17 7" }
+                            }
+                        }
+                        div { class: "dx-widget-card-body", {(widget.demo)()} }
                     }
                 }
             }
