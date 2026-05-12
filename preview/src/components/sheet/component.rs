@@ -31,21 +31,13 @@ impl SheetSide {
 
 #[component]
 pub fn Sheet(props: DialogRootProps) -> Element {
-    rsx! {
-        SheetRoot {
-            id: props.id,
-            is_modal: props.is_modal,
-            open: props.open,
-            default_open: props.default_open,
-            on_open_change: props.on_open_change,
-            attributes: props.attributes,
-            {props.children}
-        }
-    }
-}
+    let content_base = attributes!(div {
+        class: Styles::dx_sheet,
+        "data-slot": "sheet-content",
+        "data-side": SheetSide::Right.as_str(),
+    });
+    let content_attributes = merge_attributes(vec![content_base, props.attributes]);
 
-#[component]
-fn SheetRoot(props: DialogRootProps) -> Element {
     rsx! {
         dialog::DialogRoot {
             class: Styles::dx_sheet_root,
@@ -55,32 +47,11 @@ fn SheetRoot(props: DialogRootProps) -> Element {
             open: props.open,
             default_open: props.default_open,
             on_open_change: props.on_open_change,
-            attributes: props.attributes,
-            {props.children}
-        }
-    }
-}
-
-#[component]
-pub fn SheetContent(
-    #[props(default = ReadSignal::new(Signal::new(None)))] id: ReadSignal<Option<String>>,
-    #[props(default)] side: SheetSide,
-    #[props(default)] class: Option<String>,
-    #[props(extends = GlobalAttributes)] attributes: Vec<Attribute>,
-    children: Element,
-) -> Element {
-    let class = class
-        .map(|c| format!("{} {c}", Styles::dx_sheet))
-        .unwrap_or(Styles::dx_sheet.to_string());
-
-    rsx! {
-        dialog::DialogContent {
-            class,
-            id,
-            "data-slot": "sheet-content",
-            "data-side": side.as_str(),
-            attributes,
-            {children}
+            dialog::DialogContent {
+                class: None,
+                attributes: content_attributes,
+                {props.children}
+            }
         }
     }
 }

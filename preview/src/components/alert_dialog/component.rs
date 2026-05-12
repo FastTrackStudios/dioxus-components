@@ -1,15 +1,14 @@
 use dioxus::prelude::*;
 use dioxus_primitives::alert_dialog::{
     self, AlertDialogActionProps, AlertDialogActionsProps, AlertDialogCancelProps,
-    AlertDialogContentProps, AlertDialogDescriptionProps, AlertDialogRootProps,
-    AlertDialogTitleProps,
+    AlertDialogDescriptionProps, AlertDialogRootProps, AlertDialogTitleProps,
 };
 
 #[css_module("/src/components/alert_dialog/style.css")]
 struct Styles;
 
 #[component]
-pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
+pub fn AlertDialog(props: AlertDialogRootProps) -> Element {
     rsx! {
         alert_dialog::AlertDialogRoot {
             class: Styles::dx_alert_dialog_backdrop,
@@ -18,19 +17,10 @@ pub fn AlertDialogRoot(props: AlertDialogRootProps) -> Element {
             open: props.open,
             on_open_change: props.on_open_change,
             attributes: props.attributes,
-            {props.children}
-        }
-    }
-}
-
-#[component]
-pub fn AlertDialogContent(props: AlertDialogContentProps) -> Element {
-    rsx! {
-        alert_dialog::AlertDialogContent {
-            id: props.id,
-            class: format!("{} {}", props.class.unwrap_or_default(), Styles::dx_alert_dialog),
-            attributes: props.attributes,
-            {props.children}
+            alert_dialog::AlertDialogContent {
+                class: Styles::dx_alert_dialog.to_string(),
+                {props.children}
+            }
         }
     }
 }

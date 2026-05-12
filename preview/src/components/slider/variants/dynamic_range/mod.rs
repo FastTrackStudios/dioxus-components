@@ -1,6 +1,6 @@
 use super::super::component::*;
 use crate::components::label::Label;
-use crate::components::switch::{Switch, SwitchThumb};
+use crate::components::switch::Switch;
 use dioxus::prelude::*;
 
 #[component]
@@ -36,7 +36,6 @@ pub fn Demo() -> Element {
                         }
                     }
                 },
-                SwitchThumb {}
             }
             Label {
                 html_for: "mode-switch",
@@ -59,10 +58,6 @@ pub fn Demo() -> Element {
             on_value_change: move |new_value: f64| {
                 current_value.set(Some(new_value));
             },
-            SliderTrack {
-                SliderRange {}
-                SliderThumb {}
-            }
         }
     }
 }

@@ -1,7 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_primitives::slider::{
-    self, RangeSliderProps, SliderProps, SliderRangeProps, SliderThumbProps, SliderTrackProps,
-};
+use dioxus_primitives::slider::{self, RangeSliderProps, SliderProps};
 
 #[css_module("/src/components/slider/style.css")]
 struct Styles;
@@ -22,7 +20,10 @@ pub fn Slider(props: SliderProps) -> Element {
             on_value_change: props.on_value_change,
             label: props.label,
             attributes: props.attributes,
-            {props.children}
+            slider::SliderTrack { class: Styles::dx_slider_track,
+                slider::SliderRange { class: Styles::dx_slider_range }
+                slider::SliderThumb { class: Styles::dx_slider_thumb }
+            }
         }
     }
 }
@@ -43,33 +44,11 @@ pub fn RangeSlider(props: RangeSliderProps) -> Element {
             on_value_change: props.on_value_change,
             label: props.label,
             attributes: props.attributes,
-            {props.children}
-        }
-    }
-}
-
-#[component]
-pub fn SliderTrack(props: SliderTrackProps) -> Element {
-    rsx! {
-        slider::SliderTrack { class: Styles::dx_slider_track, attributes: props.attributes, {props.children} }
-    }
-}
-
-#[component]
-pub fn SliderRange(props: SliderRangeProps) -> Element {
-    rsx! {
-        slider::SliderRange { class: Styles::dx_slider_range, attributes: props.attributes, {props.children} }
-    }
-}
-
-#[component]
-pub fn SliderThumb(props: SliderThumbProps) -> Element {
-    rsx! {
-        slider::SliderThumb {
-            class: Styles::dx_slider_thumb,
-            index: props.index,
-            attributes: props.attributes,
-            {props.children}
+            slider::SliderTrack { class: Styles::dx_slider_track,
+                slider::SliderRange { class: Styles::dx_slider_range }
+                slider::SliderThumb { class: Styles::dx_slider_thumb, index: 0usize }
+                slider::SliderThumb { class: Styles::dx_slider_thumb, index: 1usize }
+            }
         }
     }
 }

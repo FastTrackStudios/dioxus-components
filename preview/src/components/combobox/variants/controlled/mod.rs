@@ -39,20 +39,16 @@ pub fn Demo() -> Element {
                 open,
                 on_value_change: move |next| value.set(next),
                 on_open_change: move |next| open.set(Some(next)),
-                ComboboxInput {
-                    placeholder: "Select framework...",
-                    aria_label: "Controlled framework",
-                }
-                ComboboxList { aria_label: "Controlled frameworks",
-                    ComboboxEmpty { "No framework found." }
-                    for (i , (value , label)) in frameworks.iter().enumerate() {
-                        ComboboxOption::<String> {
-                            index: i,
-                            value: value.to_string(),
-                            text_value: label.to_string(),
-                            {*label}
-                            ComboboxItemIndicator {}
-                        }
+                placeholder: "Select framework...",
+                aria_label: "Controlled framework",
+                list_aria_label: "Controlled frameworks",
+                ComboboxEmpty { "No framework found." }
+                for (i , (value , label)) in frameworks.iter().enumerate() {
+                    ComboboxOption::<String> {
+                        index: i,
+                        value: value.to_string(),
+                        text_value: label.to_string(),
+                        {*label}
                     }
                 }
             }

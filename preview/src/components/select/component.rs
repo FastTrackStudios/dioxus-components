@@ -1,10 +1,11 @@
 use dioxus::prelude::*;
 use dioxus_icons::lucide::{Check, ChevronDown};
 use dioxus_primitives::select::{
-    self, SelectGroupLabelProps, SelectGroupProps, SelectListProps, SelectMultiProps,
-    SelectOptionProps, SelectProps, SelectTriggerProps, SelectValueProps,
+    self, SelectGroupLabelProps, SelectMultiProps, SelectOptionProps, SelectProps,
 };
 use dioxus_primitives::{dioxus_attributes::attributes, merge_attributes};
+
+pub use dioxus_primitives::select::SelectGroup;
 
 #[css_module("/src/components/select/style.css")]
 struct Styles;
@@ -27,7 +28,19 @@ pub fn Select<T: Clone + PartialEq + 'static>(props: SelectProps<T>) -> Element 
             roving_loop: props.roving_loop,
             typeahead_timeout: props.typeahead_timeout,
             attributes: merged,
-            {props.children}
+            select::SelectTrigger {
+                class: Styles::dx_select_trigger,
+                select::SelectValue {}
+                ChevronDown {
+                    class: "dx-select-expand-icon",
+                    size: "20px",
+                    stroke: "var(--primary-color-7)",
+                }
+            }
+            select::SelectList {
+                class: Styles::dx_select_list,
+                {props.children}
+            }
         }
     }
 }
@@ -50,60 +63,19 @@ pub fn SelectMulti<T: Clone + PartialEq + 'static>(props: SelectMultiProps<T>) -
             roving_loop: props.roving_loop,
             typeahead_timeout: props.typeahead_timeout,
             attributes: merged,
-            {props.children}
-        }
-    }
-}
-
-#[component]
-pub fn SelectTrigger(props: SelectTriggerProps) -> Element {
-    let base = attributes!(button { class: Styles::dx_select_trigger });
-    let merged = merge_attributes(vec![base, props.attributes]);
-
-    rsx! {
-        select::SelectTrigger { attributes: merged,
-            {props.children}
-            ChevronDown {
-                class: "dx-select-expand-icon",
-                size: "20px",
-                stroke: "var(--primary-color-7)",
+            select::SelectTrigger {
+                class: Styles::dx_select_trigger,
+                select::SelectValue {}
+                ChevronDown {
+                    class: "dx-select-expand-icon",
+                    size: "20px",
+                    stroke: "var(--primary-color-7)",
+                }
             }
-        }
-    }
-}
-
-#[component]
-pub fn SelectValue(props: SelectValueProps) -> Element {
-    rsx! {
-        select::SelectValue {
-            placeholder: props.placeholder,
-            attributes: props.attributes,
-        }
-    }
-}
-
-#[component]
-pub fn SelectList(props: SelectListProps) -> Element {
-    let base = attributes!(div { class: Styles::dx_select_list });
-    let merged = merge_attributes(vec![base, props.attributes]);
-
-    rsx! {
-        select::SelectList {
-            id: props.id,
-            attributes: merged,
-            {props.children}
-        }
-    }
-}
-
-#[component]
-pub fn SelectGroup(props: SelectGroupProps) -> Element {
-    rsx! {
-        select::SelectGroup {
-            disabled: props.disabled,
-            id: props.id,
-            attributes: props.attributes,
-            {props.children}
+            select::SelectList {
+                class: Styles::dx_select_list,
+                {props.children}
+            }
         }
     }
 }
@@ -138,17 +110,11 @@ pub fn SelectOption<T: Clone + PartialEq + 'static>(props: SelectOptionProps<T>)
             aria_roledescription: props.aria_roledescription,
             attributes: merged,
             {props.children}
-        }
-    }
-}
-
-#[component]
-pub fn SelectItemIndicator() -> Element {
-    rsx! {
-        select::SelectItemIndicator {
-            Check {
-                size: "1rem",
-                stroke: "var(--secondary-color-5)",
+            select::SelectItemIndicator {
+                Check {
+                    size: "1rem",
+                    stroke: "var(--secondary-color-5)",
+                }
             }
         }
     }

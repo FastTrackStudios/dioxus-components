@@ -3,7 +3,7 @@ use dioxus_icons::lucide::ChevronDown;
 use dioxus_primitives::accordion::{
     self, AccordionContentProps, AccordionItemProps, AccordionProps, AccordionTriggerProps,
 };
-// Each `css_module` macro will expand the annotated struct in the current scope
+
 #[css_module("/src/components/accordion/style.css")]
 struct Styles;
 
