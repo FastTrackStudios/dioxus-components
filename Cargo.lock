@@ -1935,17 +1935,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dioxus-attributes"
-version = "0.1.0"
-source = "git+https://github.com/DioxusLabs/components#4acbf53dd86b1b3dc8cd7e409002bf922f37b4e1"
-dependencies = [
- "dioxus-rsx",
- "proc-macro2",
- "quote",
- "syn 2.0.114",
-]
-
-[[package]]
 name = "dioxus-cli-config"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2362,6 +2351,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-kit"
+version = "0.0.1"
+dependencies = [
+ "dioxus",
+ "dioxus-code",
+ "dioxus-icons",
+ "dioxus-kit-core",
+ "palette",
+ "strum",
+ "time",
+ "tracing",
+]
+
+[[package]]
+name = "dioxus-kit-core"
+version = "0.0.1"
+dependencies = [
+ "dioxus",
+ "dioxus-attributes",
+ "dioxus-sdk-time",
+ "dioxus-ssr",
+ "lazy-js-bundle 0.6.2",
+ "num-integer",
+ "palette",
+ "serde",
+ "time",
+ "tracing",
+]
+
+[[package]]
 name = "dioxus-liveview"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2445,36 +2464,6 @@ dependencies = [
  "futures-util",
  "keyboard-types",
  "rustc-hash 2.1.1",
-]
-
-[[package]]
-name = "dioxus-primitives"
-version = "0.0.1"
-dependencies = [
- "dioxus",
- "dioxus-attributes 0.1.0",
- "dioxus-sdk-time",
- "dioxus-ssr",
- "lazy-js-bundle 0.6.2",
- "num-integer",
- "palette",
- "serde",
- "time",
- "tracing",
-]
-
-[[package]]
-name = "dioxus-primitives"
-version = "0.0.1"
-source = "git+https://github.com/DioxusLabs/components#4acbf53dd86b1b3dc8cd7e409002bf922f37b4e1"
-dependencies = [
- "dioxus",
- "dioxus-attributes 0.1.0 (git+https://github.com/DioxusLabs/components)",
- "dioxus-sdk-time",
- "lazy-js-bundle 0.6.2",
- "num-integer",
- "time",
- "tracing",
 ]
 
 [[package]]
@@ -6274,7 +6263,8 @@ dependencies = [
  "dioxus-code",
  "dioxus-i18n",
  "dioxus-icons",
- "dioxus-primitives 0.0.1",
+ "dioxus-kit",
+ "dioxus-kit-core",
  "dioxus-ssr",
  "palette",
  "pulldown-cmark",
@@ -8009,14 +7999,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "test-harness"
-version = "0.1.0"
-dependencies = [
- "dioxus",
- "dioxus-primitives 0.0.1 (git+https://github.com/DioxusLabs/components)",
 ]
 
 [[package]]

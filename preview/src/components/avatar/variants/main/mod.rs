@@ -1,7 +1,7 @@
 use super::super::component::*;
 use dioxus::prelude::*;
 
-#[css_module("/src/components/avatar/style.css")]
+#[css_module("/src/components/avatar/variants/main/demo.css")]
 struct Styles;
 
 #[component]

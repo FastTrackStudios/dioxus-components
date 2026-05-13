@@ -223,7 +223,7 @@ fn NavigationLayout() -> Element {
         document::Link { rel: "stylesheet", href: asset!("/assets/main.css") }
         document::Link {
             rel: "stylesheet",
-            href: asset!("/assets/dx-components-theme.css"),
+            href: dioxus_kit::THEME_CSS,
         }
         document::Link { rel: "stylesheet", href: asset!("/assets/hero.css") }
         Navbar {}
@@ -926,7 +926,7 @@ fn BlockComponentVariantHighlight(
 fn EmailClientDashboard(dark_mode: Option<bool>) -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: asset!("/assets/main.css") }
-        document::Link { rel: "stylesheet", href: asset!("/assets/dx-components-theme.css") }
+        document::Link { rel: "stylesheet", href: dioxus_kit::THEME_CSS }
         dashboard::views::email_client::EmailClient {}
     }
 }
@@ -960,7 +960,7 @@ fn ComponentBlockDemo(name: String, variant: Option<String>, dark_mode: Option<b
         document::Link { rel: "stylesheet", href: asset!("/assets/main.css") }
         document::Link {
             rel: "stylesheet",
-            href: asset!("/assets/dx-components-theme.css"),
+            href: dioxus_kit::THEME_CSS,
         }
         div { style: "min-height: 100vh;", Comp {} }
     }
@@ -1098,5 +1098,5 @@ fn GotoIcon(mut props: LinkProps) -> Element {
 }
 
 const THEME_CSS: HighlightedCode = HighlightedCode {
-    source: dioxus_code::code!("/assets/dx-components-theme.css"),
+    source: dioxus_code::code!(concat!(env!("CARGO_MANIFEST_DIR"), "/../dioxus-kit/assets/dx-components-theme.css")),
 };
