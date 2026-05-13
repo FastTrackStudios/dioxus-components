@@ -8,8 +8,7 @@ use crate::components::{
     drag_and_drop_list::DragAndDropList,
     input::Input,
     item::{
-        Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemMediaVariant, ItemTitle,
-        ItemVariant,
+        Item, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle, ItemVariant,
     },
     label::Label,
     progress::Progress,
@@ -1478,7 +1477,7 @@ fn BlockPlayer() -> Element {
                 max: 100.0,
                 step: 1.0,
                 default_value: 38.0,
-                aria_label: "Track progress",
+                label: "Track progress",
             }
             div { style: "display: flex; justify-content: space-between; margin-top: 0.45rem; color: var(--secondary-color-5); font-size: 0.78rem;",
                 span { "1:24" }
@@ -1751,7 +1750,7 @@ fn BlockInbox() -> Element {
             }
             Badge { variant: BadgeVariant::Secondary, "3" }
         }
-        ItemGroup { gap: "0.5rem",
+        div { style: "display: grid; gap: 0.5rem;",
             for (sender , preview , time) in messages.iter() {
                 Item { variant: ItemVariant::Outline,
                     ItemMedia { variant: ItemMediaVariant::Icon,
