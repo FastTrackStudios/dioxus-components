@@ -3,17 +3,27 @@ use crate::components::{
     badge::{Badge, BadgeVariant, VerifiedIcon},
     button::{Button, ButtonVariant},
     checkbox::Checkbox,
+    color_picker::ColorPicker,
+    combobox::{Combobox, ComboboxEmpty, ComboboxOption},
+    drag_and_drop_list::DragAndDropList,
     input::Input,
+    item::{
+        Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemMediaVariant, ItemTitle,
+        ItemVariant,
+    },
     label::Label,
     progress::Progress,
     radio_group::{RadioGroup, RadioItem},
     slider::Slider,
     switch::Switch,
     tabs::{TabContent, TabList, TabTrigger, Tabs, TabsVariant},
+    textarea::{Textarea, TextareaVariant},
+    toggle_group::{ToggleGroup, ToggleItem},
 };
 use core::panic;
 use dioxus::prelude::{dioxus_router::LinkProps, *};
 use dioxus_code::{advanced::HighlightedSource, Code, CodeTheme, Theme};
+use dioxus_i18n::prelude::{use_init_i18n, I18nConfig};
 use dioxus_icons::lucide::{
     ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronUp, Copy, ExternalLink, Mail,
     Pause, Play, SkipBack, SkipForward,
@@ -99,7 +109,7 @@ fn main() {
                     )
                 }),
             )
-            .serve_dioxus_application(cfg, app::App);
+            .serve_dioxus_application(cfg, App);
 
         Ok(router)
     })
@@ -107,13 +117,13 @@ fn main() {
 
 #[component]
 pub fn App() -> Element {
-    // use_init_i18n(|| {
-    //     I18nConfig::new(langid!("en-US"))
-    //         .with_locale((langid!("en-US"), include_str!("i18n/en-US.ftl")))
-    //         .with_locale((langid!("fr-FR"), include_str!("i18n/fr-FR.ftl")))
-    //         .with_locale((langid!("es-ES"), include_str!("i18n/es-ES.ftl")))
-    //         .with_locale((langid!("de-DE"), include_str!("i18n/de-DE.ftl")))
-    // });
+    use_init_i18n(|| {
+        I18nConfig::new(langid!("en-US"))
+            .with_locale((langid!("en-US"), include_str!("i18n/en-US.ftl")))
+            .with_locale((langid!("fr-FR"), include_str!("i18n/fr-FR.ftl")))
+            .with_locale((langid!("es-ES"), include_str!("i18n/es-ES.ftl")))
+            .with_locale((langid!("de-DE"), include_str!("i18n/de-DE.ftl")))
+    });
 
     rsx! {
         Router::<Route> {}
@@ -294,7 +304,7 @@ fn Navbar() -> Element {
                             width: "28",
                             height: "28",
                         }
-                        span { "Dioxus Components" }
+                        span { "dioxus-component" }
                     }
                     Link { to: Route::docs(), class: "dx-navbar-link", "Docs" }
                     Link { to: Route::demos(), class: "dx-navbar-link", "Demos" }
@@ -695,9 +705,9 @@ fn Docs(dark_mode: Option<bool>) -> Element {
             article { class: "dx-docs-page dx-docs-prose",
                 header { class: "dx-docs-page-header",
                     p { class: "dx-docs-eyebrow", "Docs" }
-                    h1 { "Build with Dioxus Components" }
+                    h1 { "Build with dioxus-component" }
                     p {
-                        "Dioxus Components is a collection of styled, accessible Dioxus components designed to be copied into your app. Use the CLI when you want the fastest path, or copy the source when you want complete ownership."
+                        "dioxus-component is a collection of styled, accessible Dioxus components designed to be copied into your app. Use the CLI when you want the fastest path, or copy the source when you want complete ownership."
                     }
                 }
                 section { class: "dx-docs-section",
@@ -1157,14 +1167,19 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
         main { class: "dx-home-page", role: "main",
             div { id: "hero",
                 div { class: "dx-hero-shell",
-                    h1 { "Dioxus Components" }
+                    h1 { class: "dx-hero-heading",
+                        span { class: "dx-hero-title", "dioxus-component" }
+                        span { class: "dx-hero-subtitle",
+                            "beautiful, accessible, responsive components for dioxus apps"
+                        }
+                    }
                     p { class: "dx-hero-summary",
-                        "Accessible, themeable interface pieces for Dioxus apps. Browse the catalog, copy the CLI command, and pull only what you need into your project."
+                        "Browse the catalog, copy the CLI command, and pull only what you need into your project. Thoughtfully designed with powerful accessibility features. Tailored for web, desktop, and mobile."
                     }
                     div { class: "dx-hero-command",
                         span { class: "dx-hero-prompt", "$" }
-                        code { "cargo add dioxus-components" }
-                        CopyCommandButton { command: "cargo add dioxus-components".to_string() }
+                        code { "cargo add dioxus-component" }
+                        CopyCommandButton { command: "cargo add dioxus-component".to_string() }
                     }
                 }
             }
@@ -1183,17 +1198,68 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
     }
 }
 
-const BLOCKS: &[fn() -> Element] = &[
-    BlockSignIn,
-    BlockProfile,
-    BlockStats,
-    BlockNotifications,
-    BlockPlayer,
-    BlockPricing,
-    BlockFilters,
-    BlockColorPalette,
-    BlockTabs,
-    BlockSchedule,
+struct MasonryEntry {
+    component: fn() -> Element,
+    popout: bool,
+}
+
+const BLOCKS: &[MasonryEntry] = &[
+    MasonryEntry {
+        component: BlockSignIn,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockProfile,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockStats,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockInbox,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockTasks,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockNotifications,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockPlayer,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockCommand,
+        popout: true,
+    },
+    MasonryEntry {
+        component: BlockComposer,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockPricing,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockFilters,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockColorPalette,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockTabs,
+        popout: false,
+    },
+    MasonryEntry {
+        component: BlockSchedule,
+        popout: false,
+    },
 ];
 
 #[component]
@@ -1201,8 +1267,8 @@ fn WidgetMasonry() -> Element {
     rsx! {
         section { class: "dx-home-section dx-masonry-section",
             div { class: "dx-widget-masonry",
-                for block in BLOCKS {
-                    MasonryCard { component: *block }
+                for entry in BLOCKS {
+                    MasonryCard { component: entry.component, popout: entry.popout }
                 }
             }
         }
@@ -1211,10 +1277,15 @@ fn WidgetMasonry() -> Element {
 
 #[allow(unpredictable_function_pointer_comparisons)]
 #[component]
-fn MasonryCard(component: fn() -> Element) -> Element {
+fn MasonryCard(component: fn() -> Element, #[props(default)] popout: bool) -> Element {
     let Comp = component;
+    let class = if popout {
+        "dx-widget-card dx-widget-card-popout"
+    } else {
+        "dx-widget-card"
+    };
     rsx! {
-        div { class: "dx-widget-card",
+        div { class,
             Comp {}
         }
     }
@@ -1255,26 +1326,26 @@ fn BlockProfile() -> Element {
         div { style: "display: flex; align-items: center; gap: 0.75rem;",
             Avatar {
                 size: AvatarImageSize::Medium,
-                src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
-                alt: "Avatar",
+                src: "https://avatar.vercel.sh/avery-lin",
+                alt: "Avery Lin",
                 aria_label: "Avatar",
-                "JK"
+                "AL"
             }
             div { style: "flex: 1; display: grid; gap: 0.1rem; min-width: 0;",
                 div { style: "display: flex; align-items: center; gap: 0.4rem;",
-                    span { style: "font-weight: 600; color: var(--secondary-color-3);", "Jonathan Kelley" }
+                    span { style: "font-weight: 600; color: var(--secondary-color-3);", "Avery Lin" }
                     Badge {
                         variant: BadgeVariant::Secondary,
                         style: "padding: 0.15rem 0.3rem; background-color: var(--focused-border-color); color: white;",
                         VerifiedIcon {}
                     }
                 }
-                span { style: "color: var(--secondary-color-5); font-size: 0.85rem;", "@jkelleyrtp" }
+                span { style: "color: var(--secondary-color-5); font-size: 0.85rem;", "@averylin" }
             }
             Button { variant: ButtonVariant::Outline, "Follow" }
         }
-        p { style: "margin: 0.9rem 0 0; color: var(--secondary-color-5); font-size: 0.9rem; line-height: 1.55;",
-            "Working on Dioxus — fast Rust GUIs that ship to web, desktop, and mobile."
+        p { style: "margin: 1.1rem 0 0; color: var(--secondary-color-5); font-size: 0.9rem; line-height: 1.55;",
+            "Building UI primitives that ship to web, desktop, and mobile. Mostly Rust, mostly weekends."
         }
         div { style: "display: flex; gap: 0.35rem; margin-top: 0.85rem; flex-wrap: wrap;",
             Badge { variant: BadgeVariant::Outline, "Rust" }
@@ -1476,76 +1547,104 @@ fn BlockFilters() -> Element {
 
 #[component]
 fn BlockColorPalette() -> Element {
-    let palette = [
-        "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#7c3aed", "#ec4899", "#10b981", "#3b82f6",
-        "#f97316", "#06b6d4",
-    ];
-    let mut selected = use_signal(|| 4usize);
+    use dioxus_primitives::color_picker::Color;
+    use palette::{encoding, Hsv, IntoColor};
+
+    let mut color = use_signal(|| -> Hsv<encoding::Srgb, f64> {
+        Color::new(124, 58, 237).into_format::<f64>().into_color()
+    });
+
     rsx! {
-        div { style: "display: grid; gap: 0.3rem; margin-bottom: 0.9rem;",
+        div { style: "display: grid; gap: 0.3rem; margin-bottom: 1.1rem;",
             h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Theme accent" }
-            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Pick the accent color for the workspace." }
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Tune the accent that shows up across the workspace." }
         }
-        div { style: "display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem;",
-            for (idx, swatch) in palette.iter().enumerate() {
-                button {
-                    r#type: "button",
-                    aria_label: *swatch,
-                    onclick: move |_| selected.set(idx),
-                    style: format!(
-                        "aspect-ratio: 1; border-radius: 0.45rem; cursor: pointer; background-color: {}; box-shadow: {}; border: 0; padding: 0;",
-                        swatch,
-                        if idx == selected() { "inset 0 0 0 2px var(--primary-color-1), 0 0 0 2px var(--secondary-color-3)" } else { "inset 0 0 0 1px rgba(0,0,0,0.05)" },
-                    ),
-                }
-            }
-        }
-        div { style: "display: flex; align-items: center; gap: 0.55rem; margin-top: 0.95rem;",
-            div { style: format!("width: 1.15rem; height: 1.15rem; border-radius: 0.3rem; background-color: {};", palette[selected()]) }
-            code { style: "font-family: monospace; font-size: 0.85rem; color: var(--secondary-color-4); text-transform: uppercase;",
-                "{palette[selected()]}"
-            }
-            Badge { variant: BadgeVariant::Outline, style: "margin-left: auto;", "Active" }
+        ColorPicker {
+            label: "Theme accent color",
+            color: color(),
+            on_color_change: move |c| color.set(c),
         }
     }
 }
 
 #[component]
 fn BlockTabs() -> Element {
+    let members: &[(&str, &str, &str, &str)] = &[
+        ("Avery Lin", "Eng lead", "online", "AL"),
+        ("Casey Park", "Design", "away", "CP"),
+        ("Robin Hayes", "PM", "offline", "RH"),
+    ];
+    let activity: &[(&str, &str, &str)] = &[
+        ("Casey", "shipped v2.4.1", "12m ago"),
+        ("Avery", "opened PR #482", "1h ago"),
+        ("Robin", "moved 4 tasks", "3h ago"),
+    ];
     rsx! {
+        div { style: "display: grid; gap: 0.3rem; margin-bottom: 1.1rem;",
+            h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Workspace" }
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Team activity at a glance." }
+        }
         Tabs {
-            default_value: "overview".to_string(),
+            default_value: "members".to_string(),
             horizontal: true,
             width: "100%",
             TabList {
-                TabTrigger { value: "overview".to_string(), index: 0usize, "Overview" }
-                TabTrigger { value: "issues".to_string(), index: 1usize, "Issues" }
-                TabTrigger { value: "settings".to_string(), index: 2usize, "Settings" }
+                TabTrigger { value: "members".to_string(), index: 0usize, "Members" }
+                TabTrigger { value: "activity".to_string(), index: 1usize, "Activity" }
+                TabTrigger { value: "files".to_string(), index: 2usize, "Files" }
             }
-            TabContent { index: 0usize, value: "overview".to_string(),
-                div { style: "padding: 1rem 0.25rem 0.25rem; display: grid; gap: 0.55rem;",
-                    div { style: "display: flex; justify-content: space-between; color: var(--secondary-color-5); font-size: 0.88rem;",
-                        span { "Stars" }
-                        span { style: "color: var(--secondary-color-3); font-weight: 600;", "2,318" }
-                    }
-                    div { style: "display: flex; justify-content: space-between; color: var(--secondary-color-5); font-size: 0.88rem;",
-                        span { "Forks" }
-                        span { style: "color: var(--secondary-color-3); font-weight: 600;", "184" }
-                    }
-                    div { style: "display: flex; justify-content: space-between; color: var(--secondary-color-5); font-size: 0.88rem;",
-                        span { "Open PRs" }
-                        span { style: "color: var(--secondary-color-3); font-weight: 600;", "12" }
+            TabContent { index: 0usize, value: "members".to_string(),
+                div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.85rem;",
+                    for member in members.iter() {
+                        div { style: "display: flex; align-items: center; gap: 0.7rem;",
+                            Avatar {
+                                size: AvatarImageSize::Small,
+                                src: "https://avatar.vercel.sh/{member.0}",
+                                alt: "{member.0}",
+                                aria_label: "{member.0}",
+                                "{member.3}"
+                            }
+                            div { style: "flex: 1; min-width: 0;",
+                                div { style: "font-weight: 540; color: var(--secondary-color-3); font-size: 0.9rem;", "{member.0}" }
+                                div { style: "color: var(--secondary-color-5); font-size: 0.78rem;", "{member.1}" }
+                            }
+                            span {
+                                style: match member.2 {
+                                    "online" => "width: 0.55rem; height: 0.55rem; border-radius: 999px; background-color: rgb(34,197,94);",
+                                    "away" => "width: 0.55rem; height: 0.55rem; border-radius: 999px; background-color: rgb(234,179,8);",
+                                    _ => "width: 0.55rem; height: 0.55rem; border-radius: 999px; background-color: var(--primary-color-6);",
+                                },
+                            }
+                        }
                     }
                 }
             }
-            TabContent { index: 1usize, value: "issues".to_string(),
-                div { style: "padding: 1rem 0.25rem 0.25rem; color: var(--secondary-color-5); font-size: 0.88rem; line-height: 1.5;",
-                    "3 open issues, 1 awaiting triage. The router release is blocking #482."
+            TabContent { index: 1usize, value: "activity".to_string(),
+                div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.85rem;",
+                    for entry in activity.iter() {
+                        div { style: "display: flex; align-items: baseline; gap: 0.45rem; font-size: 0.88rem;",
+                            span { style: "font-weight: 600; color: var(--secondary-color-3);", "{entry.0}" }
+                            span { style: "color: var(--secondary-color-5);", "{entry.1}" }
+                            span { style: "margin-left: auto; color: var(--secondary-color-5); font-size: 0.78rem; white-space: nowrap;", "{entry.2}" }
+                        }
+                    }
                 }
             }
-            TabContent { index: 2usize, value: "settings".to_string(),
-                div { style: "padding: 1rem 0.25rem 0.25rem; color: var(--secondary-color-5); font-size: 0.88rem; line-height: 1.5;",
-                    "Repository preferences live here. Toggle visibility, default branch, and integrations."
+            TabContent { index: 2usize, value: "files".to_string(),
+                div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.6rem; color: var(--secondary-color-4); font-size: 0.88rem;",
+                    div { style: "display: flex; align-items: center; gap: 0.5rem;",
+                        span { style: "font-family: monospace; color: var(--secondary-color-5);", "/" }
+                        span { "Roadmap Q2.md" }
+                        Badge { variant: BadgeVariant::Outline, style: "margin-left: auto;", "Draft" }
+                    }
+                    div { style: "display: flex; align-items: center; gap: 0.5rem;",
+                        span { style: "font-family: monospace; color: var(--secondary-color-5);", "/" }
+                        span { "Brand guidelines.pdf" }
+                    }
+                    div { style: "display: flex; align-items: center; gap: 0.5rem;",
+                        span { style: "font-family: monospace; color: var(--secondary-color-5);", "/" }
+                        span { "Onboarding deck.key" }
+                    }
                 }
             }
         }
@@ -1563,6 +1662,172 @@ fn BlockSchedule() -> Element {
             Badge { variant: BadgeVariant::Outline, "Mar 2026" }
         }
         components::calendar::variants::main::Demo {}
+    }
+}
+
+#[component]
+fn BlockCommand() -> Element {
+    let mut query = use_signal(String::new);
+    let workspaces: &[(&str, &str)] = &[
+        ("acme", "Acme Inc."),
+        ("orbit", "Orbit Studio"),
+        ("nimbus", "Nimbus Labs"),
+        ("strata", "Strata Health"),
+        ("vela", "Vela Robotics"),
+        ("riverstone", "Riverstone Capital"),
+    ];
+    rsx! {
+        div { style: "display: grid; gap: 0.3rem; margin-bottom: 1rem;",
+            h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Switch workspace" }
+            p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Jump between projects your team owns." }
+        }
+        Combobox::<String> {
+            query: Some(query()),
+            on_query_change: move |next| query.set(next),
+            placeholder: "Search workspaces...",
+            aria_label: "Switch workspace",
+            list_aria_label: "Workspaces",
+            ComboboxEmpty { "No workspaces match." }
+            for (i , (value , label)) in workspaces.iter().enumerate() {
+                ComboboxOption::<String> {
+                    index: i,
+                    value: value.to_string(),
+                    text_value: label.to_string(),
+                    "{label}"
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn BlockInbox() -> Element {
+    let messages: &[(&str, &str, &str)] = &[
+        ("Sarah Chen", "Left 3 comments on the auth flow", "2m"),
+        ("Marcus Wright", "Roadmap sync notes attached", "1h"),
+        ("Lena Park", "Refactored the sidebar layout", "4h"),
+    ];
+    rsx! {
+        div { style: "display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.85rem;",
+            div { style: "flex: 1;",
+                h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Inbox" }
+                p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "3 new conversations." }
+            }
+            Badge { variant: BadgeVariant::Secondary, "3" }
+        }
+        ItemGroup { gap: "0.5rem",
+            for (sender , preview , time) in messages.iter() {
+                Item { variant: ItemVariant::Outline,
+                    ItemMedia { variant: ItemMediaVariant::Image,
+                        img {
+                            src: "https://avatar.vercel.sh/{sender}",
+                            alt: "{sender}",
+                            style: "filter: grayscale(0.35);",
+                        }
+                    }
+                    ItemContent {
+                        ItemTitle { "{sender}" }
+                        ItemDescription { "{preview}" }
+                    }
+                    ItemContent { flex: "none",
+                        ItemDescription { "{time}" }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn BlockTasks() -> Element {
+    let tasks: &[(&str, &str, &str, &str)] = &[
+        ("LNC-128", "Ship Q2 product roadmap", "Today", "AL"),
+        ("LNC-142", "Redesign onboarding flow", "Apr 24", "CP"),
+        ("LNC-147", "Audit payment webhook logs", "Apr 29", "RH"),
+        ("LNC-151", "Draft changelog for v2.4", "May 02", "AL"),
+    ];
+    let items: Vec<Element> = tasks
+        .iter()
+        .map(|t| {
+            rsx! {
+                div { key: "{t.0}", style: "display: flex; align-items: center; gap: 0.75rem; min-width: 0;",
+                    div { style: "flex: 1; min-width: 0; display: grid; gap: 0.2rem;",
+                        div { style: "color: var(--secondary-color-3); font-size: 0.9rem; font-weight: 540; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
+                            "{t.1}"
+                        }
+                        div { style: "display: flex; align-items: center; gap: 0.45rem; color: var(--secondary-color-5); font-size: 0.78rem;",
+                            span { style: "font-family: monospace;", "{t.0}" }
+                            span { style: "width: 3px; height: 3px; border-radius: 999px; background-color: var(--primary-color-7);" }
+                            span { "{t.2}" }
+                        }
+                    }
+                    Avatar {
+                        size: AvatarImageSize::Small,
+                        src: "https://avatar.vercel.sh/{t.3}",
+                        alt: "{t.3}",
+                        aria_label: "Assignee {t.3}",
+                        "{t.3}"
+                    }
+                }
+            }
+        })
+        .collect();
+
+    rsx! {
+        div { style: "display: flex; align-items: center; gap: 0.55rem; margin-bottom: 1.1rem;",
+            div { style: "flex: 1;",
+                h3 { style: "margin: 0; font-size: 1rem; font-weight: 660; color: var(--secondary-color-3);", "Launch priorities" }
+                p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem;", "Drag to reorder — top is highest priority." }
+            }
+            Badge { variant: BadgeVariant::Outline, "4 active" }
+        }
+        DragAndDropList { items }
+    }
+}
+
+#[component]
+fn BlockComposer() -> Element {
+    let mut draft = use_signal(|| {
+        "Big thanks to the team for landing the new roadmap view — looks great!".to_string()
+    });
+    rsx! {
+        div { style: "display: flex; align-items: center; gap: 0.65rem; margin-bottom: 1rem;",
+            Avatar {
+                size: AvatarImageSize::Small,
+                src: "https://avatar.vercel.sh/avery-lin",
+                alt: "Avery Lin",
+                aria_label: "Avery Lin",
+                "AL"
+            }
+            div { style: "flex: 1; display: grid; gap: 0.1rem;",
+                span { style: "font-weight: 600; color: var(--secondary-color-3); font-size: 0.9rem;", "Reply to roadmap thread" }
+                span { style: "color: var(--secondary-color-5); font-size: 0.78rem;", "Posting as @averylin · #product" }
+            }
+        }
+        Textarea {
+            variant: TextareaVariant::Default,
+            value: draft,
+            oninput: move |e: FormEvent| draft.set(e.value()),
+            placeholder: "Share an update…",
+            style: "width: 100%; min-height: 5.5rem; resize: vertical;",
+        }
+        div { style: "display: flex; align-items: center; gap: 0.55rem; margin-top: 0.85rem;",
+            ToggleGroup { horizontal: true, allow_multiple_pressed: true,
+                ToggleItem { index: 0usize,
+                    b { "B" }
+                }
+                ToggleItem { index: 1usize,
+                    i { "I" }
+                }
+                ToggleItem { index: 2usize,
+                    u { "U" }
+                }
+            }
+            div { style: "margin-left: auto; display: flex; gap: 0.45rem;",
+                Button { variant: ButtonVariant::Ghost, "Save draft" }
+                Button { "Post" }
+            }
+        }
     }
 }
 

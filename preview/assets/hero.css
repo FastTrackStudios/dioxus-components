@@ -12,7 +12,7 @@
     flex-direction: column;
     align-items: flex-start;
     overflow: hidden;
-    padding: 4rem 0;
+    padding: 5rem 0;
     border-bottom: 1px solid var(--primary-color-6);
     gap: 1rem;
 }
@@ -35,21 +35,34 @@
     position: relative;
 }
 
-.dx-hero-shell > h1 {
-    max-width: 720px;
+.dx-hero-heading {
+    display: flex;
+    max-width: 880px;
+    flex-direction: column;
     margin: 0;
+    font-size: 3.5rem;
+    font-weight: 300;
+    letter-spacing: -0.0125em;
+    line-height: 1.06;
+    text-transform: lowercase;
+    text-wrap: balance;
+}
+
+.dx-hero-title {
     color: var(--secondary-color-3);
-    font-size: 3.25rem;
-    font-weight: 760;
-    line-height: 1;
+}
+
+.dx-hero-subtitle {
+    color: var(--secondary-color-5);
 }
 
 .dx-hero-summary {
-    max-width: 650px;
-    margin: 0;
+    max-width: 40rem;
+    margin: 0rem 0 2rem 0;
     color: var(--secondary-color-5);
-    font-size: 1rem;
+    font-size: 0.95rem;
     line-height: 1.6;
+    text-wrap: pretty;
 }
 
 .dx-hero-command {
@@ -89,8 +102,8 @@
         padding: 1.5rem 0;
     }
 
-    .dx-hero-shell > h1 {
-        font-size: 2.35rem;
+    .dx-hero-heading {
+        font-size: 2.4rem;
     }
 
     .dx-hero-command {
