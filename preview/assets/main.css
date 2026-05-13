@@ -85,7 +85,7 @@ body {
   padding: 0.5em 0;
   color: var(--secondary-color-4);
   font-size: 0.95rem;
-  font-weight: 560;
+  font-weight: 450;
   text-decoration: none;
 }
 
@@ -105,7 +105,7 @@ body {
   align-items: center;
   color: var(--secondary-color-4);
   font-size: 0.98rem;
-  font-weight: 700;
+  font-weight: 400;
   gap: 0.55rem;
   text-decoration: none;
 }
@@ -189,7 +189,7 @@ body {
   box-sizing: border-box;
   min-height: calc(100vh - 3.25rem);
   padding-right: 1.5rem;
-  padding-left: 1.5rem;
+  padding-left: 4.5rem;
   border-right: 1px solid var(--primary-color-6);
   border-left: 1px solid var(--primary-color-6);
   grid-template-columns: 14rem minmax(0, 1fr);
@@ -816,7 +816,6 @@ body {
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
-  margin-top: 4rem;
   background-color: var(--primary-color);
   border-top: 1px solid var(--primary-color-6);
 }

@@ -301,8 +301,8 @@ fn Navbar() -> Element {
                         img {
                             src: asset!("/assets/dioxus_color.svg"),
                             alt: "Dioxus Logo",
-                            width: "28",
-                            height: "28",
+                            width: "18",
+                            height: "18",
                         }
                         span { "dioxus-component" }
                     }
@@ -357,8 +357,6 @@ fn Footer() -> Element {
     if Route::in_iframe().unwrap_or_default() {
         return rsx! {};
     }
-
-    let abc = 45612;
 
     rsx! {
         footer { class: "dx-preview-footer",
@@ -1174,12 +1172,18 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
                         }
                     }
                     p { class: "dx-hero-summary",
-                        "Browse the catalog, copy the CLI command, and pull only what you need into your project. Thoughtfully designed with powerful accessibility features. Tailored for web, desktop, and mobile."
+                        "Dioxus components by the Dioxus team. Browse the catalog, copy the CLI command, and pull only what you need into your project. Thoughtfully designed with powerful accessibility features."
                     }
-                    div { class: "dx-hero-command",
-                        span { class: "dx-hero-prompt", "$" }
-                        code { "cargo add dioxus-component" }
-                        CopyCommandButton { command: "cargo add dioxus-component".to_string() }
+                    div { class: "dx-hero-cta",
+                        Link { to: Route::docs(), class: "dx-hero-cta-primary",
+                            "get started"
+                            ArrowRight { size: "18", stroke_width: "1.8" }
+                        }
+                        div { class: "dx-hero-command",
+                            span { class: "dx-hero-prompt", "$" }
+                            code { "dx components list" }
+                            CopyCommandButton { command: "dx components list".to_string() }
+                        }
                     }
                 }
             }
@@ -1266,6 +1270,13 @@ const BLOCKS: &[MasonryEntry] = &[
 fn WidgetMasonry() -> Element {
     rsx! {
         section { class: "dx-home-section dx-masonry-section",
+            header { class: "dx-section-header",
+                span { class: "dx-section-eyebrow", "Showcase" }
+                h2 { class: "dx-section-title", "Sample interfaces" }
+                p { class: "dx-section-summary",
+                    "Live, interactive UI blocks composed from the primitives below. Use your keyboard to test the accessibility interactions."
+                }
+            }
             div { class: "dx-widget-masonry",
                 for entry in BLOCKS {
                     MasonryCard { component: entry.component, popout: entry.popout }
