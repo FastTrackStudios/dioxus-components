@@ -1,19 +1,23 @@
 use crate::components::{
-    avatar::{Avatar, AvatarFallback, AvatarImage, AvatarImageSize},
+    avatar::{Avatar, AvatarImageSize},
     badge::{Badge, BadgeVariant, VerifiedIcon},
     button::{Button, ButtonVariant},
     checkbox::Checkbox,
     input::Input,
     label::Label,
-    progress::{Progress, ProgressIndicator},
+    progress::Progress,
     radio_group::{RadioGroup, RadioItem},
-    slider::{Slider, SliderRange, SliderThumb, SliderTrack},
-    switch::{Switch, SwitchThumb},
+    slider::Slider,
+    switch::Switch,
     tabs::{TabContent, TabList, TabTrigger, Tabs, TabsVariant},
 };
 use core::panic;
 use dioxus::prelude::{dioxus_router::LinkProps, *};
-use dioxus_primitives::icon::Icon;
+use dioxus_code::{advanced::HighlightedSource, Code, CodeTheme, Theme};
+use dioxus_icons::lucide::{
+    ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronUp, Copy, ExternalLink, Mail,
+    Pause, Play, SkipBack, SkipForward,
+};
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
 use unic_langid::{langid, LanguageIdentifier};
@@ -778,14 +782,7 @@ struct DemoEntry {
 
 fn email_client_thumb() -> Element {
     rsx! {
-        Icon {
-            width: "56px",
-            height: "56px",
-            stroke: "currentColor",
-            stroke_width: 1.4,
-            path { d: "M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" }
-            path { d: "M3 7l9 6 9-6" }
-        }
+        Mail { size: "56", stroke_width: "1.4" }
     }
 }
 
@@ -825,14 +822,7 @@ fn Demos(dark_mode: Option<bool>) -> Element {
                                     p { class: "dx-demos-card-description", "{entry.description}" }
                                     span { class: "dx-demos-card-cta",
                                         "Open demo"
-                                        Icon {
-                                            width: "16px",
-                                            height: "16px",
-                                            stroke: "currentColor",
-                                            stroke_width: 1.6,
-                                            path { d: "M5 12h14" }
-                                            path { d: "M13 5l7 7-7 7" }
-                                        }
+                                        ArrowRight { size: "16", stroke_width: "1.6" }
                                     }
                                 }
                             }
@@ -1263,13 +1253,12 @@ fn BlockSignIn() -> Element {
 fn BlockProfile() -> Element {
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.75rem;",
-            Avatar { size: AvatarImageSize::Medium, aria_label: "Avatar",
-                AvatarImage {
-                    class: "dx-avatar-image",
-                    src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
-                    alt: "Avatar",
-                }
-                AvatarFallback { class: "dx-avatar-fallback", "JK" }
+            Avatar {
+                size: AvatarImageSize::Medium,
+                src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
+                alt: "Avatar",
+                aria_label: "Avatar",
+                "JK"
             }
             div { style: "flex: 1; display: grid; gap: 0.1rem; min-width: 0;",
                 div { style: "display: flex; align-items: center; gap: 0.4rem;",
@@ -1318,7 +1307,6 @@ fn BlockStats() -> Element {
                 value: 68.0,
                 aria_label: "Toward Q2 target",
                 style: "width: 100%;",
-                ProgressIndicator {}
             }
         }
         p { style: "margin: 0.65rem 0 0; color: var(--secondary-color-5); font-size: 0.82rem;",
@@ -1357,7 +1345,6 @@ fn NotificationRow(id: String, name: String, description: String, default_on: bo
                 checked: checked(),
                 aria_label: "{name}",
                 on_checked_change: move |v| checked.set(v),
-                SwitchThumb {}
             }
         }
     }
@@ -1386,7 +1373,6 @@ fn BlockPlayer() -> Element {
                 step: 1.0,
                 default_value: 38.0,
                 aria_label: "Track progress",
-                SliderTrack { SliderRange {} SliderThumb {} }
             }
             div { style: "display: flex; justify-content: space-between; margin-top: 0.45rem; color: var(--secondary-color-5); font-size: 0.78rem;",
                 span { "1:24" }
@@ -1395,25 +1381,19 @@ fn BlockPlayer() -> Element {
         }
         div { style: "display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.6rem;",
             Button { variant: ButtonVariant::Ghost, aria_label: "Previous",
-                Icon { width: "18px", height: "18px", fill: "currentColor", stroke: "none",
-                    path { d: "M6 6h2v12H6zm3.5 6l8.5-6v12z" }
-                }
+                SkipBack { size: "18", fill: "currentColor", stroke_width: "1.5" }
             }
             Button {
                 aria_label: "Play or pause",
                 onclick: move |_| { let v = !playing(); playing.set(v); },
-                Icon { width: "18px", height: "18px", fill: "currentColor", stroke: "none",
-                    if playing() {
-                        path { d: "M6 5h4v14H6zm8 0h4v14h-4z" }
-                    } else {
-                        path { d: "M8 5v14l11-7z" }
-                    }
+                if playing() {
+                    Pause { size: "18", fill: "currentColor", stroke_width: "1.5" }
+                } else {
+                    Play { size: "18", fill: "currentColor", stroke_width: "1.5" }
                 }
             }
             Button { variant: ButtonVariant::Ghost, aria_label: "Next",
-                Icon { width: "18px", height: "18px", fill: "currentColor", stroke: "none",
-                    path { d: "M16 6h2v12h-2zM6 6l8.5 6L6 18z" }
-                }
+                SkipForward { size: "18", fill: "currentColor", stroke_width: "1.5" }
             }
         }
     }
@@ -1621,13 +1601,7 @@ fn ComponentGalleryPreview(component: ComponentDemoData) -> Element {
                 to: Route::component(name),
                 class: "dx-component-card-block-link",
                 "Open full preview"
-                Icon {
-                    width: "18px",
-                    height: "18px",
-                    stroke: "currentColor",
-                    path { d: "M7 7h10v10" }
-                    path { d: "M7 17 17 7" }
-                }
+                ArrowUpRight { size: "18", stroke_width: "1.6" }
             }
         },
     };
@@ -1640,13 +1614,7 @@ fn ComponentGalleryPreview(component: ComponentDemoData) -> Element {
                         to: Route::component(name),
                         class: "dx-component-card-title-link",
                         "{display_name}"
-                        Icon {
-                            width: "18px",
-                            height: "18px",
-                            stroke: "currentColor",
-                            path { d: "M7 7h10v10" }
-                            path { d: "M7 17 17 7" }
-                        }
+                        ArrowUpRight { size: "18", stroke_width: "1.6" }
                     }
                 }
                 p { class: "dx-component-card-description", "{description}" }
