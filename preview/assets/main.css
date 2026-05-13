@@ -113,7 +113,7 @@ body {
 /* Code block styles */
 /* stylelint-disable-next-line selector-class-pattern */
 .dx-preview-code-theme {
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid var(--primary-color-6);
   border-radius: 0.5rem;
   background-color: var(--primary-color-1);
@@ -121,7 +121,7 @@ body {
 
 /* stylelint-disable-next-line selector-class-pattern */
 .dx-preview-code-theme .dxc {
-  overflow: visible;
+  overflow: hidden;
   box-sizing: border-box;
   padding: 1rem 1.1rem;
   margin: 0;
@@ -129,7 +129,9 @@ body {
   font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   line-height: 1.55;
+  overflow-wrap: anywhere;
   tab-size: 4;
+  white-space: pre-wrap;
 }
 
 .dx-code-block {
