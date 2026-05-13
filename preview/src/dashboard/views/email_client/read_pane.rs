@@ -1,17 +1,13 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::{Check, ChevronDown};
+use dioxus_primitives::select as primitive_select;
 use dioxus_primitives::toast::{use_toast, ToastOptions};
 use std::rc::Rc;
 
-use crate::components::avatar::{
-    Avatar, AvatarFallback, AvatarImage, AvatarImageSize, AvatarShape,
-};
+use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
 use crate::components::badge::{Badge, BadgeVariant};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::card::{Card, CardContent, CardDescription, CardHeader, CardTitle};
-use crate::components::select::{
-    SelectGroup, SelectGroupLabel, SelectItemIndicator, SelectList, SelectMulti, SelectOption,
-    SelectTrigger,
-};
 use crate::components::textarea::Textarea;
 use crate::components::toolbar::component::{
     Toolbar, ToolbarButton, ToolbarGroup, ToolbarSeparator,
@@ -23,6 +19,9 @@ use crate::dashboard::common::{
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
+
+#[css_module("/src/components/select/style.css")]
+struct SelectStyles;
 
 #[component]
 pub(super) fn ReadPane(
@@ -98,7 +97,7 @@ pub(super) fn ReadPane(
 
     rsx! {
         section { class: "ec-read-pane",
-            Toolbar { aria_label: "Message actions",
+            Toolbar { class: "ec-read-toolbar", aria_label: "Message actions",
                 ToolbarGroup {
                     ToolbarButton {
                         index: 0usize,
@@ -106,7 +105,7 @@ pub(super) fn ReadPane(
                         LucideIcon { kind: IconKind::ArrowLeft }
                     }
                 }
-                ToolbarSeparator {}
+                ToolbarSeparator { class: "ec-read-toolbar-separator" }
                 ToolbarGroup {
                     ToolbarButton { index: 1usize, on_click: archive_selected,
                         LucideIcon { kind: IconKind::Archive }
@@ -121,7 +120,7 @@ pub(super) fn ReadPane(
                         " Delete"
                     }
                 }
-                ToolbarSeparator {}
+                ToolbarSeparator { class: "ec-read-toolbar-separator" }
                 ToolbarGroup {
                     ToolbarButton { index: 4usize, on_click: toggle_flag_selected,
                         if selected_flagged {
@@ -158,30 +157,42 @@ pub(super) fn ReadPane(
                                         span {
                                             "{selected_static.thread_count} message{(selected_static.thread_count > 1).then(|| \"s\").unwrap_or(\"\")} in this thread"
                                         }
-                                        SelectMulti::<MessageTag> {
+                                        primitive_select::SelectMulti::<MessageTag> {
+                                            class: SelectStyles::dx_select,
                                             values: Some(selected_tags.clone()),
                                             default_values: selected_tags.clone(),
                                             on_values_change: move |values: Vec<MessageTag>| {
                                                 state.set_message_tags(tag_edit_uid.clone(), values);
                                             },
-                                            SelectTrigger {
-                                                class: "ec-tag-edit-trigger",
+                                            primitive_select::SelectTrigger {
+                                                class: format!("{} ec-tag-edit-trigger", SelectStyles::dx_select_trigger),
                                                 aria_label: "Add tag",
                                                 "+ Tag"
+                                                ChevronDown {
+                                                    class: "dx-select-expand-icon",
+                                                    size: "20px",
+                                                    stroke: "var(--primary-color-7)",
+                                                }
                                             }
-                                            SelectList {
-                                                class: "ec-filter-list",
+                                            primitive_select::SelectList {
+                                                class: format!("{} ec-filter-list", SelectStyles::dx_select_list),
                                                 aria_label: "Edit tags",
-                                                SelectGroup {
-                                                    SelectGroupLabel { "Tags" }
+                                                primitive_select::SelectGroup {
+                                                    primitive_select::SelectGroupLabel { class: SelectStyles::dx_select_group_label, "Tags" }
                                                     for (index, tag) in MessageTag::ALL.iter().enumerate() {
-                                                        SelectOption::<MessageTag> {
+                                                        primitive_select::SelectOption::<MessageTag> {
+                                                            class: SelectStyles::dx_select_option,
                                                             key: "{tag.label()}",
                                                             index,
                                                             value: *tag,
                                                             text_value: "{tag.label()}",
                                                             {tag.label()}
-                                                            SelectItemIndicator {}
+                                                            primitive_select::SelectItemIndicator {
+                                                                Check {
+                                                                    size: "1rem",
+                                                                    stroke: "var(--secondary-color-5)",
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -219,11 +230,9 @@ pub(super) fn ReadPane(
                             Avatar {
                                 size: AvatarImageSize::Small,
                                 shape: AvatarShape::Circle,
-                                AvatarImage {
-                                    src: "{avatar_profile_for_key(selected_static.sender.addr).src}",
-                                    alt: "{selected_static.sender.name}",
-                                }
-                                AvatarFallback { {selected_static.sender.initials} }
+                                src: "{avatar_profile_for_key(selected_static.sender.addr).src}",
+                                alt: "{selected_static.sender.name}",
+                                {selected_static.sender.initials}
                             }
                             div { class: "ec-thread-msg-meta",
                                 div { class: "ec-thread-msg-sender",
@@ -246,11 +255,9 @@ pub(super) fn ReadPane(
                                 Avatar {
                                     size: AvatarImageSize::Small,
                                     shape: AvatarShape::Circle,
-                                    AvatarImage {
-                                        src: "{AVATAR_PROFILE_OPTIONS[0].src}",
-                                        alt: "You",
-                                    }
-                                    AvatarFallback { "Y" }
+                                    src: "{AVATAR_PROFILE_OPTIONS[0].src}",
+                                    alt: "You",
+                                    "Y"
                                 }
                                 div { class: "ec-thread-msg-meta",
                                     div { class: "ec-thread-msg-sender",
@@ -275,11 +282,9 @@ pub(super) fn ReadPane(
                             Avatar {
                                 size: AvatarImageSize::Small,
                                 shape: AvatarShape::Circle,
-                                AvatarImage {
-                                    src: "{AVATAR_PROFILE_OPTIONS[0].src}",
-                                    alt: "You",
-                                }
-                                AvatarFallback { "Y" }
+                                src: "{AVATAR_PROFILE_OPTIONS[0].src}",
+                                alt: "You",
+                                "Y"
                             }
                             Textarea {
                                 key: "{selected_uid_value}-reply",

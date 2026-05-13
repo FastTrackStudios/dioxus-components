@@ -1,8 +1,8 @@
 use super::super::component::*;
-use crate::components::avatar::{Avatar, AvatarFallback, AvatarImage, AvatarImageSize};
+use crate::components::avatar::{Avatar, AvatarImageSize};
 use crate::components::button::{Button, ButtonVariant};
 use dioxus::prelude::*;
-use dioxus_primitives::icon;
+use dioxus_icons::lucide::Plus;
 
 const PEOPLE: &[(&str, &str, &str)] = &[
     (
@@ -35,9 +35,11 @@ pub fn Demo() -> Element {
                 for (i , (username , email , avatar)) in PEOPLE.iter().enumerate() {
                     Item {
                         ItemMedia {
-                            Avatar { size: AvatarImageSize::Small,
-                                AvatarImage { src: "{avatar}", alt: "{username}" }
-                                AvatarFallback { "{&username[..1].to_uppercase()}" }
+                            Avatar {
+                                size: AvatarImageSize::Small,
+                                src: "{avatar}",
+                                alt: "{username}",
+                                "{&username[..1].to_uppercase()}"
                             }
                         }
                         ItemContent {
@@ -64,11 +66,6 @@ pub fn Demo() -> Element {
 #[component]
 fn PlusIcon() -> Element {
     rsx! {
-        icon::Icon {
-            width: "16",
-            height: "16",
-            path { d: "M12 5v14" }
-            path { d: "M5 12h14" }
-        }
+        Plus { size: "16" }
     }
 }

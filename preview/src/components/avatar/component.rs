@@ -1,5 +1,8 @@
 use dioxus::prelude::*;
-use dioxus_primitives::avatar::{self, AvatarFallbackProps, AvatarImageProps, AvatarState};
+use dioxus_primitives::avatar::{self, AvatarState};
+
+#[css_module("/src/components/avatar/style.css")]
+struct Styles;
 
 #[derive(Clone, Copy, PartialEq, Default)]
 pub enum AvatarImageSize {
@@ -12,9 +15,9 @@ pub enum AvatarImageSize {
 impl AvatarImageSize {
     fn to_class(self) -> &'static str {
         match self {
-            AvatarImageSize::Small => "dx-avatar-sm",
-            AvatarImageSize::Medium => "dx-avatar-md",
-            AvatarImageSize::Large => "dx-avatar-lg",
+            AvatarImageSize::Small => Styles::dx_avatar_sm.inner,
+            AvatarImageSize::Medium => Styles::dx_avatar_md.inner,
+            AvatarImageSize::Large => Styles::dx_avatar_lg.inner,
         }
     }
 }
@@ -29,8 +32,8 @@ pub enum AvatarShape {
 impl AvatarShape {
     fn to_class(self) -> &'static str {
         match self {
-            AvatarShape::Circle => "dx-avatar-circle",
-            AvatarShape::Rounded => "dx-avatar-rounded",
+            AvatarShape::Circle => Styles::dx_avatar_circle.inner,
+            AvatarShape::Rounded => Styles::dx_avatar_rounded.inner,
         }
     }
 }
@@ -38,15 +41,22 @@ impl AvatarShape {
 /// The props for the [`Avatar`] component.
 #[derive(Props, Clone, PartialEq)]
 pub struct AvatarProps {
-    /// Callback when image loads successfully
+    /// The image source URL.
+    pub src: String,
+
+    /// The image alt text.
+    #[props(default)]
+    pub alt: String,
+
+    /// Callback when image loads successfully.
     #[props(default)]
     pub on_load: Option<EventHandler<()>>,
 
-    /// Callback when image fails to load
+    /// Callback when image fails to load.
     #[props(default)]
     pub on_error: Option<EventHandler<()>>,
 
-    /// Callback when the avatar state changes
+    /// Callback when the avatar state changes.
     #[props(default)]
     pub on_state_change: Option<EventHandler<AvatarState>>,
 
@@ -56,45 +66,40 @@ pub struct AvatarProps {
     #[props(default)]
     pub shape: AvatarShape,
 
-    /// Additional attributes for the avatar element
+    /// Additional attributes for the avatar element.
     #[props(extends = GlobalAttributes)]
     pub attributes: Vec<Attribute>,
 
-    /// The children of the Avatar component, which can include AvatarImage and AvatarFallback
+    /// The fallback content shown while the image is loading or if it fails to load.
     pub children: Element,
 }
 
 #[component]
 pub fn Avatar(props: AvatarProps) -> Element {
-    rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
+    let class = format!(
+        "{} {} {}",
+        Styles::dx_avatar,
+        props.size.to_class(),
+        props.shape.to_class()
+    );
 
+    rsx! {
         avatar::Avatar {
-            class: "dx-avatar {props.size.to_class()} {props.shape.to_class()}",
+            class,
             on_load: props.on_load,
             on_error: props.on_error,
             on_state_change: props.on_state_change,
             attributes: props.attributes,
-            {props.children}
+            avatar::AvatarImage {
+                class: Styles::dx_avatar_image,
+                src: props.src,
+                alt: props.alt,
+                draggable: "false",
+            }
+            avatar::AvatarFallback {
+                class: Styles::dx_avatar_fallback,
+                {props.children}
+            }
         }
-    }
-}
-
-#[component]
-pub fn AvatarImage(props: AvatarImageProps) -> Element {
-    rsx! {
-        avatar::AvatarImage {
-            class: "dx-avatar-image",
-            src: props.src,
-            alt: props.alt,
-            attributes: props.attributes,
-        }
-    }
-}
-
-#[component]
-pub fn AvatarFallback(props: AvatarFallbackProps) -> Element {
-    rsx! {
-        avatar::AvatarFallback { class: "dx-avatar-fallback", attributes: props.attributes, {props.children} }
     }
 }

@@ -91,19 +91,16 @@ macro_rules! examples {
             )),
             docs: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/docs.html")),
             component: HighlightedCode {
-                light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/component.rs.base16-ocean.light.html")),
-                dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/component.rs.base16-ocean.dark.html")),
+                source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/component.rs")),
             },
             style: HighlightedCode {
-                light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/style.css.base16-ocean.light.html")),
-                dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/style.css.base16-ocean.dark.html")),
+                source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/style.css")),
             },
             variants: &[
                 ComponentVariantDemoData {
                     name: "main",
                     rs_highlighted: HighlightedCode {
-                        light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/main/mod.rs.base16-ocean.light.html")),
-                        dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/main/mod.rs.base16-ocean.dark.html")),
+                        source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/variants/main/mod.rs")),
                     },
                     css_highlighted: None,
                     component: $name::variants::main::Demo,
@@ -113,8 +110,7 @@ macro_rules! examples {
                         ComponentVariantDemoData {
                             name: stringify!($variant),
                             rs_highlighted: HighlightedCode {
-                                light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/", stringify!($variant), "/mod.rs.base16-ocean.light.html")),
-                                dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/", stringify!($variant), "/mod.rs.base16-ocean.dark.html")),
+                                source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/variants/", stringify!($variant), "/mod.rs")),
                             },
                             css_highlighted: None,
                             component: $name::variants::$variant::Demo,
@@ -138,23 +134,19 @@ macro_rules! examples {
             )),
             docs: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/docs.html")),
             component: HighlightedCode {
-                light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/component.rs.base16-ocean.light.html")),
-                dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/component.rs.base16-ocean.dark.html")),
+                source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/component.rs")),
             },
             style: HighlightedCode {
-                light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/style.css.base16-ocean.light.html")),
-                dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/style.css.base16-ocean.dark.html")),
+                source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/style.css")),
             },
             variants: &[
                 ComponentVariantDemoData {
                     name: "main",
                     rs_highlighted: HighlightedCode {
-                        light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/main/mod.rs.base16-ocean.light.html")),
-                        dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/main/mod.rs.base16-ocean.dark.html")),
+                        source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/variants/main/mod.rs")),
                     },
                     css_highlighted: Some(HighlightedCode {
-                        light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/demo.css.base16-ocean.light.html")),
-                        dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/demo.css.base16-ocean.dark.html")),
+                        source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/variants/demo.css")),
                     }),
                     component: $name::variants::main::Demo,
                 },
@@ -163,12 +155,10 @@ macro_rules! examples {
                         ComponentVariantDemoData {
                             name: stringify!($variant),
                             rs_highlighted: HighlightedCode {
-                                light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/", stringify!($variant), "/mod.rs.base16-ocean.light.html")),
-                                dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/", stringify!($variant), "/mod.rs.base16-ocean.dark.html")),
+                                source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/variants/", stringify!($variant), "/mod.rs")),
                             },
                             css_highlighted: Some(HighlightedCode {
-                                light: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/demo.css.base16-ocean.light.html")),
-                                dark: include_str!(concat!(env!("OUT_DIR"), "/", stringify!($name), "/variants/demo.css.base16-ocean.dark.html")),
+                                source: dioxus_code::code!(concat!("/src/components/", stringify!($name), "/variants/demo.css")),
                             }),
                             component: $name::variants::$variant::Demo,
                         },
@@ -185,12 +175,13 @@ examples!(
     aspect_ratio,
     avatar,
     badge,
-    button,
+    button[size, icon],
     calendar[simple, internationalized, range, multi_month, unavailable_dates],
     card,
     checkbox,
     collapsible,
     color_picker,
+    combobox[controlled, disabled, dynamic],
     context_menu,
     date_picker[internationalized, range, multi_month, unavailable_dates],
     dialog,

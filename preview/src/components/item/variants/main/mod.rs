@@ -1,7 +1,7 @@
 use super::super::component::*;
 use crate::components::button::{Button, ButtonVariant};
 use dioxus::prelude::*;
-use dioxus_primitives::icon;
+use dioxus_icons::lucide::{BadgeCheck, ChevronRight};
 
 #[component]
 pub fn Demo() -> Element {
@@ -47,22 +47,13 @@ pub fn Demo() -> Element {
 #[component]
 fn BadgeCheckIcon() -> Element {
     rsx! {
-        icon::Icon {
-            width: "20",
-            height: "20",
-            path { d: "M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" }
-            path { d: "m9 12 2 2 4-4" }
-        }
+        BadgeCheck { size: "20" }
     }
 }
 
 #[component]
 fn ChevronRightIcon() -> Element {
     rsx! {
-        icon::Icon {
-            width: "16",
-            height: "16",
-            path { d: "m9 18 6-6-6-6" }
-        }
+        ChevronRight { size: "16" }
     }
 }

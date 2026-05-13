@@ -1,8 +1,12 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::{GripVertical, X};
 use dioxus_primitives::drag_and_drop_list::{
-    self, DragAndDropContext, DragAndDropItemContext, DragAndDropListItemProps,
+    self, DragAndDropContext, DragAndDropDropIndicatorProps, DragAndDropItemContext,
+    DragAndDropListItemProps, DragAndDropListItemsProps,
 };
-use dioxus_primitives::icon::Icon;
+
+#[css_module("/src/components/drag_and_drop_list/style.css")]
+struct Styles;
 
 #[derive(Props, Clone, PartialEq)]
 pub struct DragAndDropListProps {
@@ -28,13 +32,25 @@ pub struct DragAndDropListProps {
 #[component]
 pub fn DragAndDropList(props: DragAndDropListProps) -> Element {
     let is_removable = props.is_removable;
-    let items = props
+    let aria_label = props
+        .aria_label
+        .clone()
+        .unwrap_or_else(|| "Sortable list".to_string());
+    // Keep a stable key per item so Dioxus moves keyed siblings instead of
+    // swapping content between list items during reorder.
+    let items: Vec<Element> = props
         .items
         .iter()
-        .map(|item| {
+        .enumerate()
+        .map(|(idx, item)| {
+            let key = item
+                .as_ref()
+                .ok()
+                .and_then(|v| v.key.clone())
+                .unwrap_or_else(|| idx.to_string());
             rsx! {
-                DragIcon {}
-                div { class: "dx-item-body-div", {item} }
+                DragIcon { key: "{key}" }
+                div { class: Styles::dx_item_body_div, {item} }
                 if is_removable {
                     RemoveButton {}
                 }
@@ -43,11 +59,16 @@ pub fn DragAndDropList(props: DragAndDropListProps) -> Element {
         .collect();
 
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
         drag_and_drop_list::DragAndDropList {
+            class: Styles::dx_dnd_list,
             items,
             aria_label: props.aria_label,
             attributes: props.attributes,
+            drag_and_drop_list::DragAndDropInstructions {}
+            DragAndDropListItems {
+                aria_label,
+            }
+            drag_and_drop_list::DragAndDropLiveRegion {}
             {props.children}
         }
     }
@@ -57,6 +78,7 @@ pub fn DragAndDropList(props: DragAndDropListProps) -> Element {
 pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
     rsx! {
         drag_and_drop_list::DragAndDropListItem {
+            class: Styles::dx_dnd_list_item,
             index: props.index,
             attributes: props.attributes,
             {props.children}
@@ -65,17 +87,52 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
 }
 
 #[component]
+pub fn DragAndDropListItems(props: DragAndDropListItemsProps) -> Element {
+    rsx! {
+        drag_and_drop_list::DragAndDropListItems {
+            class: Styles::dx_dnd_list_ul,
+            aria_label: props.aria_label,
+            attributes: props.attributes,
+            for item in drag_and_drop_list::use_drag_and_drop_list_items() {
+                Fragment {
+                    key: "{item.key}",
+                    DragAndDropDropIndicator {
+                        index: item.index,
+                        position: "before",
+                    }
+                    DragAndDropListItem {
+                        index: item.index,
+                        {item.children}
+                    }
+                    DragAndDropDropIndicator {
+                        index: item.index,
+                        position: "after",
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+pub fn DragAndDropDropIndicator(props: DragAndDropDropIndicatorProps) -> Element {
+    rsx! {
+        drag_and_drop_list::DragAndDropDropIndicator {
+            class: Styles::dx_drop_indicator,
+            index: props.index,
+            position: props.position,
+            attributes: props.attributes,
+        }
+    }
+}
+
+#[component]
 fn DragIcon() -> Element {
     rsx! {
-        div { class: "dx-item-icon-div", aria_hidden: "true",
-            Icon {
-                // equal icon from lucide https://lucide.dev/icons/equal
-                stroke: "var(--secondary-color-4)",
-                width: "24",
-                height: "24",
-                line { x1: "5", x2: "19", y1: "9", y2: "9" }
-                line { x1: "5", x2: "19", y1: "15", y2: "15" }
-            }
+        GripVertical {
+            class: Styles::dx_item_icon,
+            "aria-hidden": "true",
+            size: "16px",
         }
     }
 }
@@ -91,19 +148,25 @@ pub fn RemoveButton(
     let label = format!("Remove item {}", index + 1);
     rsx! {
         button {
-            class: "dx-remove-button",
+            class: Styles::dx_remove_button,
+            r#type: "button",
             aria_label: "{label}",
-            onclick: move |_| ctx.remove(index),
+            draggable: "false",
+            onpointerdown: move |event| event.stop_propagation(),
+            onmousedown: move |event| event.stop_propagation(),
+            onmouseup: move |event| event.stop_propagation(),
+            ondragstart: move |event| {
+                event.prevent_default();
+                event.stop_propagation();
+            },
+            onkeydown: move |event| event.stop_propagation(),
+            onclick: move |event| {
+                event.stop_propagation();
+                ctx.remove(index);
+            },
             ..attributes,
             {children}
-            Icon {
-                // X icon from lucide https://lucide.dev/icons/x
-                stroke: "var(--secondary-color-4)",
-                width: "24",
-                height: "24",
-                path { d: "M18 6 6 18" }
-                path { d: "m6 6 12 12" }
-            }
+            X { size: "14px" }
         }
     }
 }

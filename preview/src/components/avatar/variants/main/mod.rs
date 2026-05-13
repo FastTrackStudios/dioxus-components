@@ -1,6 +1,9 @@
 use super::super::component::*;
 use dioxus::prelude::*;
 
+#[css_module("/src/components/avatar/style.css")]
+struct Styles;
+
 #[component]
 pub fn Demo() -> Element {
     let mut avatar_state = use_signal(|| "No state yet".to_string());
@@ -11,69 +14,57 @@ pub fn Demo() -> Element {
             align_items: "center",
             justify_content: "between",
             gap: "1rem",
-            div { class: "dx-avatar-item",
-                p { class: "dx-avatar-label", "Basic Usage" }
+            div { class: Styles::dx_avatar_item,
+                p { class: Styles::dx_avatar_label, "Basic Usage" }
                 Avatar {
                     size: AvatarImageSize::Small,
+                    src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
+                    alt: "User avatar",
                     on_state_change: move |state| {
                         avatar_state.set(format!("Avatar 1: {state:?}"));
                     },
                     aria_label: "Basic avatar",
-                    AvatarImage {
-                        class: "dx-avatar-image",
-                        src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
-                        alt: "User avatar",
-                    }
-                    AvatarFallback { class: "dx-avatar-fallback", "EA" }
+                    "EA"
                 }
             }
-            div { class: "dx-avatar-item",
-                p { class: "dx-avatar-label", "Rounded" }
+            div { class: Styles::dx_avatar_item,
+                p { class: Styles::dx_avatar_label, "Rounded" }
                 Avatar {
                     size: AvatarImageSize::Small,
                     shape: AvatarShape::Rounded,
+                    src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
+                    alt: "User avatar",
                     on_state_change: move |state| {
                         avatar_state.set(format!("Avatar 2: {state:?}"));
                     },
                     aria_label: "Basic avatar",
-                    AvatarImage {
-                        class: "dx-avatar-image",
-                        src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
-                        alt: "User avatar",
-                    }
-                    AvatarFallback { class: "dx-avatar-fallback", "EA" }
+                    "EA"
                 }
             }
-            div { class: "dx-avatar-item",
-                p { class: "dx-avatar-label", "Error State" }
+            div { class: Styles::dx_avatar_item,
+                p { class: Styles::dx_avatar_label, "Error State" }
                 Avatar {
                     size: AvatarImageSize::Medium,
+                    src: "https://invalid-url.example/image.jpg",
+                    alt: "Invalid image",
                     on_state_change: move |state| {
                         avatar_state.set(format!("Avatar 3: {state:?}"));
                     },
                     aria_label: "Error avatar",
-                    AvatarImage {
-                        class: "dx-avatar-image",
-                        src: "https://invalid-url.example/image.jpg",
-                        alt: "Invalid image",
-                    }
-                    AvatarFallback { class: "dx-avatar-fallback", "JK" }
+                    "JK"
                 }
             }
-            div { class: "dx-avatar-item",
-                p { class: "dx-avatar-label", "Large Size" }
+            div { class: Styles::dx_avatar_item,
+                p { class: Styles::dx_avatar_label, "Large Size" }
                 Avatar {
                     size: AvatarImageSize::Large,
+                    src: asset!("/assets/dioxus-logo.png", ImageAssetOptions::new().with_avif()).to_string(),
+                    alt: "Large avatar",
                     on_state_change: move |state| {
                         avatar_state.set(format!("Avatar 4: {state:?}"));
                     },
                     aria_label: "Large avatar",
-                    AvatarImage {
-                        class: "dx-avatar-image",
-                        src: asset!("/assets/dioxus-logo.png", ImageAssetOptions::new().with_avif()),
-                        alt: "Large avatar",
-                    }
-                    AvatarFallback { class: "dx-avatar-fallback", "DX" }
+                    "DX"
                 }
             }
         }

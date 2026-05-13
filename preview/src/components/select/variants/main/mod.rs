@@ -32,31 +32,24 @@ pub fn Demo() -> Element {
             SelectOption::<Option<Fruit>> { index: i, value: f, text_value: "{f}",
                 disabled: matches!(f, Fruit::Orange),
                 "{f.emoji()} {f}"
-                SelectItemIndicator {}
             }
         }
     });
 
     rsx! {
-
         Select::<Option<Fruit>> {
-            SelectTrigger { aria_label: "Select Trigger", width: "12rem",
-                SelectValue { placeholder: "Select a fruit..." }
+            width: "12rem",
+            SelectGroup {
+                SelectGroupLabel { "Fruits" }
+                {fruits}
             }
-            SelectList { aria_label: "Select Demo",
-                SelectGroup {
-                    SelectGroupLabel { "Fruits" }
-                    {fruits}
-                }
-                SelectGroup {
-                    SelectGroupLabel { "Other" }
-                    SelectOption::<Option<Fruit>> {
-                        index: Fruit::COUNT,
-                        value: None,
-                        text_value: "Other",
-                        "Other"
-                        SelectItemIndicator {}
-                    }
+            SelectGroup {
+                SelectGroupLabel { "Other" }
+                SelectOption::<Option<Fruit>> {
+                    index: Fruit::COUNT,
+                    value: None,
+                    text_value: "Other",
+                    "Other"
                 }
             }
         }

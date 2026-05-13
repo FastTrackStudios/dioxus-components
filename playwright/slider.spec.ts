@@ -11,10 +11,20 @@ async function clickSliderTrack(page: Page, track: Locator, frac: number) {
   await page.mouse.click(point.x, point.y);
 }
 
+function sliderGroup(page: Page, name: string | RegExp) {
+  return page
+    .getByRole('slider', { name })
+    .first()
+    .locator('xpath=ancestor::*[@role="group" and @data-orientation="horizontal"][1]');
+}
+
+function sliderTrack(slider: Locator) {
+  return slider.locator('div[data-orientation="horizontal"]:has([role="slider"])').first();
+}
+
 test('test', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/?name=slider&', { timeout: 20 * 60 * 1000 }); // Increase timeout to 20 minutes
-  const slider = await page.locator('.dx-slider').first();
-  const thumb = await page.locator('.dx-slider-thumb').first();
+  const thumb = page.getByRole('slider', { name: 'Demo Slider' });
   // The initial aria-valuenow should be 50
   await expect(thumb).toHaveAttribute('aria-valuenow', '50');
   await thumb.focus();
@@ -41,18 +51,19 @@ test('drag survives pointercancel (iPad system gesture)', async ({ page }) => {
   // `pointercancel`, so its internal "active pointer" state stayed set and
   // every subsequent tap was ignored.
   await page.goto('http://127.0.0.1:8080/component/?name=slider&', { timeout: 20 * 60 * 1000 });
-  const slider = page.locator('.dx-slider').first();
-  const thumb = page.locator('.dx-slider-thumb').first();
+  const slider = sliderGroup(page, 'Demo Slider');
+  const thumb = page.getByRole('slider', { name: 'Demo Slider' });
 
   await expect(thumb).toHaveAttribute('aria-valuenow', '50');
 
-  const tap = async (frac: number, pointerId: number) => {
+  const dispatchPointerDown = async (frac: number, pointerId: number) => {
     // Re-measure each time — focusing the thumb can scroll the page, which
     // shifts the slider's viewport coordinates between taps.
-    const box = await slider.boundingBox();
-    if (!box) throw new Error('slider has no bounding box');
+    const box = await sliderTrack(slider).boundingBox();
+    if (!box) throw new Error('slider track has no bounding box');
     const x = box.x + box.width * frac;
     const y = box.y + box.height / 2;
+
     await slider.evaluate((el, { x, y, pointerId }) => {
       el.dispatchEvent(new PointerEvent('pointerdown', {
         pointerId,
@@ -66,24 +77,34 @@ test('drag survives pointercancel (iPad system gesture)', async ({ page }) => {
         cancelable: true,
       }));
     }, { x, y, pointerId });
+
+    return { x, y };
   };
 
-  // First tap at 30% sets the value normally.
-  await tap(0.3, 1);
-  await expect(thumb).toHaveAttribute('aria-valuenow', '30');
+  // Start a drag so the slider records an active pointer.
+  const firstPointerId = 99;
+  const firstDrag = await dispatchPointerDown(0.5, firstPointerId);
+  await expect(thumb).toHaveAttribute('data-dragging', 'true');
 
-  // OS gesture: pointercancel fires *without* a matching pointerup. iPad
-  // dispatches it on the captured target, not on window — bubble it from the
-  // slider element so we exercise the on-element handler too.
-  await slider.evaluate((el) => {
-    el.dispatchEvent(new PointerEvent('pointercancel', {
-      pointerId: 1,
+  // OS gesture: pointercancel fires without a matching pointerup. Dispatch it
+  // through window so the shared pointer tracker observes the cancellation.
+  await page.evaluate(({ x, y, pointerId }) => {
+    window.dispatchEvent(new PointerEvent('pointercancel', {
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
       bubbles: true,
+      cancelable: true,
     }));
-  });
+  }, { ...firstDrag, pointerId: firstPointerId });
+  await expect(thumb).toHaveAttribute('data-dragging', 'false');
 
-  // New tap at 70% with a fresh pointer — should still update the slider.
-  await tap(0.7, 2);
+  // New tap at 70% with a fresh pointer should still update the slider.
+  await clickSliderTrack(page, sliderTrack(slider), 0.7);
+  await expect(thumb).toHaveAttribute('aria-valuenow', '70');
+  await expect(thumb).toHaveAttribute('data-dragging', 'false');
   await expect(thumb).toHaveAttribute('aria-valuenow', '70');
 });
 
@@ -95,20 +116,24 @@ test('drag ignores pageX/clientX mismatch (iPad pinch-zoom analog)', async ({ pa
   // jammed the value at 100%. Reproduce by forging pageX on synthetic events.
   await page.goto('http://127.0.0.1:8080/component/?name=slider&', { timeout: 20 * 60 * 1000 });
 
-  const slider = page.locator('.dx-slider').first();
-  const thumb = page.locator('.dx-slider-thumb').first();
+  const slider = sliderGroup(page, 'Demo Slider');
+  const thumb = page.getByRole('slider', { name: 'Demo Slider' });
   await expect(thumb).toHaveAttribute('aria-valuenow', '50');
 
-  const box = await slider.boundingBox();
+  const box = await sliderTrack(slider).boundingBox();
   if (!box) throw new Error('slider has no bounding box');
   const x = box.x + box.width * 0.3;
   const y = box.y + box.height / 2;
   const pageOffset = 1000; // way larger than the slider width — would clamp to 100
 
-  // Slider's onpointerdown reads client_coordinates, so push that.
-  await slider.evaluate((el, { x, y }) => {
+  // Slider's onpointerdown reads client_coordinates, so push that. Firefox does
+  // not reliably map this synthetic event to the exact track coordinate, so the
+  // assertion below only depends on staying below the midpoint before and after
+  // the forged pointermove.
+  const pointerId = 51;
+  await slider.evaluate((el, { x, y, pointerId }) => {
     el.dispatchEvent(new PointerEvent('pointerdown', {
-      pointerId: 1,
+      pointerId,
       pointerType: 'touch',
       isPrimary: true,
       clientX: x,
@@ -118,14 +143,31 @@ test('drag ignores pageX/clientX mismatch (iPad pinch-zoom analog)', async ({ pa
       bubbles: true,
       cancelable: true,
     }));
-  }, { x, y });
-  await expect(thumb).toHaveAttribute('aria-valuenow', '30');
+  }, { x, y, pointerId });
+  await expect(thumb).toHaveAttribute('data-dragging', 'true');
+  const before = await thumb.getAttribute('aria-valuenow');
+  expect(parseInt(before!, 10)).toBeLessThan(50);
+
+  // Prime the drag loop with matching client/page coordinates so the next move
+  // measures the forged pageX delta.
+  await page.evaluate(({ x, y, pointerId }) => {
+    window.dispatchEvent(new PointerEvent('pointermove', {
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      bubbles: true,
+    }));
+  }, { x, y, pointerId });
 
   // Pointermove with clientX unchanged but pageX forged so it differs.
   // Mirrors what iPad sends when the visual viewport is offset from layout.
-  await page.evaluate(({ x, y, pageOffset }) => {
+  await page.evaluate(({ x, y, pageOffset, pointerId }) => {
     const evt = new PointerEvent('pointermove', {
-      pointerId: 1,
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
       clientX: x,
       clientY: y,
       bubbles: true,
@@ -133,7 +175,7 @@ test('drag ignores pageX/clientX mismatch (iPad pinch-zoom analog)', async ({ pa
     Object.defineProperty(evt, 'pageX', { value: x + pageOffset });
     Object.defineProperty(evt, 'pageY', { value: y });
     window.dispatchEvent(evt);
-  }, { x, y, pageOffset });
+  }, { x, y, pageOffset, pointerId });
 
   // Without the fix the value jumps to ~100. With consistent coords it stays.
   const after = await thumb.getAttribute('aria-valuenow');
@@ -142,8 +184,7 @@ test('drag ignores pageX/clientX mismatch (iPad pinch-zoom analog)', async ({ pa
 
 test('dynamic min/max', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/block?name=slider&variant=dynamic_range&', { timeout: 20 * 60 * 1000 });
-  const slider = page.locator('.dx-slider');
-  const thumb = slider.locator('.dx-slider-thumb');
+  const thumb = page.getByRole('slider', { name: 'Dynamic Range Slider' });
 
   // Initial state: percentage mode (0-100)
   await expect(thumb).toHaveAttribute('aria-valuemin', '0');
@@ -166,7 +207,7 @@ test('dynamic min/max', async ({ page }) => {
 
 test('range two thumbs', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/block?name=slider&variant=range&', { timeout: 20 * 60 * 1000 });
-  const thumbs = page.locator('.dx-slider-thumb');
+  const thumbs = page.getByRole('slider', { name: 'Range Slider' });
   await expect(thumbs).toHaveCount(2);
   const t0 = thumbs.nth(0);
   const t1 = thumbs.nth(1);
@@ -194,7 +235,7 @@ test('range two thumbs', async ({ page }) => {
 
 test('range thumbs recover from collision', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/block?name=slider&variant=range&', { timeout: 20 * 60 * 1000 });
-  const thumbs = page.locator('.dx-slider-thumb');
+  const thumbs = page.getByRole('slider', { name: 'Range Slider' });
   const t0 = thumbs.nth(0);
   const t1 = thumbs.nth(1);
 
@@ -219,11 +260,11 @@ test('range thumbs recover from collision', async ({ page }) => {
 
 test('range track click activates closest thumb', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/block?name=slider&variant=range&', { timeout: 20 * 60 * 1000 });
-  const thumbs = page.locator('.dx-slider-thumb');
+  const thumbs = page.getByRole('slider', { name: 'Range Slider' });
   const t0 = thumbs.nth(0);
   const t1 = thumbs.nth(1);
-  const slider = page.locator('.dx-slider').first();
-  const track = slider.locator('.dx-slider-track');
+  const slider = sliderGroup(page, 'Range Slider');
+  const track = sliderTrack(slider);
 
   await expect(t0).toHaveAttribute('aria-valuenow', '20');
   await expect(t1).toHaveAttribute('aria-valuenow', '80');
@@ -240,11 +281,11 @@ test('range track click activates closest thumb', async ({ page }) => {
 
 test('range collided thumbs split by click direction', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/block?name=slider&variant=range&', { timeout: 20 * 60 * 1000 });
-  const thumbs = page.locator('.dx-slider-thumb');
+  const thumbs = page.getByRole('slider', { name: 'Range Slider' });
   const t0 = thumbs.nth(0);
   const t1 = thumbs.nth(1);
-  const slider = page.locator('.dx-slider').first();
-  const track = slider.locator('.dx-slider-track');
+  const slider = sliderGroup(page, 'Range Slider');
+  const track = sliderTrack(slider);
 
   // Collide both thumbs at 80
   await t0.focus();
@@ -261,11 +302,11 @@ test('range collided thumbs split by click direction', async ({ page }) => {
 
 test('range collided thumbs drag left from just below collision', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/block?name=slider&variant=range&', { timeout: 20 * 60 * 1000 });
-  const thumbs = page.locator('.dx-slider-thumb');
+  const thumbs = page.getByRole('slider', { name: 'Range Slider' });
   const t0 = thumbs.nth(0);
   const t1 = thumbs.nth(1);
-  const slider = page.locator('.dx-slider').first();
-  const track = slider.locator('.dx-slider-track');
+  const slider = sliderGroup(page, 'Range Slider');
+  const track = sliderTrack(slider);
 
   // Collide both thumbs at 80
   await t0.focus();

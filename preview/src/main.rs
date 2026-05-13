@@ -269,11 +269,9 @@ fn Navbar() -> Element {
                         to: Route::home(),
                         class: "dx-navbar-brand",
                         aria_label: "Back",
-                        Icon {
-                            width: "2rem",
-                            height: "2rem",
+                        ChevronLeft {
+                            size: "2rem",
                             stroke: "var(--secondary-color-4)",
-                            path { d: "M15 18 L9 12 L15 6" }
                         }
                     }
                 }
@@ -394,28 +392,34 @@ fn Footer() -> Element {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct HighlightedCode {
-    pub light: &'static str,
-    pub dark: &'static str,
+    pub source: HighlightedSource,
 }
 
 #[component]
 fn CodeBlock(source: HighlightedCode, collapsed: bool) -> Element {
     rsx! {
         div {
-            class: "dx-code-block dx-dark-code-block",
+            class: "dx-code-block",
             tabindex: "0",
             "data-collapsed": "{collapsed}",
-            dangerous_inner_html: source.dark,
-        }
-        div {
-            class: "dx-code-block dx-light-code-block",
-            tabindex: "0",
-            "data-collapsed": "{collapsed}",
-            dangerous_inner_html: source.light,
+            PreviewCode { source: source.source }
         }
         CopyButton { position: "absolute", top: "0.5em", right: "0.5em" }
+    }
+}
+
+#[component]
+fn PreviewCode(source: HighlightedSource) -> Element {
+    rsx! {
+        div {
+            class: "dx-preview-code-theme",
+            Code {
+                src: source,
+                theme: CodeTheme::system(Theme::GITHUB_LIGHT, Theme::GITHUB_DARK),
+            }
+        }
     }
 }
 
@@ -429,7 +433,7 @@ fn CopyButton(#[props(extends=GlobalAttributes)] attributes: Vec<Attribute>) -> 
             r#type: "button",
             aria_label: "Copy code",
             "data-copied": copied,
-            "onclick": "navigator.clipboard.writeText(this.parentNode.firstChild.innerText || this.parentNode.innerText);",
+            "onclick": "const visiblePre = Array.from(this.parentNode.querySelectorAll('pre')).find((pre) => pre.offsetParent !== null); navigator.clipboard.writeText(visiblePre ? visiblePre.innerText : Array.from(this.parentNode.childNodes).filter((node) => node !== this).map((node) => node.textContent).join('').trim());",
             onclick: move |_| copied.set(true),
             ..attributes,
             if copied() {
@@ -444,15 +448,9 @@ fn CopyButton(#[props(extends=GlobalAttributes)] attributes: Vec<Attribute>) -> 
 #[component]
 fn CopyIcon() -> Element {
     rsx! {
-        Icon {
+        Copy {
             width: "24px",
             height: "25px",
-            fill: "currentColor",
-            stroke: "none",
-            stroke_width: 1.5,
-            // Clipboard image from octicons (MIT) https://github.com/primer/octicons/blob/v2.0.0/svg/clippy.svg
-            path { d: "M18 20h2v3c0 1-1 2-2 2H2c-.998 0-2-1-2-2V5c0-.911.755-1.667 1.667-1.667h5A3.323 3.323 0 0110 0a3.323 3.323 0 013.333 3.333h5C19.245 3.333 20 4.09 20 5v8.333h-2V9H2v14h16v-3zM3 7h14c0-.911-.793-1.667-1.75-1.667H13.5c-.957 0-1.75-.755-1.75-1.666C11.75 2.755 10.957 2 10 2s-1.75.755-1.75 1.667c0 .911-.793 1.666-1.75 1.666H4.75C3.793 5.333 3 6.09 3 7z" }
-            path { d: "M4 19h6v2H4zM12 11H4v2h8zM4 17h4v-2H4zM15 15v-3l-4.5 4.5L15 21v-3l8.027-.032L23 15z" }
         }
     }
 }
@@ -460,10 +458,9 @@ fn CopyIcon() -> Element {
 #[component]
 fn CheckIcon() -> Element {
     rsx! {
-        Icon {
+        Check {
             width: "24px",
             height: "25px",
-            path { d: "M5 13l4 4L19 7" }
         }
     }
 }
@@ -539,12 +536,10 @@ fn LanguageSelect() -> Element {
                 }
                 span { class: "dx-language-select-value",
                     {current_lang.read().flag()}
-                    Icon {
+                    ChevronDown {
                         class: "dx-select-expand-icon",
-                        width: "20px",
-                        height: "20px",
+                        size: "20px",
                         stroke: "var(--secondary-color-4)",
-                        polyline { points: "6 9 12 15 18 9" }
                     }
                 }
             }
@@ -574,14 +569,15 @@ fn ComponentCode(
             onclick: move |_| {
                 collapsed.toggle();
             },
-            Icon {
-                width: "20px",
-                height: "20px",
-                stroke: "var(--secondary-color-4)",
-                if collapsed() {
-                    polyline { points: "6 9 12 15 18 9" }
-                } else {
-                    polyline { points: "6 15 12 9 18 15" }
+            if collapsed() {
+                ChevronDown {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
+                }
+            } else {
+                ChevronUp {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
                 }
             }
         }
@@ -657,14 +653,15 @@ fn CollapsibleCodeBlock(highlighted: HighlightedCode) -> Element {
             onclick: move |_| {
                 collapsed.toggle();
             },
-            Icon {
-                width: "20px",
-                height: "20px",
-                stroke: "var(--secondary-color-4)",
-                if collapsed() {
-                    polyline { points: "6 9 12 15 18 9" }
-                } else {
-                    polyline { points: "6 15 12 9 18 15" }
+            if collapsed() {
+                ChevronDown {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
+                }
+            } else {
+                ChevronUp {
+                    size: "20px",
+                    stroke: "var(--secondary-color-4)",
                 }
             }
         }
@@ -672,7 +669,6 @@ fn CollapsibleCodeBlock(highlighted: HighlightedCode) -> Element {
 
     rsx! {
         div {
-            class: "dx-tabs-content-extra",
             width: "100%",
             height: "100%",
             display: "flex",
@@ -865,8 +861,6 @@ fn ComponentDemo(iframe: Option<bool>, dark_mode: Option<bool>, name: String) ->
         };
     };
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("/assets/prism.css") }
-        script { src: asset!("/assets/prism.js") }
         ComponentHighlight { demo }
     }
 }
@@ -1693,27 +1687,14 @@ fn CopyCommandButton(command: String) -> Element {
 #[component]
 fn GotoIcon(mut props: LinkProps) -> Element {
     props.children = rsx! {
-        Icon {
-            width: "20px",
-            height: "20px",
+        ExternalLink {
+            size: "20px",
             stroke: "var(--secondary-color-4)",
-            stroke_width: 0.25,
-            path {
-                d: "M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h7v2H5v14h14v-7h2v7q0 .825-.587 1.413T19 21zm4.7-5.3l-1.4-1.4L17.6 5H14V3h7v7h-2V6.4z",
-                fill: "var(--secondary-color-4)",
-            }
         }
     };
     Link(props)
 }
 
 const THEME_CSS: HighlightedCode = HighlightedCode {
-    light: include_str!(concat!(
-        env!("OUT_DIR"),
-        "/dx-components-theme.css.base16-ocean.light.html"
-    )),
-    dark: include_str!(concat!(
-        env!("OUT_DIR"),
-        "/dx-components-theme.css.base16-ocean.dark.html"
-    )),
+    source: dioxus_code::code!("/assets/dx-components-theme.css"),
 };

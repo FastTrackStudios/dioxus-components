@@ -42,73 +42,110 @@ fn resolve_drop_position(from: usize, to: usize) -> DropPosition {
 /// Use `use_context::<DragAndDropItemContext>()` to access the current item's index.
 #[derive(Clone, Copy)]
 pub struct DragAndDropItemContext {
-    index: usize,
+    index: Signal<usize>,
 }
 
 impl DragAndDropItemContext {
     /// Returns the index of the current item in the list.
     pub fn index(&self) -> usize {
-        self.index
+        (self.index)()
     }
+}
+
+#[derive(Clone, Copy, PartialEq, Debug)]
+enum DragState {
+    Idle,
+    Dragging {
+        from: usize,
+        to: Option<usize>,
+        position: DropPosition,
+    },
+    Dropped {
+        from: usize,
+        to: usize,
+    },
 }
 
 /// Context provided by [`DragAndDropList`] to its descendants.
 /// Use `use_context::<DragAndDropContext>()` to access list-level operations.
 #[derive(Clone, Copy)]
 pub struct DragAndDropContext {
-    drag_from: Signal<Option<usize>>,
-    drop_to: Signal<Option<usize>>,
-    drop_position: Signal<DropPosition>,
-    is_dragging: Signal<bool>,
+    drag: Signal<DragState>,
     list_items: Signal<Vec<Element>>,
     focused_index: Signal<Option<usize>>,
     announcement: Signal<String>,
 }
 
 impl DragAndDropContext {
+    fn drag_from(&self) -> Option<usize> {
+        match (self.drag)() {
+            DragState::Idle => None,
+            DragState::Dragging { from, .. } | DragState::Dropped { from, .. } => Some(from),
+        }
+    }
+
+    fn drop_to(&self) -> Option<usize> {
+        match (self.drag)() {
+            DragState::Idle => None,
+            DragState::Dragging { to, .. } => to,
+            DragState::Dropped { to, .. } => Some(to),
+        }
+    }
+
+    fn drop_position(&self) -> DropPosition {
+        match (self.drag)() {
+            DragState::Dragging { position, .. } => position,
+            _ => DropPosition::Undefined,
+        }
+    }
+
+    fn is_dragging(&self) -> bool {
+        !matches!((self.drag)(), DragState::Idle)
+    }
+
     fn start_drag(&mut self, index: usize) {
-        self.drag_from.set(Some(index));
-        self.drop_to.set(None);
-        self.drop_position.set(DropPosition::Undefined);
-        self.is_dragging.set(true);
+        self.drag.set(DragState::Dragging {
+            from: index,
+            to: None,
+            position: DropPosition::Undefined,
+        });
     }
 
     fn end_drag(&mut self) {
-        let focus_target = (self.drop_to)().or((self.drag_from)());
+        let focus_target = self.drop_to().or(self.drag_from());
         self.set_focus(focus_target);
-        self.drag_from.set(None);
-        self.drop_to.set(None);
-        self.drop_position.set(DropPosition::Undefined);
-        self.is_dragging.set(false);
+        self.drag.set(DragState::Idle);
     }
 
     fn cancel_drag(&mut self) {
-        self.set_focus((self.drag_from)());
-        self.drag_from.set(None);
-        self.drop_to.set(None);
-        self.drop_position.set(DropPosition::Undefined);
-        self.is_dragging.set(false);
+        self.set_focus(self.drag_from());
+        self.drag.set(DragState::Idle);
     }
 
     fn drag_over(&mut self, hovered: usize, position: DropPosition) {
-        let from = (self.drag_from)().unwrap_or(hovered);
+        let DragState::Dragging { from, .. } = (self.drag)() else {
+            return;
+        };
         let resolved = resolve_drop_index(from, hovered, position);
-
-        self.drop_to.set(Some(resolved));
-        self.drop_position
-            .set(resolve_drop_position(from, resolved));
+        self.drag.set(DragState::Dragging {
+            from,
+            to: Some(resolved),
+            position: resolve_drop_position(from, resolved),
+        });
     }
 
     fn drop(&mut self) {
-        let Some(index) = (self.drop_to)() else {
+        let DragState::Dragging {
+            from, to: Some(to), ..
+        } = (self.drag)()
+        else {
             return;
         };
-
         let mut list = (self.list_items)();
-        let from = (self.drag_from)().unwrap();
         let element = list.remove(from);
-        list.insert(index, element);
+        list.insert(to, element);
         self.list_items.set(list);
+        self.drag.set(DragState::Dropped { from, to });
     }
 
     /// Remove the item at the given index from the list.
@@ -160,31 +197,36 @@ impl DragAndDropContext {
             .set(Some(index.checked_sub(1).unwrap_or(len - 1)));
     }
 
-    fn move_up(&mut self, from: usize) {
-        let current = (self.drop_to)().unwrap_or(from);
+    fn move_up(&mut self, index: usize) {
+        let DragState::Dragging { from, to, .. } = (self.drag)() else {
+            return;
+        };
+        let current = to.unwrap_or(index);
         let len = (self.list_items)().len();
-        let new_index = current.checked_sub(1).unwrap_or(len - 1);
-        self.drop_to.set(Some(new_index));
-        self.update_keyboard_drop_position(from);
+        let new_to = current.checked_sub(1).unwrap_or(len - 1);
+        self.drag.set(DragState::Dragging {
+            from,
+            to: Some(new_to),
+            position: resolve_drop_position(from, new_to),
+        });
     }
 
-    fn move_down(&mut self, from: usize) {
-        let current = (self.drop_to)().unwrap_or(from);
+    fn move_down(&mut self, index: usize) {
+        let DragState::Dragging { from, to, .. } = (self.drag)() else {
+            return;
+        };
+        let current = to.unwrap_or(index);
         let len = (self.list_items)().len();
-        let new_index = (current + 1) % len;
-        self.drop_to.set(Some(new_index));
-        self.update_keyboard_drop_position(from);
-    }
-
-    fn update_keyboard_drop_position(&mut self, from: usize) {
-        let drag_from = (self.drag_from)().unwrap_or(from);
-        let drop_to = (self.drop_to)().unwrap_or(from);
-        self.drop_position
-            .set(resolve_drop_position(drag_from, drop_to));
+        let new_to = (current + 1) % len;
+        self.drag.set(DragState::Dragging {
+            from,
+            to: Some(new_to),
+            position: resolve_drop_position(from, new_to),
+        });
     }
 
     fn announce_move(&mut self, index: usize) {
-        let pos = (self.drop_to)().unwrap_or(index) + 1;
+        let pos = self.drop_to().unwrap_or(index) + 1;
         let count = self.item_count();
         self.announce(format!(
             "You have moved the item to position {pos} of {count}"
@@ -192,9 +234,9 @@ impl DragAndDropContext {
     }
 
     fn toggle_drag(&mut self, index: usize) {
-        if (self.is_dragging)() {
-            let from = (self.drag_from)().unwrap_or(index) + 1;
-            let to = (self.drop_to)().unwrap_or(index) + 1;
+        if self.is_dragging() {
+            let from = self.drag_from().unwrap_or(index) + 1;
+            let to = self.drop_to().unwrap_or(index) + 1;
             self.drop();
             self.end_drag();
             self.announce(format!(
@@ -227,7 +269,39 @@ pub struct DragAndDropListProps {
     pub attributes: Vec<Attribute>,
 
     /// The children of the list component.
-    pub children: Element,
+    #[props(default)]
+    pub children: Option<Element>,
+}
+
+/// The props for the [`DragAndDropListItems`] component.
+#[derive(Props, Clone, PartialEq)]
+pub struct DragAndDropListItemsProps {
+    /// Accessible label for the list.
+    pub aria_label: String,
+
+    /// Additional attributes to apply to the inner list element.
+    #[props(extends = GlobalAttributes)]
+    pub attributes: Vec<Attribute>,
+
+    /// The children of the inner list element.
+    #[props(default)]
+    pub children: Option<Element>,
+}
+
+/// The props for the [`DragAndDropInstructions`] component.
+#[derive(Props, Clone, PartialEq)]
+pub struct DragAndDropInstructionsProps {
+    /// Additional attributes to apply to the instructions element.
+    #[props(extends = GlobalAttributes)]
+    pub attributes: Vec<Attribute>,
+}
+
+/// The props for the [`DragAndDropLiveRegion`] component.
+#[derive(Props, Clone, PartialEq)]
+pub struct DragAndDropLiveRegionProps {
+    /// Additional attributes to apply to the live region element.
+    #[props(extends = GlobalAttributes)]
+    pub attributes: Vec<Attribute>,
 }
 
 /// # DragAndDropList
@@ -255,18 +329,12 @@ pub struct DragAndDropListProps {
 /// ```
 #[component]
 pub fn DragAndDropList(props: DragAndDropListProps) -> Element {
-    let drag_from = use_signal(|| None);
-    let drop_to = use_signal(|| None);
-    let drop_position = use_signal(|| DropPosition::Undefined);
-    let is_dragging = use_signal(|| false);
+    let drag = use_signal(|| DragState::Idle);
     let list_items = use_signal(|| props.items.clone());
     let announcement = use_signal(String::new);
 
-    use_context_provider(|| DragAndDropContext {
-        drag_from,
-        drop_to,
-        drop_position,
-        is_dragging,
+    use_context_provider(move || DragAndDropContext {
+        drag,
         list_items,
         focused_index: Signal::new(None),
         announcement,
@@ -278,45 +346,122 @@ pub fn DragAndDropList(props: DragAndDropListProps) -> Element {
         .unwrap_or("Sortable list")
         .to_string();
 
-    let display_list = move |elements: Vec<Element>| {
-        elements
-            .iter()
-            .enumerate()
-            .map(|(index, children)| {
-                rsx! {
-                    DragAndDropListItem {
-                        index,
-                        {children}
-                    }
-                }
-            })
-            .collect::<Vec<Element>>()
-    };
+    let children = props.children.unwrap_or_else(|| {
+        rsx! {
+            DragAndDropInstructions {}
+            DragAndDropListItems {
+                aria_label: label,
+            }
+            DragAndDropLiveRegion {}
+        }
+    });
 
     rsx! {
         div {
-            class: "dx-dnd-list",
             ..props.attributes,
-            div {
-                id: "dnd-instructions",
-                style: "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);",
-                "Press Enter to start reordering. Use Arrow keys to change position. Press Enter to confirm or Escape to cancel."
+            {children}
+        }
+    }
+}
+
+/// Return render data for the current sortable items.
+pub fn use_drag_and_drop_list_items() -> Vec<DragAndDropListRenderItem> {
+    let ctx: DragAndDropContext = use_context();
+    (ctx.list_items)()
+        .into_iter()
+        .enumerate()
+        .map(|(index, children)| {
+            // Propagate any `key:` the caller set on the item's root element
+            // through to the keyed sortable item fragment.
+            let key = children
+                .as_ref()
+                .ok()
+                .and_then(|vnode| vnode.key.clone())
+                .unwrap_or_else(|| index.to_string());
+            DragAndDropListRenderItem {
+                index,
+                key,
+                children,
             }
-            ul {
-                class: "dx-dnd-list-ul",
-                aria_label: "{label}",
-                aria_roledescription: "sortable list",
-                aria_describedby: "dnd-instructions",
-                { display_list(list_items()).iter() }
+        })
+        .collect()
+}
+
+/// The inner list element for sortable items.
+#[component]
+pub fn DragAndDropListItems(props: DragAndDropListItemsProps) -> Element {
+    let mut ctx: DragAndDropContext = use_context();
+    let children = props.children.unwrap_or_else(|| {
+        rsx! {
+            for item in use_drag_and_drop_list_items() {
+                Fragment {
+                    key: "{item.key}",
+                    DragAndDropDropIndicator {
+                        index: item.index,
+                        position: "before",
+                    }
+                    DragAndDropListItem {
+                        index: item.index,
+                        {item.children}
+                    }
+                    DragAndDropDropIndicator {
+                        index: item.index,
+                        position: "after",
+                    }
+                }
             }
-            div {
-                role: "status",
-                aria_live: "assertive",
-                aria_atomic: "true",
-                style: "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);",
-                "{announcement}"
-            }
-            {props.children}
+        }
+    });
+
+    rsx! {
+        ul {
+            aria_label: "{props.aria_label}",
+            aria_roledescription: "sortable list",
+            aria_describedby: "dnd-instructions",
+            ondragover: move |event: Event<DragData>| {
+                // Drops can happen in the visual gaps between items. The
+                // nearest item still owns target calculation, but the list
+                // must accept the final drop for those gap targets.
+                event.prevent_default();
+                event.data_transfer().set_drop_effect("move");
+            },
+            ondrop: move |event: Event<DragData>| {
+                event.prevent_default();
+                ctx.drop();
+            },
+            ..props.attributes,
+            {children}
+        }
+    }
+}
+
+/// Screen-reader instructions for keyboard sorting.
+#[component]
+pub fn DragAndDropInstructions(props: DragAndDropInstructionsProps) -> Element {
+    rsx! {
+        div {
+            id: "dnd-instructions",
+            style: "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);",
+            ..props.attributes,
+            "Press Enter to start reordering. Use Arrow keys to change position. Press Enter to confirm or Escape to cancel."
+        }
+    }
+}
+
+/// Live region for drag-and-drop announcements.
+#[component]
+pub fn DragAndDropLiveRegion(props: DragAndDropLiveRegionProps) -> Element {
+    let ctx: DragAndDropContext = use_context();
+    let announcement = (ctx.announcement)();
+
+    rsx! {
+        div {
+            role: "status",
+            aria_live: "assertive",
+            aria_atomic: "true",
+            style: "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);",
+            ..props.attributes,
+            "{announcement}"
         }
     }
 }
@@ -332,6 +477,33 @@ pub struct DragAndDropListItemProps {
     pub attributes: Vec<Attribute>,
 
     /// The children of the list item component.
+    pub children: Element,
+}
+
+/// The props for the [`DragAndDropDropIndicator`] component.
+#[derive(Props, Clone, PartialEq)]
+pub struct DragAndDropDropIndicatorProps {
+    /// The index of the item this indicator is adjacent to.
+    pub index: usize,
+
+    /// The indicator position relative to the item.
+    pub position: &'static str,
+
+    /// Additional attributes to apply to the drop indicator element.
+    #[props(extends = GlobalAttributes)]
+    pub attributes: Vec<Attribute>,
+}
+
+/// Data for rendering a sortable list item.
+#[derive(Clone, PartialEq)]
+pub struct DragAndDropListRenderItem {
+    /// The current index of this item.
+    pub index: usize,
+
+    /// The stable key for this item.
+    pub key: String,
+
+    /// The rendered item children.
     pub children: Element,
 }
 
@@ -362,7 +534,12 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
     let mut ctx: DragAndDropContext = use_context();
 
     let index = props.index;
-    use_context_provider(|| DragAndDropItemContext { index });
+    let mut item_ctx = use_context_provider(move || DragAndDropItemContext {
+        index: Signal::new(index),
+    });
+    if *item_ctx.index.peek() != index {
+        item_ctx.index.set(index);
+    }
 
     let mut item_ref: Signal<Option<Rc<MountedData>>> = use_signal(|| None);
     use_effect(move || {
@@ -375,18 +552,13 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
         }
     });
 
-    let render_drop_indicator = move |to: Option<usize>| match to {
-        None => false,
-        Some(v) => v == index,
-    };
-
     let onkeydown = move |event: Event<KeyboardData>| {
         let key = event.key();
 
         match key {
             Key::ArrowUp => {
                 event.prevent_default();
-                if (ctx.is_dragging)() {
+                if ctx.is_dragging() {
                     ctx.move_up(index);
                     ctx.announce_move(index);
                 } else {
@@ -395,7 +567,7 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
             }
             Key::ArrowDown => {
                 event.prevent_default();
-                if (ctx.is_dragging)() {
+                if ctx.is_dragging() {
                     ctx.move_down(index);
                     ctx.announce_move(index);
                 } else {
@@ -412,8 +584,8 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
             }
             Key::Escape => {
                 event.prevent_default();
-                if (ctx.is_dragging)() {
-                    let pos = (ctx.drag_from)().unwrap_or(index) + 1;
+                if ctx.is_dragging() {
+                    let pos = ctx.drag_from().unwrap_or(index) + 1;
                     ctx.cancel_drag();
                     ctx.announce(format!(
                         "Movement cancelled. The item has returned to its starting position of {pos}"
@@ -422,19 +594,19 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
             }
             Key::Delete | Key::Backspace => {
                 event.prevent_default();
-                if !(ctx.is_dragging)() {
+                if !ctx.is_dragging() {
                     ctx.remove(index);
                 }
             }
             Key::Home => {
                 event.prevent_default();
-                if !(ctx.is_dragging)() {
+                if !ctx.is_dragging() {
                     ctx.set_focus(Some(0));
                 }
             }
             Key::End => {
                 event.prevent_default();
-                if !(ctx.is_dragging)() {
+                if !ctx.is_dragging() {
                     ctx.set_focus(ctx.item_count().checked_sub(1));
                 }
             }
@@ -445,31 +617,78 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
     let is_tab_reachable = ctx.is_focused(index) || ((ctx.focused_index)().is_none() && index == 0);
 
     rsx! {
-        if (ctx.drop_position)() == DropPosition::Before && render_drop_indicator((ctx.drop_to)()) {
-            DropIndicator {  }
-        }
         li {
-            class: "dx-dnd-list-item",
             aria_roledescription: "sortable item",
             draggable: "true",
             tabindex: if is_tab_reachable { "0" } else { "-1" },
-            aria_grabbed: if (ctx.drag_from)().is_some_and(|from| from == index) { "true" } else { "false" },
-            "data-is-grabbing": if (ctx.drag_from)().is_some_and(|from| from == index) { "true" },
+            aria_grabbed: if ctx.drag_from().is_some_and(|from| from == index) { "true" } else { "false" },
+            "data-is-grabbing": if ctx.drag_from().is_some_and(|from| from == index) { "true" },
+            // Set when the drop target has returned to this item's starting slot —
+            // i.e. dropping now would leave it in place. The primitive suppresses
+            // the drop indicator in that case (no gap to point to), so styling
+            // hooks off this attribute to surface the "stays here" state.
+            "data-drop-at-origin": if ctx.drag_from().is_some_and(|from| from == index) && ctx.drop_to() == Some(index) { "true" },
             "data-focus-visible": if ctx.is_focused(index) { "true" },
             onmounted: move |data| item_ref.set(Some(data.data())),
             onfocus: move |_| {
-                if !(ctx.is_dragging)() {
+                if !ctx.is_dragging() {
                     ctx.set_focus(Some(index));
                 }
             },
             ondragstart: move |event: Event<DragData>| {
                 ctx.start_drag(index);
+                event.data_transfer().set_effect_allowed("move");
+                event.data_transfer().set_drop_effect("move");
                 // Note: this is only for Firefox (without it, DnD won't work)
                 let _ = event.data_transfer().set_data("text/html", "");
+                let mut document_drop_ctx = ctx;
+                let mut document_drop = document::eval(
+                    r#"
+                    function cleanup() {
+                        document.removeEventListener("dragover", onDragOver, true);
+                        document.removeEventListener("drop", onDrop, true);
+                        document.removeEventListener("dragend", onDragEnd, true);
+                    }
+
+                    function onDragOver(event) {
+                        event.preventDefault();
+                        if (event.dataTransfer) {
+                            event.dataTransfer.dropEffect = "move";
+                        }
+                    }
+
+                    function onDrop(event) {
+                        event.preventDefault();
+                        dioxus.send("drop");
+                        cleanup();
+                    }
+
+                    function onDragEnd() {
+                        dioxus.send("end");
+                        cleanup();
+                    }
+
+                    document.addEventListener("dragover", onDragOver, true);
+                    document.addEventListener("drop", onDrop, true);
+                    document.addEventListener("dragend", onDragEnd, true);
+
+                    await dioxus.recv();
+                    cleanup();
+                    "#,
+                );
+                spawn(async move {
+                    if let Ok(action) = document_drop.recv::<String>().await {
+                        if action == "drop" {
+                            document_drop_ctx.drop();
+                        }
+                    }
+                    let _ = document_drop.send(true);
+                });
             },
             ondragend: move |_| ctx.end_drag(),
             ondragover: move |event: Event<DragData>| {
                 event.prevent_default();
+                event.data_transfer().set_drop_effect("move");
                 async move {
                     if let Some(md) = item_ref() {
                         let cursor_y = event.client_coordinates().y;
@@ -485,23 +704,32 @@ pub fn DragAndDropListItem(props: DragAndDropListItemProps) -> Element {
                     }
                 }
             },
-            ondrop: move |_| ctx.drop(),
             //ondragleave: move |_| ctx.drop_to.set(None),
             onkeydown,
             ..props.attributes,
             {props.children}
         }
-        if (ctx.drop_position)() == DropPosition::After && render_drop_indicator((ctx.drop_to)()) {
-            DropIndicator {  }
-        }
     }
 }
 
+/// The drop indicator rendered next to a sortable item.
 #[component]
-fn DropIndicator() -> Element {
+pub fn DragAndDropDropIndicator(props: DragAndDropDropIndicatorProps) -> Element {
+    let ctx: DragAndDropContext = use_context();
+    let render = ctx.drop_to().is_some_and(|to| to == props.index)
+        && match props.position {
+            "before" => ctx.drop_position() == DropPosition::Before,
+            "after" => ctx.drop_position() == DropPosition::After,
+            _ => false,
+        };
+    if !render {
+        return rsx! {};
+    }
+
     rsx! {
         div {
-            class: "dx-drop-indicator",
+            "data-position": "{props.position}",
+            ..props.attributes,
         }
     }
 }
