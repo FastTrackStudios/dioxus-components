@@ -21,7 +21,7 @@ body {
   margin: 0;
   background-color: var(--primary-color);
   color: var(--secondary-color-4);
-  font-family: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: Geist, system-ui, -apple-system, "Segoe UI", sans-serif;
   font-optical-sizing: auto;
   font-style: normal;
   font-weight: 400;
@@ -57,7 +57,6 @@ body {
   position: sticky;
   z-index: 1000;
   top: 0;
-  inset-block-start: 0;
   display: flex;
   width: 100%;
   box-sizing: border-box;
@@ -65,6 +64,7 @@ body {
   justify-content: center;
   padding: 0;
   background-color: var(--primary-color);
+  inset-block-start: 0;
 }
 
 .dx-navbar-inner {
@@ -194,23 +194,23 @@ body {
 .dx-docs-layout {
   display: grid;
   width: min(var(--dx-content-width), calc(100vw - 2rem));
-  box-sizing: border-box;
   min-height: calc(100vh - 3.25rem);
+  box-sizing: border-box;
   padding-right: 1.5rem;
   padding-left: 4.5rem;
   border-right: 1px solid var(--primary-color-6);
   border-left: 1px solid var(--primary-color-6);
-  grid-template-columns: 14rem minmax(0, 1fr);
   margin: 0 auto;
+  grid-template-columns: 14rem minmax(0, 1fr);
 }
 
 .dx-docs-sidebar {
   position: sticky;
   top: 3.25rem;
-  align-self: start;
+  overflow: auto;
   max-height: calc(100vh - 3.25rem);
   box-sizing: border-box;
-  overflow: auto;
+  align-self: start;
   padding: 2.25rem 1rem 2rem 0;
   border-right: 1px solid var(--primary-color-6);
 }
@@ -247,17 +247,17 @@ body {
 .dx-docs-page,
 .dx-component-page {
   min-width: 0;
+  max-width: 840px;
   box-sizing: border-box;
   padding: 3rem 0 5rem 4.25rem;
-  max-width: 840px;
 }
 
 .dx-docs-page-header,
 .dx-component-page-header {
   display: grid;
-  gap: 1rem;
   padding-bottom: 1.75rem;
   border-bottom: 1px solid var(--primary-color-6);
+  gap: 1rem;
 }
 
 .dx-docs-page-header > *,
@@ -334,8 +334,8 @@ body {
 .dx-docs-section h2,
 .dx-component-section-heading h2 {
   padding-bottom: 0.4rem;
-  margin: 0 0 0.75rem;
   border-bottom: 1px solid var(--primary-color-6);
+  margin: 0 0 0.75rem;
   color: var(--secondary-color-3);
   font-size: 1.5rem;
   font-weight: 660;
@@ -364,8 +364,8 @@ body {
   position: relative;
   min-height: 1.5rem;
   padding-left: 2rem;
-  line-height: 1.45;
   counter-increment: dx-docs-steps;
+  line-height: 1.45;
 }
 
 .dx-docs-section ol li::before {
@@ -432,8 +432,8 @@ body {
 
 .dx-docs-prose .dx-docs-section h2 {
   padding-bottom: 0.4rem;
-  margin: 0 0 1rem;
   border-bottom: 1px solid var(--primary-color-6);
+  margin: 0 0 1rem;
   color: var(--secondary-color-3);
   font-size: 1.5rem;
   font-weight: 660;
@@ -473,7 +473,6 @@ body {
 
 /* Block code — github-style fenced block */
 .dx-docs-prose pre {
-  overflow-x: auto;
   padding: 1rem 1.1rem;
   border: 1px solid var(--primary-color-6);
   border-radius: 0.5rem;
@@ -483,6 +482,7 @@ body {
   font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.875rem;
   line-height: 1.5;
+  overflow-x: auto;
 }
 
 .dx-docs-prose pre code {
@@ -561,8 +561,8 @@ body {
   background-color: var(--primary-color-1);
   background-image:
     radial-gradient(circle, rgb(0 0 0 / 6%) 1px, transparent 1px);
-  background-size: 16px 16px;
   background-position: -1px -1px;
+  background-size: 16px 16px;
 }
 
 /* When the preview frame wraps a code block (the CODE tab), drop the
@@ -625,11 +625,12 @@ body {
 }
 
 .dx-component-description {
-  /* max-width: 38rem; */
-  overflow-x: auto;
   color: var(--secondary-color-4);
   font-size: 1rem;
   line-height: 1.65;
+
+  /* max-width: 38rem; */
+  overflow-x: auto;
 }
 
 .dx-component-description p {
@@ -715,16 +716,16 @@ body {
 }
 
 .dx-home-section:last-child {
-  border-bottom: none;
   padding-bottom: 5rem;
+  border-bottom: none;
 }
 
 .dx-section-header {
   display: flex;
   max-width: 720px;
   flex-direction: column;
-  gap: 0.65rem;
   margin: 0 0 2.5rem;
+  gap: 0.65rem;
 }
 
 .dx-section-eyebrow {
@@ -740,8 +741,8 @@ body {
   color: var(--secondary-color-3);
   font-size: 2.25rem;
   font-weight: 720;
-  line-height: 1.1;
   letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 
 .dx-section-summary {
@@ -776,11 +777,11 @@ body {
   overflow: visible;
 }
 
-@media (max-width: 1100px) {
+@media (width <= 1100px) {
   .dx-widget-masonry { column-count: 2; }
 }
 
-@media (max-width: 640px) {
+@media (width <= 640px) {
   .dx-widget-masonry { column-count: 1; }
 }
 
@@ -814,8 +815,8 @@ body {
 
 .dx-demos-card:hover {
   border-color: var(--primary-color-7);
-  transform: translateY(-2px);
   box-shadow: 0 12px 32px -20px rgb(0 0 0 / 35%);
+  transform: translateY(-2px);
 }
 
 .dx-demos-card:focus-visible {
@@ -837,8 +838,8 @@ body {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 0.5rem;
   padding: 1.25rem 1.5rem 1.5rem;
+  gap: 0.5rem;
 }
 
 .dx-demos-card-tag {
@@ -872,20 +873,20 @@ body {
 .dx-demos-card-cta {
   display: inline-flex;
   align-items: center;
-  margin-top: auto;
   padding-top: 0.75rem;
-  gap: 0.35rem;
+  margin-top: auto;
   color: var(--highlight-color-tertiary);
   font-size: 0.88rem;
   font-weight: 600;
+  gap: 0.35rem;
 }
 
 .dx-component-gallery {
   display: grid;
   width: 100%;
-  gap: 0;
   padding: 0;
   margin: 0;
+  gap: 0;
 }
 
 .dx-component-card {
@@ -983,8 +984,10 @@ body {
 
 .dx-component-card-block-link {
   display: inline-flex;
+  min-height: 6rem;
   align-items: center;
-  color: var(--highlight-color-tertiary);
+  justify-content: center;
+  color: var(--secondary-color-4);
   font-size: 0.925rem;
   font-weight: 600;
   gap: 0.35rem;
@@ -1003,12 +1006,12 @@ body {
 
 .dx-component-card-preview {
   display: flex;
+  overflow: visible;
   min-width: 0;
   min-height: 10rem;
   box-sizing: border-box;
   align-items: center;
   justify-content: center;
-  overflow: visible;
   padding: 2rem;
   border: 1px solid var(--primary-color-6);
   border-radius: 0.25rem;
@@ -1019,12 +1022,6 @@ body {
   max-width: 100%;
 }
 
-.dx-component-card-block-link {
-  min-height: 6rem;
-  justify-content: center;
-  color: var(--secondary-color-4);
-}
-
 /* Footer */
 .dx-preview-footer {
   display: flex;
@@ -1032,18 +1029,18 @@ body {
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
-  background-color: var(--primary-color);
   border-top: 1px solid var(--primary-color-6);
+  background-color: var(--primary-color);
 }
 
 .dx-footer-inner {
   display: grid;
   width: min(var(--dx-content-width), calc(100vw - 2rem));
   box-sizing: border-box;
-  gap: 3rem;
   padding: 3rem 4.5rem 2.5rem;
   border-right: 1px solid var(--primary-color-6);
   border-left: 1px solid var(--primary-color-6);
+  gap: 3rem;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
 }
 
@@ -1126,7 +1123,7 @@ body {
   font-size: 0.82rem;
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .dx-navbar-inner {
     flex-wrap: wrap;
     padding-right: 1rem;
@@ -1157,8 +1154,8 @@ body {
   }
 
   .dx-docs-sidebar-section:last-child {
-    max-height: 14rem;
     overflow: auto;
+    max-height: 14rem;
   }
 
   .dx-docs-page,
@@ -1172,13 +1169,13 @@ body {
   }
 
   .dx-component-tabs-header {
-    align-items: flex-start;
     flex-direction: column;
+    align-items: flex-start;
   }
 
   .dx-component-card {
-    gap: 1.25rem;
     padding: 1.5rem 0;
+    gap: 1.25rem;
     grid-template-columns: 1fr;
   }
 

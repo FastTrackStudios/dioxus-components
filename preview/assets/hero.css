@@ -6,24 +6,24 @@
 .dx-hero-shell {
     position: relative;
     display: flex;
+    overflow: hidden;
     width: 100%;
     box-sizing: border-box;
     flex-direction: column;
     align-items: flex-start;
-    overflow: hidden;
-    padding: 6rem 0 8rem 0;
+    padding: 6rem 0 8rem;
     border-bottom: 1px solid var(--primary-color-6);
     gap: 1rem;
 }
 
 .dx-hero-shell::before {
     position: absolute;
-    inset: 0;
     background-image:
         linear-gradient(var(--primary-color-6) 1px, transparent 1px),
         linear-gradient(90deg, var(--primary-color-6) 1px, transparent 1px);
     background-size: 28px 28px;
     content: "";
+    inset: 0;
     mask-image: linear-gradient(90deg, transparent, rgb(0 0 0 / 28%), transparent);
     pointer-events: none;
 }
@@ -62,8 +62,8 @@
 }
 
 .dx-hero-cta-primary:hover {
-    background-color: var(--secondary-color-2);
     border-color: var(--secondary-color-2);
+    background-color: var(--secondary-color-2);
     transform: translateY(-1px);
 }
 
@@ -95,7 +95,7 @@
 
 .dx-hero-summary {
     max-width: 40rem;
-    margin: 0rem 0 2rem 0;
+    margin: 0 0 2rem;
     color: var(--secondary-color-5);
     font-size: 0.95rem;
     line-height: 1.6;
@@ -104,8 +104,8 @@
 
 .dx-hero-command {
     display: inline-flex;
-    height: 2.5rem;
     max-width: 100%;
+    height: 2.5rem;
     box-sizing: border-box;
     align-items: center;
     padding: 0 0.5rem 0 0.75rem;
@@ -118,11 +118,11 @@
 
 .dx-hero-command code {
     overflow: hidden;
+    padding-right: 20px;
     font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.925rem;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding-right: 20px;
 }
 
 .dx-hero-prompt {
@@ -131,7 +131,7 @@
     font-weight: 700;
 }
 
-@media (max-width: 760px) {
+@media (width <= 760px) {
     #hero {
         padding: 2rem 1rem 1.5rem;
     }

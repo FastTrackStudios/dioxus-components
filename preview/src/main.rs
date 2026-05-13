@@ -275,6 +275,7 @@ fn Navbar() -> Element {
         return rsx! {
             nav {
                 class: "dx-preview-navbar",
+                aria_label: "Primary",
                 border: "none",
                 padding: "1rem",
                 justify_content: "flex-start",
@@ -294,7 +295,7 @@ fn Navbar() -> Element {
     }
 
     rsx! {
-        nav { class: "dx-preview-navbar",
+        nav { class: "dx-preview-navbar", aria_label: "Primary",
             div { class: "dx-navbar-inner",
                 div { class: "dx-navbar-primary",
                     Link { to: Route::home(), class: "dx-navbar-brand",
@@ -774,7 +775,7 @@ fn Docs(dark_mode: Option<bool>) -> Element {
 fn DocsSidebar(active_component: Option<&'static str>) -> Element {
     rsx! {
         aside { class: "dx-docs-sidebar", aria_label: "Docs navigation",
-            nav {
+            nav { aria_label: "Components",
                 div { class: "dx-docs-sidebar-section",
                     p { class: "dx-docs-sidebar-heading", "Start" }
                     Link {
@@ -1528,6 +1529,7 @@ fn BlockPricing() -> Element {
                         fill: "none",
                         stroke: "var(--highlight-color-tertiary)",
                         stroke_width: "2.5",
+                        "aria-hidden": "true",
                         polyline { points: "20 6 9 17 4 12" }
                     }
                     "{feature}"
@@ -1752,11 +1754,13 @@ fn BlockInbox() -> Element {
         ItemGroup { gap: "0.5rem",
             for (sender , preview , time) in messages.iter() {
                 Item { variant: ItemVariant::Outline,
-                    ItemMedia { variant: ItemMediaVariant::Image,
-                        img {
+                    ItemMedia { variant: ItemMediaVariant::Icon,
+                        Avatar {
+                            size: AvatarImageSize::Small,
                             src: "https://avatar.vercel.sh/{sender}",
                             alt: "{sender}",
-                            style: "filter: grayscale(0.35);",
+                            aria_label: "{sender}",
+                            "{sender.chars().next().unwrap_or('?')}"
                         }
                     }
                     ItemContent {
@@ -1846,14 +1850,14 @@ fn BlockComposer() -> Element {
             style: "width: 100%; min-height: 5.5rem; resize: vertical;",
         }
         div { style: "display: flex; align-items: center; gap: 0.55rem; margin-top: 0.85rem;",
-            ToggleGroup { horizontal: true, allow_multiple_pressed: true,
-                ToggleItem { index: 0usize,
+            ToggleGroup { horizontal: true, allow_multiple_pressed: true, aria_label: "Text formatting",
+                ToggleItem { index: 0usize, aria_label: "Bold",
                     b { "B" }
                 }
-                ToggleItem { index: 1usize,
+                ToggleItem { index: 1usize, aria_label: "Italic",
                     i { "I" }
                 }
-                ToggleItem { index: 2usize,
+                ToggleItem { index: 2usize, aria_label: "Underline",
                     u { "U" }
                 }
             }
