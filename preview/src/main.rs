@@ -710,19 +710,39 @@ fn Docs(dark_mode: Option<bool>) -> Element {
                 }
                 section { class: "dx-docs-section",
                     h2 { "How it works" }
-                    div { class: "dx-docs-feature-grid",
-                        div {
-                            h3 { "Copy-first components" }
-                            p { "Each component ships as source code and CSS you can keep, edit, and theme inside your own project." }
-                        }
-                        div {
-                            h3 { "Shared theme tokens" }
-                            p { "Import the theme CSS once, then component styles use the same color, focus, and state variables." }
-                        }
-                        div {
-                            h3 { "Dioxus primitives underneath" }
-                            p { "The styled components are built on reusable primitives for accessibility, keyboard interaction, and state." }
-                        }
+                    p {
+                        "dioxus-component is not yet on crates.io. For now, components ship from this Git repository — you point your app at the primitives library here, then pull individual styled components into your source tree with the Dioxus CLI."
+                    }
+                    p {
+                        "Start by adding the underlying primitives library to your app's "
+                        code { "Cargo.toml" }
+                        " from the Git path:"
+                    }
+                    pre {
+                        code { r#"dioxus-primitives = {{ git = "https://github.com/DioxusLabs/components" }}"# }
+                    }
+                    p {
+                        "The styled components live in this same repository as a registry. The "
+                        code { "dx components" }
+                        " subcommand of the Dioxus CLI is what reads from it. To see everything that's available:"
+                    }
+                    div { class: "dx-docs-command",
+                        code { "dx components list" }
+                        CopyCommandButton { command: "dx components list".to_string() }
+                    }
+                    p {
+                        "Then add a specific component to your app — swap "
+                        code { "button" }
+                        " for any name from the list:"
+                    }
+                    div { class: "dx-docs-command",
+                        code { "dx components add button" }
+                        CopyCommandButton { command: "dx components add button".to_string() }
+                    }
+                    p {
+                        "Each "
+                        code { "dx components add" }
+                        " copies the component's Rust source and its stylesheet directly into your project. Once it's in your tree, the code is yours: keep the included CSS as-is, replace the class names with Tailwind utilities, or rewrite the styles from scratch. There is no runtime dependency on this registry after the copy."
                     }
                 }
                 section { class: "dx-docs-section",
@@ -812,7 +832,7 @@ fn Demos(dark_mode: Option<bool>) -> Element {
             section { class: "dx-home-section",
                 header { class: "dx-section-header",
                     span { class: "dx-section-eyebrow", "Demos" }
-                    h1 { class: "dx-section-title", "Apps built with Dioxus-Components" }
+                    h1 { class: "dx-section-title", "Demo apps" }
                     p { class: "dx-section-summary",
                         "End-to-end app demos assembled from these primitives. Open one to explore the layout and try it live."
                     }
