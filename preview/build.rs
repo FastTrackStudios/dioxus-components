@@ -116,6 +116,9 @@ fn render_code_block_html(kind: &pulldown_cmark::CodeBlockKind<'_>, source: &str
     dioxus_ssr::render_element(rsx! {
         div {
             class: "dx-preview-code-theme",
+            tabindex: "0",
+            role: "region",
+            aria_label: "Code sample",
             dioxus_code::Code {
                 src: highlighted,
                 theme: dioxus_code::CodeTheme::system(
