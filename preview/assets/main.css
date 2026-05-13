@@ -113,7 +113,7 @@ body {
 /* Code block styles */
 /* stylelint-disable-next-line selector-class-pattern */
 .dx-preview-code-theme {
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid var(--primary-color-6);
   border-radius: 0.5rem;
   background-color: var(--primary-color-1);
@@ -121,7 +121,7 @@ body {
 
 /* stylelint-disable-next-line selector-class-pattern */
 .dx-preview-code-theme .dxc {
-  overflow: auto;
+  overflow: visible;
   box-sizing: border-box;
   padding: 1rem 1.1rem;
   margin: 0;

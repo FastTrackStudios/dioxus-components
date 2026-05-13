@@ -427,6 +427,9 @@ fn PreviewCode(source: HighlightedSource) -> Element {
     rsx! {
         div {
             class: "dx-preview-code-theme",
+            tabindex: "0",
+            role: "region",
+            aria_label: "Code sample",
             Code {
                 src: source,
                 theme: CodeTheme::system(Theme::GITHUB_LIGHT, Theme::GITHUB_DARK),
