@@ -1949,17 +1949,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dioxus-attributes"
-version = "0.1.0"
-source = "git+https://github.com/DioxusLabs/components#13abbb1297b49fae71fcc13ab44ba52738bbe7dd"
-dependencies = [
- "dioxus-rsx",
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
 name = "dioxus-cli-config"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2083,7 +2072,7 @@ dependencies = [
  "image",
  "infer",
  "jni",
- "lazy-js-bundle 0.7.9",
+ "lazy-js-bundle",
  "libc",
  "muda",
  "ndk",
@@ -2154,7 +2143,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "generational-box",
- "lazy-js-bundle 0.7.9",
+ "lazy-js-bundle",
  "serde",
  "serde_json",
  "tracing",
@@ -2312,7 +2301,7 @@ dependencies = [
  "futures-util",
  "generational-box",
  "keyboard-types",
- "lazy-js-bundle 0.7.9",
+ "lazy-js-bundle",
  "rustversion",
  "serde",
  "serde_json",
@@ -2352,7 +2341,7 @@ checksum = "6ae929a4cdde2e51fca98ccb8a8fe2ea11640e5026c57486b15dbd5618ba7e56"
 dependencies = [
  "dioxus",
  "dioxus-signals",
- "lazy-js-bundle 0.7.9",
+ "lazy-js-bundle",
 ]
 
 [[package]]
@@ -2365,7 +2354,7 @@ dependencies = [
  "dioxus-core-types",
  "dioxus-html",
  "js-sys",
- "lazy-js-bundle 0.7.9",
+ "lazy-js-bundle",
  "rustc-hash 2.1.2",
  "serde",
  "sledgehammer_bindgen",
@@ -2466,26 +2455,10 @@ name = "dioxus-primitives"
 version = "0.0.1"
 dependencies = [
  "dioxus",
- "dioxus-attributes 0.1.0",
+ "dioxus-attributes",
  "dioxus-sdk-time",
  "dioxus-ssr",
- "lazy-js-bundle 0.6.2",
- "num-integer",
- "palette",
- "serde",
- "time",
- "tracing",
-]
-
-[[package]]
-name = "dioxus-primitives"
-version = "0.0.1"
-source = "git+https://github.com/DioxusLabs/components#13abbb1297b49fae71fcc13ab44ba52738bbe7dd"
-dependencies = [
- "dioxus",
- "dioxus-attributes 0.1.0 (git+https://github.com/DioxusLabs/components)",
- "dioxus-sdk-time",
- "lazy-js-bundle 0.6.2",
+ "lazy-js-bundle",
  "num-integer",
  "palette",
  "serde",
@@ -2685,7 +2658,7 @@ dependencies = [
  "generational-box",
  "gloo-timers",
  "js-sys",
- "lazy-js-bundle 0.7.9",
+ "lazy-js-bundle",
  "rustc-hash 2.1.2",
  "send_wrapper",
  "serde",
@@ -4714,12 +4687,6 @@ dependencies = [
 
 [[package]]
 name = "lazy-js-bundle"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e49596223b9d9d4947a14a25c142a6e7d8ab3f27eb3ade269d238bb8b5c267e2"
-
-[[package]]
-name = "lazy-js-bundle"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccafada6c9541db44db758619236f2748f6e1bdaa84d04ded858567cd1e89321"
@@ -6318,7 +6285,7 @@ dependencies = [
  "dioxus-code",
  "dioxus-i18n",
  "dioxus-icons",
- "dioxus-primitives 0.0.1",
+ "dioxus-primitives",
  "dioxus-ssr",
  "palette",
  "pulldown-cmark",
@@ -8059,7 +8026,7 @@ name = "test-harness"
 version = "0.1.0"
 dependencies = [
  "dioxus",
- "dioxus-primitives 0.0.1 (git+https://github.com/DioxusLabs/components)",
+ "dioxus-primitives",
 ]
 
 [[package]]
