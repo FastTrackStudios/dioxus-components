@@ -905,16 +905,19 @@ fn ComponentHighlight(demo: ComponentDemoData) -> Element {
             article { class: "dx-component-page",
                 header { class: "dx-component-page-header",
                     p { class: "dx-docs-eyebrow", "Component" }
-                    h1 { "{name}" }
+                    div { class: "dx-component-page-title-row",
+                        h1 { "{name}" }
+                        ComponentInstallCommand { name: raw_name }
+                    }
                     p { "{description}" }
                 }
                 section { class: "dx-component-section",
                     match r#type {
                         ComponentType::Normal => rsx! {
-                            ComponentVariantHighlight { variant: main.clone(), main_variant: true, component_name: Some(raw_name) }
+                            ComponentVariantHighlight { variant: main.clone(), main_variant: true, component_name: None }
                         },
                         ComponentType::Block => rsx! {
-                            BlockComponentVariantHighlight { variant: main.clone(), main_variant: true, component_name: raw_name, show_install: true }
+                            BlockComponentVariantHighlight { variant: main.clone(), main_variant: true, component_name: raw_name, show_install: false }
                         },
                     }
                 }
