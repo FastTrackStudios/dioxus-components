@@ -15,6 +15,49 @@ test('pointer navigation', async ({ page }) => {
   await expect(contextMenu).toHaveCount(0);
 });
 
+test('menu lands at the tap coordinates on touch long-press', async ({ page }) => {
+  await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
+  // Push the trigger down so the tap point isn't at viewport (0, 0) — any
+  // misalignment will then have a non-zero direction to detect.
+  await page.evaluate(() => {
+    const main = document.querySelector('main') ?? document.body;
+    (main as HTMLElement).style.paddingTop = '300px';
+    (main as HTMLElement).style.paddingLeft = '120px';
+  });
+
+  const trigger = page.getByRole('button', { name: 'right click here' });
+  const contextMenu = page.getByRole('menu');
+  const box = await trigger.boundingBox();
+  if (!box) throw new Error('trigger has no bounding box');
+  const tapX = box.x + box.width / 2;
+  const tapY = box.y + box.height / 2;
+  const pointerId = 7777;
+
+  await trigger.evaluate((el, { x, y, pointerId }) => {
+    el.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { x: tapX, y: tapY, pointerId });
+
+  await expect(contextMenu).toHaveAttribute('data-state', 'open');
+  const menuBox = await contextMenu.boundingBox();
+  if (!menuBox) throw new Error('menu has no bounding box');
+  // The menu's top-left should be at the tap coords (give or take a px for
+  // sub-pixel rounding). If it's off by tens of pixels, a viewport coord
+  // system is mismatched somewhere.
+  expect(Math.abs(menuBox.x - tapX)).toBeLessThan(2);
+  expect(Math.abs(menuBox.y - tapY)).toBeLessThan(2);
+});
+
+
 test('touch long-press opens the context menu', async ({ page }) => {
   // iOS Safari does not fire `contextmenu` on long press, so the menu must
   // open from a held touch instead. Reproduces issue #262.

@@ -127,12 +127,6 @@ pub fn ContextMenu(props: ContextMenuProps) -> Element {
         }
     });
 
-    // Outside-tap dismissal is handled by the backdrop inside
-    // `ContextMenuContent`. Don't toggle `body { pointer-events: none }` or
-    // `html { overflow: hidden }` here — iOS Safari ties pinch-zoom/pan state
-    // to those properties, and resetting them while the menu is open scrambles
-    // `position: fixed` coordinates by the visual-viewport offset.
-
     // Handle escape key to close the menu
     let handle_keydown = move |event: Event<KeyboardData>| {
         if open() && event.key() == Key::Escape {
@@ -230,7 +224,7 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
             // press, which can race our own timer. Defuse the race so only one
             // open lands.
             cancel_long_press(long_press_task, long_press_start);
-            let p = event.data().client_coordinates();
+            let p = event.data().page_coordinates();
             ctx.position.set((p.x as i32, p.y as i32));
             ctx.set_open.call(true);
             event.prevent_default();
@@ -244,7 +238,7 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
             return;
         }
         cancel_long_press(long_press_task, long_press_start);
-        let p = event.client_coordinates();
+        let p = event.page_coordinates();
         long_press_start.set(Some((p.x, p.y)));
         let set_open = ctx.set_open;
         let mut position = ctx.position;
@@ -260,7 +254,7 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
         let Some((sx, sy)) = long_press_start.cloned() else {
             return;
         };
-        let p = event.client_coordinates();
+        let p = event.page_coordinates();
         let dx = p.x - sx;
         let dy = p.y - sy;
         if dx * dx + dy * dy > LONG_PRESS_MOVE_TOLERANCE_SQ {
