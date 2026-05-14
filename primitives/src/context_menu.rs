@@ -5,6 +5,14 @@ use crate::{
     use_animated_open, use_controlled, use_effect_cleanup, use_id_or, use_unique_id,
 };
 use dioxus::prelude::*;
+use dioxus_core::Task;
+use dioxus_sdk_time::sleep;
+use std::time::Duration;
+
+/// How long a touch must be held before the context menu opens.
+const LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
+/// Pointer drift (in CSS pixels, squared) that cancels an in-flight long press.
+const LONG_PRESS_MOVE_TOLERANCE_SQ: f64 = 100.0;
 
 #[derive(Clone, Copy)]
 struct ContextMenuCtx {
@@ -219,24 +227,81 @@ pub struct ContextMenuTriggerProps {
 #[component]
 pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
     let mut ctx: ContextMenuCtx = use_context();
+    // iOS Safari does not deliver `contextmenu` from a long-press on touch, so
+    // we run a manual timer keyed on the initial touch position and fire it
+    // ourselves once the finger has held still long enough.
+    let mut long_press_task: Signal<Option<Task>> = use_signal(|| None);
+    let mut long_press_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
+
+    let cancel_long_press = move |mut task: Signal<Option<Task>>, mut start: Signal<Option<(f64, f64)>>| {
+        if let Some(t) = task.write().take() {
+            t.cancel();
+        }
+        start.set(None);
+    };
 
     let handle_context_menu = move |event: Event<MouseData>| {
         if !(ctx.disabled)() {
-            ctx.position.set((
-                event.data().client_coordinates().x as i32,
-                event.data().client_coordinates().y as i32,
-            ));
+            // Android Chrome dispatches `contextmenu` ~500ms after a touch long
+            // press, which can race our own timer. Defuse the race so only one
+            // open lands.
+            cancel_long_press(long_press_task, long_press_start);
+            let p = event.data().client_coordinates();
+            ctx.position.set((p.x as i32, p.y as i32));
             ctx.set_open.call(true);
             event.prevent_default();
         }
     };
 
+    let handle_pointer_down = move |event: Event<PointerData>| {
+        // Long-press fires for touch and pen (Apple Pencil etc.); mouse keeps
+        // using the native `contextmenu` event.
+        if event.pointer_type() == "mouse" || (ctx.disabled)() {
+            return;
+        }
+        cancel_long_press(long_press_task, long_press_start);
+        let p = event.client_coordinates();
+        long_press_start.set(Some((p.x, p.y)));
+        let set_open = ctx.set_open;
+        let mut position = ctx.position;
+        let task = spawn(async move {
+            sleep(LONG_PRESS_DURATION).await;
+            position.set((p.x as i32, p.y as i32));
+            set_open.call(true);
+        });
+        long_press_task.set(Some(task));
+    };
+
+    let handle_pointer_move = move |event: Event<PointerData>| {
+        let Some((sx, sy)) = long_press_start.cloned() else {
+            return;
+        };
+        let p = event.client_coordinates();
+        let dx = p.x - sx;
+        let dy = p.y - sy;
+        if dx * dx + dy * dy > LONG_PRESS_MOVE_TOLERANCE_SQ {
+            cancel_long_press(long_press_task, long_press_start);
+        }
+    };
+
+    let handle_pointer_end = move |_event: Event<PointerData>| {
+        cancel_long_press(long_press_task, long_press_start);
+    };
+
     rsx! {
         div {
             oncontextmenu: handle_context_menu,
+            onpointerdown: handle_pointer_down,
+            onpointermove: handle_pointer_move,
+            onpointerup: handle_pointer_end,
+            onpointercancel: handle_pointer_end,
             role: "button",
             aria_haspopup: "menu",
             aria_expanded: (ctx.open)(),
+            // Suppress iOS Safari's long-press behaviors (callout sheet, text
+            // selection magnifier, gray tap-flash) and the system's own touch
+            // gestures so our timer is the only thing that fires.
+            style: "-webkit-touch-callout: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; touch-action: none;",
             ..props.attributes,
             {props.children}
         }
@@ -352,8 +417,25 @@ pub fn ContextMenuContent(props: ContextMenuContentProps) -> Element {
 
     let render = use_animated_open(id, open);
 
+    let close_on_outside = move |_event: Event<PointerData>| {
+        ctx.focus.blur();
+        ctx.set_open.call(false);
+    };
+
     rsx! {
         if render() {
+            // Backdrop. The parent `ContextMenu` sets `body { pointer-events:
+            // none }` while open, so without this overlay an outside tap goes
+            // nowhere and the menu can't be dismissed on touch devices.
+            div {
+                position: "fixed",
+                top: "0",
+                left: "0",
+                right: "0",
+                bottom: "0",
+                pointer_events: open().then_some("auto"),
+                onpointerdown: close_on_outside,
+            }
             div {
                 id,
                 role: "menu",

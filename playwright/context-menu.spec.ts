@@ -15,6 +15,182 @@ test('pointer navigation', async ({ page }) => {
   await expect(contextMenu).toHaveCount(0);
 });
 
+test('touch long-press opens the context menu', async ({ page }) => {
+  // iOS Safari does not fire `contextmenu` on long press, so the menu must
+  // open from a held touch instead. Reproduces issue #262.
+  await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
+  const trigger = page.getByRole('button', { name: 'right click here' });
+  const contextMenu = page.getByRole('menu');
+
+  const box = await trigger.boundingBox();
+  if (!box) throw new Error('trigger has no bounding box');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const pointerId = 4242;
+
+  await trigger.evaluate((el, { x, y, pointerId }) => {
+    el.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { x, y, pointerId });
+
+  await expect(contextMenu).toHaveAttribute('data-state', 'open');
+
+  // Release the touch after the menu has opened; it should stay open.
+  await trigger.evaluate((el, { x, y, pointerId }) => {
+    el.dispatchEvent(new PointerEvent('pointerup', {
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      bubbles: true,
+    }));
+  }, { x, y, pointerId });
+
+  await expect(contextMenu).toHaveAttribute('data-state', 'open');
+});
+
+test('pen long-press opens the context menu', async ({ page }) => {
+  await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
+  const trigger = page.getByRole('button', { name: 'right click here' });
+  const contextMenu = page.getByRole('menu');
+
+  const box = await trigger.boundingBox();
+  if (!box) throw new Error('trigger has no bounding box');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const pointerId = 4244;
+
+  await trigger.evaluate((el, { x, y, pointerId }) => {
+    el.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId,
+      pointerType: 'pen',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { x, y, pointerId });
+
+  await expect(contextMenu).toHaveAttribute('data-state', 'open');
+});
+
+test('mouse pointerdown does not arm the long-press timer', async ({ page }) => {
+  await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
+  const trigger = page.getByRole('button', { name: 'right click here' });
+
+  const box = await trigger.boundingBox();
+  if (!box) throw new Error('trigger has no bounding box');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const pointerId = 4245;
+
+  await trigger.evaluate((el, { x, y, pointerId }) => {
+    el.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId,
+      pointerType: 'mouse',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { x, y, pointerId });
+
+  // Hold past the long-press threshold; the menu must remain closed because
+  // mouse pointers should only open via the native `contextmenu` event.
+  await page.waitForTimeout(700);
+  await expect(page.getByRole('menu')).toHaveCount(0);
+});
+
+test('touch tap outside closes the open menu', async ({ page }) => {
+  await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
+  const trigger = page.getByRole('button', { name: 'right click here' });
+  const contextMenu = page.getByRole('menu');
+
+  await trigger.click({ button: 'right' });
+  await expect(contextMenu).toHaveAttribute('data-state', 'open');
+
+  // Tap near the bottom-right of the viewport, well outside the menu.
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('no viewport');
+  const farX = viewport.width - 10;
+  const farY = viewport.height - 10;
+  await page.evaluate(({ x, y }) => {
+    const target = document.elementFromPoint(x, y);
+    if (!target) throw new Error('no element at outside point');
+    target.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId: 5050,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { x: farX, y: farY });
+
+  await expect(contextMenu).toHaveCount(0);
+});
+
+test('touch released before long-press threshold does not open the menu', async ({ page }) => {
+  await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
+  const trigger = page.getByRole('button', { name: 'right click here' });
+
+  const box = await trigger.boundingBox();
+  if (!box) throw new Error('trigger has no bounding box');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const pointerId = 4343;
+
+  await trigger.evaluate((el, { x, y, pointerId }) => {
+    el.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { x, y, pointerId });
+
+  // Quick tap — release well before the long-press threshold.
+  await page.waitForTimeout(50);
+  await trigger.evaluate((el, { x, y, pointerId }) => {
+    el.dispatchEvent(new PointerEvent('pointerup', {
+      pointerId,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      bubbles: true,
+    }));
+  }, { x, y, pointerId });
+
+  // Wait past the long-press threshold; menu must remain closed.
+  await page.waitForTimeout(700);
+  await expect(page.getByRole('menu')).toHaveCount(0);
+});
+
 test('keyboard navigation', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 }); // Increase timeout to 20 minutes
   await page.getByRole('button', { name: 'right click here' }).click({
