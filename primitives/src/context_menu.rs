@@ -231,12 +231,18 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
     let mut long_press_task: Signal<Option<Task>> = use_signal(|| None);
     let mut long_press_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
 
+    // Returns true if a pending task was actually cancelled; false if the timer
+    // had already fired (task was None) or was never started.
     let cancel_long_press =
-        move |mut task: Signal<Option<Task>>, mut start: Signal<Option<(f64, f64)>>| {
-            if let Some(t) = task.write().take() {
+        move |mut task: Signal<Option<Task>>, mut start: Signal<Option<(f64, f64)>>| -> bool {
+            let cancelled = if let Some(t) = task.write().take() {
                 t.cancel();
-            }
+                true
+            } else {
+                false
+            };
             start.set(None);
+            cancelled
         };
 
     let handle_context_menu = move |event: Event<MouseData>| {
@@ -244,7 +250,13 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
             // Android Chrome dispatches `contextmenu` ~500ms after a touch long
             // press, which can race our own timer. Defuse the race so only one
             // open lands.
-            cancel_long_press(long_press_task, long_press_start);
+            let timer_was_pending = cancel_long_press(long_press_task, long_press_start);
+            if !timer_was_pending {
+                // Timer already fired and called set_open; suppress the browser
+                // context menu but don't open a second time.
+                event.prevent_default();
+                return;
+            }
             let p = event.data().client_coordinates();
             let set_open = ctx.set_open;
             let mut position = ctx.position;
@@ -270,6 +282,8 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
         let mut position = ctx.position;
         let task = spawn(async move {
             sleep(LONG_PRESS_DURATION).await;
+            // Clear self so handle_context_menu knows the timer already fired.
+            long_press_task.set(None);
             let (off_x, off_y) = visual_viewport_offset().await;
             position.set(((p.x + off_x) as i32, (p.y + off_y) as i32));
             set_open.call(true);
