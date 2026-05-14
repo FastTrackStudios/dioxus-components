@@ -192,6 +192,40 @@ test('touch tap outside closes the open menu', async ({ page }) => {
   await expect(contextMenu).toHaveCount(0);
 });
 
+test('pointerdown at the trigger location does not dismiss an open menu', async ({ page }) => {
+  // Regression for the long-press dismiss bug: on iOS Safari a fresh
+  // pointerdown could land at the original touch coordinates right after the
+  // menu opened (either from a topology-change re-dispatch under the active
+  // touch, or from compat-mouse promotion). The dismiss listener must treat
+  // the trigger as "inside" the menu's root and ignore it.
+  await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
+  const trigger = page.getByRole('button', { name: 'right click here' });
+  const contextMenu = page.getByRole('menu');
+
+  await trigger.click({ button: 'right' });
+  await expect(contextMenu).toHaveAttribute('data-state', 'open');
+
+  const box = await trigger.boundingBox();
+  if (!box) throw new Error('trigger has no bounding box');
+  await page.evaluate(({ x, y }) => {
+    const target = document.elementFromPoint(x, y);
+    if (!target) throw new Error('no element at trigger center');
+    target.dispatchEvent(new PointerEvent('pointerdown', {
+      pointerId: 6060,
+      pointerType: 'touch',
+      isPrimary: true,
+      clientX: x,
+      clientY: y,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    }));
+  }, { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+
+  await expect(contextMenu).toHaveAttribute('data-state', 'open');
+});
+
 test('touch released before long-press threshold does not open the menu', async ({ page }) => {
   await page.goto('http://127.0.0.1:8080/component/?name=context_menu&', { timeout: 20 * 60 * 1000 });
   const trigger = page.getByRole('button', { name: 'right click here' });

@@ -231,12 +231,13 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
     let mut long_press_task: Signal<Option<Task>> = use_signal(|| None);
     let mut long_press_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
 
-    let cancel_long_press = move |mut task: Signal<Option<Task>>, mut start: Signal<Option<(f64, f64)>>| {
-        if let Some(t) = task.write().take() {
-            t.cancel();
-        }
-        start.set(None);
-    };
+    let cancel_long_press =
+        move |mut task: Signal<Option<Task>>, mut start: Signal<Option<(f64, f64)>>| {
+            if let Some(t) = task.write().take() {
+                t.cancel();
+            }
+            start.set(None);
+        };
 
     let handle_context_menu = move |event: Event<MouseData>| {
         if !(ctx.disabled)() {
