@@ -216,8 +216,11 @@ fn use_outside_dismiss(
 ) {
     use_effect_with_cleanup(move || {
         let mut eval = document::eval(
-            "const sel = `#${await dioxus.recv()}`;
-            const f = e => { if (!e.target.closest?.(sel)) dioxus.send(true); };
+            "const id = await dioxus.recv();
+            const f = e => {
+                const root = document.getElementById(id);
+                if (root && !root.contains(e.target)) dioxus.send(true);
+            };
             document.addEventListener('pointerdown', f, true);
             document.addEventListener('focusin', f, true);
             await dioxus.recv();
