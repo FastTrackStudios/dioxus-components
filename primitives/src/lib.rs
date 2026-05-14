@@ -208,44 +208,28 @@ fn use_global_keydown_listener(key: &'static str, on_escape: impl FnMut() + Clon
     });
 }
 
-/// Dismiss when a pointerdown or focusin happens outside both the trigger and the content.
-/// Mirrors react-aria's light-dismiss behavior. Listeners are registered on `document` in the
-/// capture phase and torn down when the calling component unmounts.
+/// Dismiss when a pointerdown or focusin happens on a node whose ancestor chain doesn't
+/// contain a `[data-dx-inside="{id}"]` marker. Mirrors react-aria's light-dismiss behavior.
+/// Pair with [`inside_dismiss_attrs`] — spread the marker on every element that should
+/// count as inside (trigger, content, …).
 ///
-/// `trigger_id` may be `""` if the trigger is outside the calling component's tree (e.g. dialogs
-/// where the open-button is supplied by the user) — in that case only the content is excluded.
+/// `id` should be a stable [`use_unique_id`]; using a per-instance id is what makes nested
+/// popovers work, since each popover's listener only treats its own marker as "inside".
 fn use_outside_dismiss(
-    trigger_id: impl Readable<Target = String> + Copy + 'static,
-    content_id: impl Readable<Target = String> + Copy + 'static,
+    id: impl Readable<Target = String> + Copy + 'static,
     on_dismiss: impl FnMut() + Clone + 'static,
 ) {
     use_effect_with_cleanup(move || {
         let mut eval = document::eval(
-            r#"const triggerId = await dioxus.recv();
-            const contentId = await dioxus.recv();
-            function isInside(target) {
-                if (!(target instanceof Node)) return false;
-                if (triggerId) {
-                    const trigger = document.getElementById(triggerId);
-                    if (trigger && trigger.contains(target)) return true;
-                }
-                const content = document.getElementById(contentId);
-                if (content && content.contains(target)) return true;
-                return false;
-            }
-            function onEvent(event) {
-                if (!isInside(event.target)) {
-                    dioxus.send(true);
-                }
-            }
-            document.addEventListener('pointerdown', onEvent, true);
-            document.addEventListener('focusin', onEvent, true);
+            "const sel = `[data-dx-inside='${await dioxus.recv()}']`;
+            const f = e => { if (!e.target.closest?.(sel)) dioxus.send(true); };
+            document.addEventListener('pointerdown', f, true);
+            document.addEventListener('focusin', f, true);
             await dioxus.recv();
-            document.removeEventListener('pointerdown', onEvent, true);
-            document.removeEventListener('focusin', onEvent, true);"#,
+            document.removeEventListener('pointerdown', f, true);
+            document.removeEventListener('focusin', f, true);",
         );
-        let _ = eval.send(trigger_id.cloned());
-        let _ = eval.send(content_id.cloned());
+        let _ = eval.send(id.cloned());
         let mut on_dismiss = on_dismiss.clone();
         spawn(async move {
             while let Ok(true) = eval.recv().await {
@@ -256,6 +240,15 @@ fn use_outside_dismiss(
             let _ = eval.send(true);
         }
     });
+}
+
+/// Marker attribute for [`use_outside_dismiss`]. Spread the returned attributes on every
+/// element that should count as inside; the value must match the `id` passed to the hook.
+fn inside_dismiss_attrs(id: Signal<String>) -> Vec<Attribute> {
+    use dioxus_attributes::attributes;
+    attributes!(div {
+        "data-dx-inside": id,
+    })
 }
 
 fn use_animated_open(
