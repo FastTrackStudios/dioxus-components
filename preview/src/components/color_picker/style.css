@@ -180,13 +180,17 @@
         0 4px 16px rgb(0 0 0 / 15%);
 }
 
-.dx-color-picker-popover[data-state="closed"] {
-    display: none;
+.dx-color-picker-popover {
+    display: block;
 }
 
 .dx-color-picker-popover[data-state="open"] {
-    display: block;
     animation: dx-color-picker-popover-fade-in .15s ease-out;
+}
+
+.dx-color-picker-popover[data-state="closed"] {
+    animation: dx-color-picker-popover-fade-out .15s ease-out forwards;
+    pointer-events: none;
 }
 
 @keyframes dx-color-picker-popover-fade-in {
@@ -198,6 +202,18 @@
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes dx-color-picker-popover-fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-4px);
     }
 }
 

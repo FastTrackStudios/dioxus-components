@@ -5,8 +5,8 @@ use dioxus::prelude::*;
 
 use crate::use_global_escape_listener;
 use crate::{
-    use_animated_open, use_controlled, use_id_or, use_unique_id, ContentAlign, ContentSide,
-    FOCUS_TRAP_JS,
+    use_animated_open, use_controlled, use_effect_with_cleanup, use_id_or, use_unique_id,
+    ContentAlign, ContentSide, FOCUS_TRAP_JS,
 };
 
 #[derive(Clone, Copy)]
@@ -273,6 +273,52 @@ pub fn PopoverContentRendered(
     // just add this to the popover itself because it might not be focused if the user
     // is highlighting text or interacting with another element.
     use_global_escape_listener(move || set_open.call(false));
+
+    // Dismiss the popover when the user interacts outside of it. This mirrors the
+    // light-dismiss behavior of react-aria's Popover — a pointerdown outside the
+    // trigger/content, or focus moving outside (e.g. via Tab in non-modal mode),
+    // closes the popover.
+    let labelledby = ctx.labelledby;
+    let content_id = id.clone();
+    use_effect_with_cleanup(move || {
+        let mut eval = document::eval(
+            r#"const triggerId = await dioxus.recv();
+            const contentId = await dioxus.recv();
+            function isInside(target) {
+                if (!(target instanceof Node)) return false;
+                const trigger = document.getElementById(triggerId);
+                if (trigger && trigger.contains(target)) return true;
+                const content = document.getElementById(contentId);
+                if (content && content.contains(target)) return true;
+                return false;
+            }
+            function onPointerDown(event) {
+                if (!isInside(event.target)) {
+                    dioxus.send(true);
+                }
+            }
+            function onFocusIn(event) {
+                if (!isInside(event.target)) {
+                    dioxus.send(true);
+                }
+            }
+            document.addEventListener('pointerdown', onPointerDown, true);
+            document.addEventListener('focusin', onFocusIn, true);
+            await dioxus.recv();
+            document.removeEventListener('pointerdown', onPointerDown, true);
+            document.removeEventListener('focusin', onFocusIn, true);"#,
+        );
+        let _ = eval.send(labelledby.cloned());
+        let _ = eval.send(content_id.clone());
+        spawn(async move {
+            while let Ok(true) = eval.recv().await {
+                set_open.call(false);
+            }
+        });
+        move || {
+            let _ = eval.send(true);
+        }
+    });
 
     rsx! {
         div {
