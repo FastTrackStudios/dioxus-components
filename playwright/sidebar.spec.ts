@@ -6,6 +6,7 @@ const SIDEBAR_RENDER_TIMEOUT = 30 * 1000;
 async function gotoSidebarBlock(page: Page) {
   await page.goto(`${BASE_URL}/component/block/?name=sidebar&variant=main&`, {
     timeout: 20 * 60 * 1000,
+    waitUntil: 'load'
   });
 
   await expect(page.locator('[data-slot="sidebar-wrapper"]')).toBeVisible({
@@ -16,6 +17,7 @@ async function gotoSidebarBlock(page: Page) {
 test("sidebar: preview page renders block", async ({ page }) => {
   await page.goto(`${BASE_URL}/component/?name=sidebar&`, {
     timeout: 20 * 60 * 1000,
+    waitUntil: 'load'
   });
   const iframe = page.locator("iframe").first();
   await expect(iframe).toBeVisible({ timeout: SIDEBAR_RENDER_TIMEOUT });
