@@ -1141,6 +1141,7 @@ body {
 
 @media (width <= 760px) {
   .dx-navbar-inner {
+    width: 100%;
     flex-wrap: wrap;
     padding-right: 1rem;
     padding-left: 1rem;
@@ -1280,6 +1281,7 @@ body {
   }
 
   .dx-home-page {
+    width: 100%;
     padding-right: 1rem;
     padding-left: 1rem;
   }
