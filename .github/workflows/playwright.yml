@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - /**
+      - playwright/**
+      - preview/**/*.css
       - preview/**/*.rs
       - preview/**/Cargo.toml
       - primitives/**/*.rs
@@ -19,6 +21,8 @@ on:
       - main
     paths:
       - /**
+      - playwright/**
+      - preview/**/*.css
       - preview/**/*.rs
       - preview/**/Cargo.toml
       - primitives/**/*.rs
