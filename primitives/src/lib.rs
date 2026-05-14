@@ -208,6 +208,56 @@ fn use_global_keydown_listener(key: &'static str, on_escape: impl FnMut() + Clon
     });
 }
 
+/// Dismiss when a pointerdown or focusin happens outside both the trigger and the content.
+/// Mirrors react-aria's light-dismiss behavior. Listeners are registered on `document` in the
+/// capture phase and torn down when the calling component unmounts.
+///
+/// `trigger_id` may be `""` if the trigger is outside the calling component's tree (e.g. dialogs
+/// where the open-button is supplied by the user) — in that case only the content is excluded.
+fn use_outside_dismiss(
+    trigger_id: impl Readable<Target = String> + Copy + 'static,
+    content_id: impl Readable<Target = String> + Copy + 'static,
+    on_dismiss: impl FnMut() + Clone + 'static,
+) {
+    use_effect_with_cleanup(move || {
+        let mut eval = document::eval(
+            r#"const triggerId = await dioxus.recv();
+            const contentId = await dioxus.recv();
+            function isInside(target) {
+                if (!(target instanceof Node)) return false;
+                if (triggerId) {
+                    const trigger = document.getElementById(triggerId);
+                    if (trigger && trigger.contains(target)) return true;
+                }
+                const content = document.getElementById(contentId);
+                if (content && content.contains(target)) return true;
+                return false;
+            }
+            function onEvent(event) {
+                if (!isInside(event.target)) {
+                    dioxus.send(true);
+                }
+            }
+            document.addEventListener('pointerdown', onEvent, true);
+            document.addEventListener('focusin', onEvent, true);
+            await dioxus.recv();
+            document.removeEventListener('pointerdown', onEvent, true);
+            document.removeEventListener('focusin', onEvent, true);"#,
+        );
+        let _ = eval.send(trigger_id.cloned());
+        let _ = eval.send(content_id.cloned());
+        let mut on_dismiss = on_dismiss.clone();
+        spawn(async move {
+            while let Ok(true) = eval.recv().await {
+                on_dismiss();
+            }
+        });
+        move || {
+            let _ = eval.send(true);
+        }
+    });
+}
+
 fn use_animated_open(
     id: impl Readable<Target = String> + Copy + 'static,
     open: impl Readable<Target = bool> + Copy + 'static,
