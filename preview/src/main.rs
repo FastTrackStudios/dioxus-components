@@ -304,7 +304,7 @@ fn Navbar() -> Element {
                             width: "18",
                             height: "18",
                         }
-                        span { "dioxus-component" }
+                        span { "dioxus-components" }
                     }
                     Link { to: Route::docs(), class: "dx-navbar-link", "Docs" }
                     Link { to: Route::demos(), class: "dx-navbar-link", "Demos" }
@@ -314,7 +314,7 @@ fn Navbar() -> Element {
                     // Link {
                     //     to: "https://crates.io/crates/dioxus-components",
                     //     class: "dx-navbar-link",
-                    //     aria_label: "DioxusUI crates.io",
+                    //     aria_label: "Dioxus-Components crates.io",
                     //     Icon {
                     //         width: "24px",
                     //         height: "24px",
@@ -369,7 +369,7 @@ fn Footer() -> Element {
                             width: "22",
                             height: "22",
                         }
-                        span { "DioxusUI" }
+                        span { "Dioxus Components" }
                     }
                     p { class: "dx-footer-tagline",
                         "Accessible, themeable interface pieces for Dioxus apps."
@@ -385,7 +385,7 @@ fn Footer() -> Element {
                     div { class: "dx-footer-nav-group",
                         span { class: "dx-footer-nav-heading", "Project" }
                         Link {
-                            to: "https://github.com/DioxusLabs/components",
+                            to: "https://github.com/DioxusLabs/dioxus-components",
                             class: "dx-footer-link",
                             "GitHub"
                         }
@@ -703,15 +703,15 @@ fn Docs(dark_mode: Option<bool>) -> Element {
             article { class: "dx-docs-page dx-docs-prose",
                 header { class: "dx-docs-page-header",
                     p { class: "dx-docs-eyebrow", "Docs" }
-                    h1 { "Build with dioxus-component" }
+                    h1 { "Build with dioxus-components" }
                     p {
-                        "dioxus-component is a collection of styled, accessible Dioxus components designed to be copied into your app. Use the CLI when you want the fastest path, or copy the source when you want complete ownership."
+                        "dioxus-components is a collection of styled, accessible Dioxus components designed to be copied into your app. Use the CLI when you want the fastest path, or copy the source when you want complete ownership."
                     }
                 }
                 section { class: "dx-docs-section",
                     h2 { "How it works" }
                     p {
-                        "dioxus-component is not yet on crates.io. For now, components ship from this Git repository — you point your app at the primitives library here, then pull individual styled components into your source tree with the Dioxus CLI."
+                        "dioxus-components is not yet on crates.io. For now, components ship from this Git repository — you point your app at the primitives library here, then pull individual styled components into your source tree with the Dioxus CLI."
                     }
                     p {
                         "Start by adding the underlying primitives library to your app's "
@@ -1189,7 +1189,7 @@ fn Home(iframe: Option<bool>, dark_mode: Option<bool>) -> Element {
             div { id: "hero",
                 div { class: "dx-hero-shell",
                     h1 { class: "dx-hero-heading",
-                        span { class: "dx-hero-title", "dioxus-component" }
+                        span { class: "dx-hero-title", "dioxus-components" }
                         span { class: "dx-hero-subtitle",
                             "beautiful, accessible, responsive components for dioxus apps"
                         }
