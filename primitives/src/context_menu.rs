@@ -14,15 +14,19 @@ const LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
 /// Pointer drift (in CSS pixels, squared) that cancels an in-flight long press.
 const LONG_PRESS_MOVE_TOLERANCE_SQ: f64 = 100.0;
 
-/// The `position: fixed` menu needs layout-viewport coords. `clientX/Y` is in
-/// visual-viewport coords (off by the pan offset under Safari pinch-zoom);
-/// `pageX/Y` is in document coords (off by `window.scrollX/Y`). Adding
-/// `visualViewport.offsetLeft/Top` to `clientX/Y` is the conversion — and the
-/// same trick Floating UI does for `strategy: 'fixed'` on WebKit.
+/// `position: fixed` needs layout-viewport coords. In Safari, `clientX/Y` is
+/// visual-viewport relative (off by the pan offset under pinch-zoom), so we add
+/// `visualViewport.offsetLeft/Top` — the same trick Floating UI does for
+/// `strategy: 'fixed'` on WebKit. Chrome reports `clientX/Y` in layout-viewport
+/// coords (matching `position: fixed`), so the correction must not be applied
+/// there — it would double-count the pan offset and shift the menu by 2× the
+/// pan distance.
 async fn visual_viewport_offset() -> (f64, f64) {
     let mut eval = dioxus::document::eval(
         "const vv = window.visualViewport; \
-         dioxus.send([vv ? vv.offsetLeft : 0, vv ? vv.offsetTop : 0]);",
+         const ua = navigator.userAgent; \
+         const isWebKit = ua.includes('AppleWebKit') && !ua.includes('Chrome'); \
+         dioxus.send(isWebKit ? [vv ? vv.offsetLeft : 0, vv ? vv.offsetTop : 0] : [0, 0]);",
     );
     eval.recv::<(f64, f64)>().await.unwrap_or((0.0, 0.0))
 }
