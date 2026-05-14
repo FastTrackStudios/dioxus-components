@@ -2,7 +2,9 @@
 
 use crate::{
     focus::{use_focus_controlled_item_disabled, use_focus_provider, FocusState},
-    use_animated_open, use_controlled, use_id_or, use_outside_dismiss, use_unique_id,
+    selectable::{pointer_select_cancel, pointer_select_commit, pointer_select_start},
+    use_animated_open, use_controlled, use_effect_with_cleanup, use_id_or, use_outside_dismiss,
+    use_unique_id,
 };
 use dioxus::prelude::*;
 use dioxus_core::Task;
@@ -47,6 +49,13 @@ struct ContextMenuCtx {
     // Id on the root wrapper — covers both trigger and content, so
     // `use_outside_dismiss` treats them as "inside".
     root_id: Signal<String>,
+
+    // Set briefly after a touch long-press opens the menu. Used to (a) swallow
+    // Android Chrome's spurious `contextmenu` ~500ms later, and (b) ignore the
+    // pointer re-dispatch Android sends to whatever element is now under the
+    // still-held finger — that would otherwise look like an instant tap on the
+    // menu item the menu just rendered over.
+    long_press_just_fired: Signal<bool>,
 }
 
 /// The props for the [`ContextMenu`] component.
@@ -132,6 +141,7 @@ pub fn ContextMenu(props: ContextMenuProps) -> Element {
     let (open, set_open) = use_controlled(props.open, props.default_open, props.on_open_change);
     let position = use_signal(|| (0, 0));
     let root_id = use_unique_id();
+    let long_press_just_fired = use_signal(|| false);
 
     let focus = use_focus_provider(props.roving_loop);
     let mut ctx = use_context_provider(|| ContextMenuCtx {
@@ -141,6 +151,7 @@ pub fn ContextMenu(props: ContextMenuProps) -> Element {
         position,
         focus,
         root_id,
+        long_press_just_fired,
     });
 
     use_effect(move || {
@@ -234,19 +245,14 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
     // ourselves once the finger has held still long enough.
     let mut long_press_task: Signal<Option<Task>> = use_signal(|| None);
     let mut long_press_start: Signal<Option<(f64, f64)>> = use_signal(|| None);
+    let mut long_press_just_fired = ctx.long_press_just_fired;
 
-    // Returns true if a pending task was actually cancelled; false if the timer
-    // had already fired (task was None) or was never started.
     let cancel_long_press =
-        move |mut task: Signal<Option<Task>>, mut start: Signal<Option<(f64, f64)>>| -> bool {
-            let cancelled = if let Some(t) = task.write().take() {
+        move |mut task: Signal<Option<Task>>, mut start: Signal<Option<(f64, f64)>>| {
+            if let Some(t) = task.write().take() {
                 t.cancel();
-                true
-            } else {
-                false
-            };
+            }
             start.set(None);
-            cancelled
         };
 
     let handle_context_menu = move |event: Event<MouseData>| {
@@ -254,10 +260,14 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
             // Android Chrome dispatches `contextmenu` ~500ms after a touch long
             // press, which can race our own timer. Defuse the race so only one
             // open lands.
-            let timer_was_pending = cancel_long_press(long_press_task, long_press_start);
-            if !timer_was_pending {
-                // Timer already fired and called set_open; suppress the browser
-                // context menu but don't open a second time.
+            cancel_long_press(long_press_task, long_press_start);
+            if long_press_just_fired.cloned() {
+                // Timer already opened the menu; suppress the browser context
+                // menu but don't open a second time. Leave the flag set —
+                // the timer task clears it ~700ms after the menu opened, and
+                // the menu items rely on that window to ignore Android's
+                // re-dispatched pointerdown/up on the element under the
+                // still-held finger.
                 event.prevent_default();
                 return;
             }
@@ -286,11 +296,15 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
         let mut position = ctx.position;
         let task = spawn(async move {
             sleep(LONG_PRESS_DURATION).await;
-            // Clear self so handle_context_menu knows the timer already fired.
             long_press_task.set(None);
             let (off_x, off_y) = visual_viewport_offset().await;
             position.set(((p.x + off_x) as i32, (p.y + off_y) as i32));
             set_open.call(true);
+            // Stay armed long enough to catch Android's compat `contextmenu`,
+            // then disarm so future mouse right-clicks aren't suppressed.
+            long_press_just_fired.set(true);
+            sleep(Duration::from_millis(700)).await;
+            long_press_just_fired.set(false);
         });
         long_press_task.set(Some(task));
     };
@@ -445,6 +459,39 @@ pub fn ContextMenuContent(props: ContextMenuContentProps) -> Element {
         ctx.set_open.call(false);
     });
 
+    // A `position: fixed` menu pinned to a click point drifts away from the
+    // click target as soon as the page scrolls. Native context menus block
+    // scroll while open; match that by suppressing wheel/touchmove outside
+    // the menu and locking the document's overflow.
+    use_effect_with_cleanup(move || {
+        if !open() {
+            return Box::new(|| {}) as Box<dyn FnOnce()>;
+        }
+        let root = ctx.root_id;
+        let eval = dioxus::document::eval(
+            "const id = await dioxus.recv(); \
+             const prevOverflow = document.documentElement.style.overflow; \
+             const prevBodyOverflow = document.body.style.overflow; \
+             document.documentElement.style.overflow = 'hidden'; \
+             document.body.style.overflow = 'hidden'; \
+             const f = (e) => { \
+                 const r = document.getElementById(id); \
+                 if (!r || !r.contains(e.target)) e.preventDefault(); \
+             }; \
+             window.addEventListener('wheel', f, { capture: true, passive: false }); \
+             window.addEventListener('touchmove', f, { capture: true, passive: false }); \
+             await dioxus.recv(); \
+             document.documentElement.style.overflow = prevOverflow; \
+             document.body.style.overflow = prevBodyOverflow; \
+             window.removeEventListener('wheel', f, true); \
+             window.removeEventListener('touchmove', f, true);",
+        );
+        let _ = eval.send(root.cloned());
+        Box::new(move || {
+            let _ = eval.send(true);
+        })
+    });
+
     rsx! {
         if render() {
             div {
@@ -559,30 +606,25 @@ pub fn ContextMenuItem(props: ContextMenuItemProps) -> Element {
 
     let tab_index = use_memo(move || if focused() { "0" } else { "-1" });
 
-    let handle_click = {
-        let value = (props.value)().clone();
-        move |event: Event<PointerData>| {
-            if !disabled() {
-                props.on_select.call(value.clone());
-                ctx.focus.blur();
-                event.prevent_default();
-                event.stop_propagation();
-            }
+    // Touch sequences from the long-press that opened the menu shouldn't
+    // count as selecting an item. Recording on pointerdown and committing on
+    // pointerup means a pointerup without a matching pointerdown on this
+    // item is ignored — exactly the long-press-then-lift case.
+    let down_pos: Signal<Option<(f64, f64)>> = use_signal(|| None);
+    let value = props.value;
+    let mut select = move || {
+        if !disabled() {
+            props.on_select.call((value)());
+            ctx.focus.blur();
+            ctx.set_open.call(false);
         }
     };
 
-    let handle_keydown = {
-        let value = (props.value)().clone();
-        move |event: Event<KeyboardData>| {
-            // Check for Enter or Space key
-            if event.key() == Key::Enter || event.key() == Key::Character(" ".to_string()) {
-                if !disabled() {
-                    props.on_select.call(value.clone());
-                    ctx.focus.blur();
-                }
-                event.prevent_default();
-                event.stop_propagation();
-            }
+    let handle_keydown = move |event: Event<KeyboardData>| {
+        if event.key() == Key::Enter || event.key() == Key::Character(" ".to_string()) {
+            select();
+            event.prevent_default();
+            event.stop_propagation();
         }
     };
 
@@ -590,7 +632,19 @@ pub fn ContextMenuItem(props: ContextMenuItemProps) -> Element {
         div {
             role: "menuitem",
             tabindex: tab_index,
-            onpointerdown: handle_click,
+            onpointerdown: move |event| {
+                pointer_select_start(&event, disabled(), down_pos);
+            },
+            onpointerup: move |event| {
+                if pointer_select_commit(&event, disabled(), down_pos) {
+                    select();
+                    event.prevent_default();
+                    event.stop_propagation();
+                }
+            },
+            onpointercancel: move |_| {
+                pointer_select_cancel(down_pos);
+            },
             onkeydown: handle_keydown,
             onblur: move |_| {
                 if focused() {
@@ -606,3 +660,4 @@ pub fn ContextMenuItem(props: ContextMenuItemProps) -> Element {
         }
     }
 }
+
