@@ -19,7 +19,7 @@ struct PopoverCtx {
     #[allow(unused)]
     is_modal: ReadSignal<bool>,
     labelledby: Signal<String>,
-    root_id: Signal<String>,
+    root_id: Memo<String>,
 }
 
 /// The props for the [`PopoverRoot`] component.
@@ -39,6 +39,9 @@ pub struct PopoverRootProps {
     /// Callback fired when the open state changes.
     #[props(default)]
     pub on_open_change: Callback<bool>,
+
+    /// The id of the popover root element.
+    pub id: ReadSignal<Option<String>>,
 
     /// Additional attributes to apply to the popover root element.
     #[props(extends = GlobalAttributes)]
@@ -100,7 +103,8 @@ pub struct PopoverRootProps {
 #[component]
 pub fn PopoverRoot(props: PopoverRootProps) -> Element {
     let labelledby = use_unique_id();
-    let root_id = use_unique_id();
+    let gen_root_id = use_unique_id();
+    let root_id = use_id_or(gen_root_id, props.id);
 
     let (open, set_open) = use_controlled(props.open, props.default_open, props.on_open_change);
 
