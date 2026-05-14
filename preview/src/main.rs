@@ -25,7 +25,7 @@ use dioxus_code::{advanced::HighlightedSource, Code, CodeTheme, Theme};
 use dioxus_i18n::prelude::{use_init_i18n, I18nConfig};
 use dioxus_icons::lucide::{
     ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronUp, Copy, ExternalLink, Mail,
-    Pause, Play, SkipBack, SkipForward,
+    Menu, Pause, Play, SkipBack, SkipForward, X,
 };
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
@@ -427,6 +427,7 @@ fn PreviewCode(source: HighlightedSource) -> Element {
     rsx! {
         div {
             class: "dx-preview-code-theme",
+            tabindex: "0",
             Code {
                 src: source,
                 theme: CodeTheme::system(Theme::GITHUB_LIGHT, Theme::GITHUB_DARK),
@@ -772,25 +773,56 @@ fn Docs(dark_mode: Option<bool>) -> Element {
 
 #[component]
 fn DocsSidebar(active_component: Option<&'static str>) -> Element {
+    let mut open = use_signal(|| false);
+    let close = move |_| open.set(false);
     rsx! {
-        aside { class: "dx-docs-sidebar", aria_label: "Docs navigation",
-            nav { aria_label: "Components",
-                div { class: "dx-docs-sidebar-section",
-                    p { class: "dx-docs-sidebar-heading", "Start" }
-                    Link {
-                        to: Route::docs(),
-                        class: if active_component.is_none() { "dx-docs-sidebar-link dx-docs-sidebar-link-active" } else { "dx-docs-sidebar-link" },
-                        "Overview"
-                    }
-                }
-                for cat in components::ComponentCategory::ALL.iter().copied() {
+        button {
+            class: "dx-docs-sidebar-toggle",
+            r#type: "button",
+            aria_label: "Open navigation",
+            aria_expanded: open(),
+            aria_controls: "dx-docs-sidebar-nav",
+            onclick: move |_| open.set(true),
+            Menu { size: "18" }
+            span { "Menu" }
+        }
+        div {
+            class: if open() { "dx-docs-sidebar-backdrop dx-docs-sidebar-backdrop-open" } else { "dx-docs-sidebar-backdrop" },
+            aria_hidden: "true",
+            onclick: close,
+        }
+        aside {
+            id: "dx-docs-sidebar-nav",
+            class: if open() { "dx-docs-sidebar dx-docs-sidebar-open" } else { "dx-docs-sidebar" },
+            aria_label: "Docs navigation",
+            button {
+                class: "dx-docs-sidebar-close",
+                r#type: "button",
+                aria_label: "Close navigation",
+                onclick: close,
+                X { size: "18" }
+            }
+            div { class: "dx-docs-sidebar-scroll",
+                nav {
+                    aria_label: "Components",
+                    onclick: close,
                     div { class: "dx-docs-sidebar-section",
-                        p { class: "dx-docs-sidebar-heading", "{cat.label()}" }
-                        for component in components::DEMOS.iter().filter(|c| components::category_of(c.name) == cat) {
-                            Link {
-                                to: Route::component(component.name),
-                                class: if active_component == Some(component.name) { "dx-docs-sidebar-link dx-docs-sidebar-link-active" } else { "dx-docs-sidebar-link" },
-                                {component.name.replace("_", " ")}
+                        p { class: "dx-docs-sidebar-heading", "Start" }
+                        Link {
+                            to: Route::docs(),
+                            class: if active_component.is_none() { "dx-docs-sidebar-link dx-docs-sidebar-link-active" } else { "dx-docs-sidebar-link" },
+                            "Overview"
+                        }
+                    }
+                    for cat in components::ComponentCategory::ALL.iter().copied() {
+                        div { class: "dx-docs-sidebar-section",
+                            p { class: "dx-docs-sidebar-heading", "{cat.label()}" }
+                            for component in components::DEMOS.iter().filter(|c| components::category_of(c.name) == cat) {
+                                Link {
+                                    to: Route::component(component.name),
+                                    class: if active_component == Some(component.name) { "dx-docs-sidebar-link dx-docs-sidebar-link-active" } else { "dx-docs-sidebar-link" },
+                                    {component.name.replace("_", " ")}
+                                }
                             }
                         }
                     }
@@ -1277,7 +1309,7 @@ const BLOCKS: &[MasonryEntry] = &[
     },
     MasonryEntry {
         component: BlockColorPalette,
-        popout: false,
+        popout: true,
     },
     MasonryEntry {
         component: BlockTabs,
