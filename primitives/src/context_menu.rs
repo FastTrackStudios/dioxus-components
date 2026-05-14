@@ -14,6 +14,19 @@ const LONG_PRESS_DURATION: Duration = Duration::from_millis(500);
 /// Pointer drift (in CSS pixels, squared) that cancels an in-flight long press.
 const LONG_PRESS_MOVE_TOLERANCE_SQ: f64 = 100.0;
 
+/// The `position: fixed` menu needs layout-viewport coords. `clientX/Y` is in
+/// visual-viewport coords (off by the pan offset under Safari pinch-zoom);
+/// `pageX/Y` is in document coords (off by `window.scrollX/Y`). Adding
+/// `visualViewport.offsetLeft/Top` to `clientX/Y` is the conversion — and the
+/// same trick Floating UI does for `strategy: 'fixed'` on WebKit.
+async fn visual_viewport_offset() -> (f64, f64) {
+    let mut eval = dioxus::document::eval(
+        "const vv = window.visualViewport; \
+         dioxus.send([vv ? vv.offsetLeft : 0, vv ? vv.offsetTop : 0]);",
+    );
+    eval.recv::<(f64, f64)>().await.unwrap_or((0.0, 0.0))
+}
+
 #[derive(Clone, Copy)]
 struct ContextMenuCtx {
     // State
@@ -204,7 +217,7 @@ pub struct ContextMenuTriggerProps {
 /// ```
 #[component]
 pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
-    let mut ctx: ContextMenuCtx = use_context();
+    let ctx: ContextMenuCtx = use_context();
     // iOS Safari does not deliver `contextmenu` from a long-press on touch, so
     // we run a manual timer keyed on the initial touch position and fire it
     // ourselves once the finger has held still long enough.
@@ -224,9 +237,14 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
             // press, which can race our own timer. Defuse the race so only one
             // open lands.
             cancel_long_press(long_press_task, long_press_start);
-            let p = event.data().page_coordinates();
-            ctx.position.set((p.x as i32, p.y as i32));
-            ctx.set_open.call(true);
+            let p = event.data().client_coordinates();
+            let set_open = ctx.set_open;
+            let mut position = ctx.position;
+            spawn(async move {
+                let (off_x, off_y) = visual_viewport_offset().await;
+                position.set(((p.x + off_x) as i32, (p.y + off_y) as i32));
+                set_open.call(true);
+            });
             event.prevent_default();
         }
     };
@@ -238,13 +256,14 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
             return;
         }
         cancel_long_press(long_press_task, long_press_start);
-        let p = event.page_coordinates();
+        let p = event.client_coordinates();
         long_press_start.set(Some((p.x, p.y)));
         let set_open = ctx.set_open;
         let mut position = ctx.position;
         let task = spawn(async move {
             sleep(LONG_PRESS_DURATION).await;
-            position.set((p.x as i32, p.y as i32));
+            let (off_x, off_y) = visual_viewport_offset().await;
+            position.set(((p.x + off_x) as i32, (p.y + off_y) as i32));
             set_open.call(true);
         });
         long_press_task.set(Some(task));
@@ -254,7 +273,7 @@ pub fn ContextMenuTrigger(props: ContextMenuTriggerProps) -> Element {
         let Some((sx, sy)) = long_press_start.cloned() else {
             return;
         };
-        let p = event.page_coordinates();
+        let p = event.client_coordinates();
         let dx = p.x - sx;
         let dy = p.y - sy;
         if dx * dx + dy * dy > LONG_PRESS_MOVE_TOLERANCE_SQ {
