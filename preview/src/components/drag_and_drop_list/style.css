@@ -42,20 +42,22 @@
   user-select: none;
 }
 
-.dx-dnd-list-item:hover {
-  --gap-shift: -1px;
+@media (hover: hover) and (pointer: fine) {
+  .dx-dnd-list-item:hover {
+    --gap-shift: -1px;
 
-  border-color: var(--primary-color-7);
-  background-color: var(--light, #fff) var(--dark, var(--primary-color-6));
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 4%),
-    0 3px 8px rgb(0 0 0 / 4%);
-}
+    border-color: var(--primary-color-7);
+    background-color: var(--light, #fff) var(--dark, var(--primary-color-6));
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 4%),
+      0 3px 8px rgb(0 0 0 / 4%);
+  }
 
-.dx-dnd-list-item:active {
-  --gap-shift: 0px;
+  .dx-dnd-list-item:active {
+    --gap-shift: 0px;
 
-  transition-duration: 80ms;
+    transition-duration: 80ms;
+  }
 }
 
 .dx-dnd-list-item:focus-visible {
@@ -74,6 +76,7 @@
   box-shadow: none;
   cursor: grabbing;
   opacity: 0.5;
+  transition-duration: 80ms;
 }
 
 .dx-dnd-list-item[data-is-grabbing="true"][data-drop-at-origin="true"] {
@@ -91,8 +94,10 @@
   transition: color 150ms ease;
 }
 
-.dx-dnd-list-item:hover .dx-item-icon {
-  color: var(--secondary-color-2);
+@media (hover: hover) and (pointer: fine) {
+  .dx-dnd-list-item:hover .dx-item-icon {
+    color: var(--secondary-color-2);
+  }
 }
 
 .dx-item-body-div {
