@@ -2,7 +2,7 @@
 
 use crate::{
     focus::{use_focus_controlled_item_disabled, use_focus_provider, FocusState},
-    use_animated_open, use_controlled, use_id_or, use_unique_id,
+    use_animated_open, use_controlled, use_id_or, use_outside_dismiss, use_unique_id,
 };
 use dioxus::prelude::*;
 use dioxus_core::Task;
@@ -39,6 +39,10 @@ struct ContextMenuCtx {
 
     // Focus state
     focus: FocusState,
+
+    // Id on the root wrapper — covers both trigger and content, so
+    // `use_outside_dismiss` treats them as "inside".
+    root_id: Signal<String>,
 }
 
 /// The props for the [`ContextMenu`] component.
@@ -123,6 +127,7 @@ pub struct ContextMenuProps {
 pub fn ContextMenu(props: ContextMenuProps) -> Element {
     let (open, set_open) = use_controlled(props.open, props.default_open, props.on_open_change);
     let position = use_signal(|| (0, 0));
+    let root_id = use_unique_id();
 
     let focus = use_focus_provider(props.roving_loop);
     let mut ctx = use_context_provider(|| ContextMenuCtx {
@@ -131,6 +136,7 @@ pub fn ContextMenu(props: ContextMenuProps) -> Element {
         disabled: props.disabled,
         position,
         focus,
+        root_id,
     });
 
     use_effect(move || {
@@ -151,6 +157,7 @@ pub fn ContextMenu(props: ContextMenuProps) -> Element {
 
     rsx! {
         div {
+            id: root_id,
             tabindex: 0, // Make the menu container focusable
             onkeydown: handle_keydown,
             "data-state": if open() { "open" } else { "closed" },
@@ -414,23 +421,13 @@ pub fn ContextMenuContent(props: ContextMenuContentProps) -> Element {
 
     let render = use_animated_open(id, open);
 
-    let close_on_outside = move |_event: Event<PointerData>| {
+    use_outside_dismiss(ctx.root_id, move || {
         ctx.focus.blur();
         ctx.set_open.call(false);
-    };
+    });
 
     rsx! {
         if render() {
-            // Full-viewport backdrop captures outside taps so the menu
-            // dismisses on touch devices (and provides modal scrim semantics).
-            div {
-                position: "fixed",
-                top: "0",
-                left: "0",
-                right: "0",
-                bottom: "0",
-                onpointerdown: close_on_outside,
-            }
             div {
                 id,
                 role: "menu",
