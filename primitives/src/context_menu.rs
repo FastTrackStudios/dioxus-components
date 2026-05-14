@@ -2,7 +2,7 @@
 
 use crate::{
     focus::{use_focus_controlled_item_disabled, use_focus_provider, FocusState},
-    use_animated_open, use_controlled, use_effect_cleanup, use_id_or, use_unique_id,
+    use_animated_open, use_controlled, use_id_or, use_unique_id,
 };
 use dioxus::prelude::*;
 use dioxus_core::Task;
@@ -127,27 +127,11 @@ pub fn ContextMenu(props: ContextMenuProps) -> Element {
         }
     });
 
-    // If the context menu is open, prevent pointer and scroll events outside of it
-    let pointer_events_disabled = |disabled| {
-        if disabled {
-            dioxus::document::eval(
-                "document.body.style.pointerEvents = 'none'; document.documentElement.style.overflow = 'hidden';",
-            );
-        } else {
-            dioxus::document::eval(
-                "document.body.style.pointerEvents = 'auto'; document.documentElement.style.overflow = 'auto';",
-            );
-        }
-    };
-    use_effect(move || {
-        pointer_events_disabled(ctx.open.cloned());
-    });
-    use_effect_cleanup(move || {
-        // If the context menu was open, reset pointer events
-        if ctx.open.cloned() {
-            pointer_events_disabled(false);
-        }
-    });
+    // Outside-tap dismissal is handled by the backdrop inside
+    // `ContextMenuContent`. Don't toggle `body { pointer-events: none }` or
+    // `html { overflow: hidden }` here — iOS Safari ties pinch-zoom/pan state
+    // to those properties, and resetting them while the menu is open scrambles
+    // `position: fixed` coordinates by the visual-viewport offset.
 
     // Handle escape key to close the menu
     let handle_keydown = move |event: Event<KeyboardData>| {
@@ -424,16 +408,14 @@ pub fn ContextMenuContent(props: ContextMenuContentProps) -> Element {
 
     rsx! {
         if render() {
-            // Backdrop. The parent `ContextMenu` sets `body { pointer-events:
-            // none }` while open, so without this overlay an outside tap goes
-            // nowhere and the menu can't be dismissed on touch devices.
+            // Full-viewport backdrop captures outside taps so the menu
+            // dismisses on touch devices (and provides modal scrim semantics).
             div {
                 position: "fixed",
                 top: "0",
                 left: "0",
                 right: "0",
                 bottom: "0",
-                pointer_events: open().then_some("auto"),
                 onpointerdown: close_on_outside,
             }
             div {
