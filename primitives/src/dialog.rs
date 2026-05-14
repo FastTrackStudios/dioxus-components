@@ -4,8 +4,8 @@ use dioxus::document;
 use dioxus::prelude::*;
 
 use crate::{
-    inside_dismiss_attrs, use_animated_open, use_controlled, use_global_escape_listener, use_id_or,
-    use_outside_dismiss, use_unique_id, FOCUS_TRAP_JS,
+    use_animated_open, use_controlled, use_global_escape_listener, use_id_or, use_outside_dismiss,
+    use_unique_id, FOCUS_TRAP_JS,
 };
 
 /// Context for the [`DialogRoot`] component
@@ -22,6 +22,7 @@ pub struct DialogCtx {
     is_modal: ReadSignal<bool>,
     dialog_labelledby: Signal<String>,
     dialog_describedby: Signal<String>,
+    root_id: Memo<String>,
 }
 
 impl DialogCtx {
@@ -118,16 +119,17 @@ pub fn DialogRoot(props: DialogRootProps) -> Element {
 
     let (open, set_open) = use_controlled(props.open, props.default_open, props.on_open_change);
 
+    let unique_id = use_unique_id();
+    let id = use_id_or(unique_id, props.id);
+
     use_context_provider(|| DialogCtx {
         open,
         set_open,
         is_modal: props.is_modal,
         dialog_labelledby,
         dialog_describedby,
+        root_id: id,
     });
-
-    let unique_id = use_unique_id();
-    let id = use_id_or(unique_id, props.id);
 
     let render = use_animated_open(id, open);
 
@@ -228,10 +230,7 @@ pub fn DialogContent(props: DialogContentProps) -> Element {
     let gen_id = use_unique_id();
     let id = use_id_or(gen_id, props.id);
 
-    // Light-dismiss on outside interaction. The content spreads `inside_dismiss_attrs` below
-    // so the document listener only fires for events whose target is outside this dialog.
-    let dismiss_id = use_unique_id();
-    use_outside_dismiss(dismiss_id, move || set_open.call(false));
+    use_outside_dismiss(ctx.root_id, move || set_open.call(false));
     use_effect(move || {
         let is_modal = is_modal();
         if !is_modal {
@@ -264,7 +263,6 @@ pub fn DialogContent(props: DialogContentProps) -> Element {
             aria_labelledby: ctx.dialog_labelledby,
             aria_describedby: ctx.dialog_describedby,
             class: props.class.clone().unwrap_or_else(|| "dx-dialog".to_string()),
-            ..inside_dismiss_attrs(dismiss_id),
             ..props.attributes,
             {props.children}
         }

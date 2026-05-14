@@ -208,20 +208,15 @@ fn use_global_keydown_listener(key: &'static str, on_escape: impl FnMut() + Clon
     });
 }
 
-/// Dismiss when a pointerdown or focusin happens on a node whose ancestor chain doesn't
-/// contain a `[data-dx-inside="{id}"]` marker. Mirrors react-aria's light-dismiss behavior.
-/// Pair with [`inside_dismiss_attrs`] — spread the marker on every element that should
-/// count as inside (trigger, content, …).
-///
-/// `id` should be a stable [`use_unique_id`]; using a per-instance id is what makes nested
-/// popovers work, since each popover's listener only treats its own marker as "inside".
+/// Light-dismiss when pointerdown/focusin lands outside the element with the given `id`.
+/// `id` should be the id of the popover/dialog root that contains every "inside" element.
 fn use_outside_dismiss(
     id: impl Readable<Target = String> + Copy + 'static,
     on_dismiss: impl FnMut() + Clone + 'static,
 ) {
     use_effect_with_cleanup(move || {
         let mut eval = document::eval(
-            "const sel = `[data-dx-inside='${await dioxus.recv()}']`;
+            "const sel = `#${await dioxus.recv()}`;
             const f = e => { if (!e.target.closest?.(sel)) dioxus.send(true); };
             document.addEventListener('pointerdown', f, true);
             document.addEventListener('focusin', f, true);
@@ -240,15 +235,6 @@ fn use_outside_dismiss(
             let _ = eval.send(true);
         }
     });
-}
-
-/// Marker attribute for [`use_outside_dismiss`]. Spread the returned attributes on every
-/// element that should count as inside; the value must match the `id` passed to the hook.
-fn inside_dismiss_attrs(id: Signal<String>) -> Vec<Attribute> {
-    use dioxus_attributes::attributes;
-    attributes!(div {
-        "data-dx-inside": id,
-    })
 }
 
 fn use_animated_open(

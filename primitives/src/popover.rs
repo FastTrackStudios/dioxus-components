@@ -4,8 +4,8 @@ use dioxus::document;
 use dioxus::prelude::*;
 
 use crate::{
-    inside_dismiss_attrs, use_animated_open, use_controlled, use_global_escape_listener, use_id_or,
-    use_outside_dismiss, use_unique_id, ContentAlign, ContentSide, FOCUS_TRAP_JS,
+    use_animated_open, use_controlled, use_global_escape_listener, use_id_or, use_outside_dismiss,
+    use_unique_id, ContentAlign, ContentSide, FOCUS_TRAP_JS,
 };
 
 #[derive(Clone, Copy)]
@@ -19,9 +19,7 @@ struct PopoverCtx {
     #[allow(unused)]
     is_modal: ReadSignal<bool>,
     labelledby: Signal<String>,
-    /// Per-instance id used by [`use_outside_dismiss`] / [`inside_dismiss_attrs`] so that
-    /// nested popovers each only dismiss on clicks outside their own trigger+content.
-    dismiss_id: Signal<String>,
+    root_id: Signal<String>,
 }
 
 /// The props for the [`PopoverRoot`] component.
@@ -102,7 +100,7 @@ pub struct PopoverRootProps {
 #[component]
 pub fn PopoverRoot(props: PopoverRootProps) -> Element {
     let labelledby = use_unique_id();
-    let dismiss_id = use_unique_id();
+    let root_id = use_unique_id();
 
     let (open, set_open) = use_controlled(props.open, props.default_open, props.on_open_change);
 
@@ -111,11 +109,12 @@ pub fn PopoverRoot(props: PopoverRootProps) -> Element {
         set_open,
         is_modal: props.is_modal,
         labelledby,
-        dismiss_id,
+        root_id,
     });
 
     rsx! {
         div {
+            id: root_id,
             "data-state": if open() { "open" } else { "closed" },
             ..props.attributes,
             {props.children}
@@ -278,10 +277,7 @@ pub fn PopoverContentRendered(
     // is highlighting text or interacting with another element.
     use_global_escape_listener(move || set_open.call(false));
 
-    // Light-dismiss: close the popover when the user clicks or focuses outside both the
-    // trigger and the content. Mirrors react-aria's Popover behavior. The trigger spreads
-    // the matching inside-attrs on itself (see `PopoverTrigger`).
-    use_outside_dismiss(ctx.dismiss_id, move || set_open.call(false));
+    use_outside_dismiss(ctx.root_id, move || set_open.call(false));
 
     rsx! {
         div {
@@ -294,7 +290,6 @@ pub fn PopoverContentRendered(
             "data-state": if is_open { "open" } else { "closed" },
             "data-side": side.as_str(),
             "data-align": align.as_str(),
-            ..inside_dismiss_attrs(ctx.dismiss_id),
             ..attributes,
             {children}
         }
@@ -383,11 +378,9 @@ pub fn PopoverTrigger(props: PopoverTriggerProps) -> Element {
             id,
             type: "button",
             onclick: move |e| {
-                // Prevent the click event from propagating to the overlay.
                 e.stop_propagation();
                 ctx.set_open.call(!(ctx.open)());
             },
-            ..inside_dismiss_attrs(ctx.dismiss_id),
             ..props.attributes,
             {props.children}
         }
