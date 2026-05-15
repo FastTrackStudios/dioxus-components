@@ -162,10 +162,17 @@ body {
 }
 
 .dx-dark-mode-toggle {
+  padding: 0;
   border: none;
   background: none;
   color: var(--secondary-color-4);
   cursor: pointer;
+}
+
+.dx-dark-mode-toggle svg {
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
 .dx-copy-button {

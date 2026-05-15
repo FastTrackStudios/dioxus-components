@@ -333,15 +333,15 @@ fn Navbar() -> Element {
                             class: "dx-light-mode-only",
                             src: asset!("/assets/github-mark/github-mark.svg"),
                             alt: "GitHub",
-                            width: "24",
-                            height: "24",
+                            width: "22",
+                            height: "22",
                         }
                         img {
                             class: "dx-dark-mode-only",
                             src: asset!("/assets/github-mark/github-mark-white.svg"),
                             alt: "GitHub",
-                            width: "24",
-                            height: "24",
+                            width: "22",
+                            height: "22",
                         }
                     }
                     theme::DarkModeToggle {}
@@ -463,7 +463,7 @@ fn CopyIcon() -> Element {
     rsx! {
         Copy {
             width: "24px",
-            height: "25px",
+            height: "24px",
         }
     }
 }
@@ -473,7 +473,7 @@ fn CheckIcon() -> Element {
     rsx! {
         Check {
             width: "24px",
-            height: "25px",
+            height: "24px",
         }
     }
 }
@@ -551,7 +551,7 @@ fn LanguageSelect() -> Element {
                     {current_lang.read().flag()}
                     ChevronDown {
                         class: "dx-select-expand-icon",
-                        size: "20px",
+                        size: "24px",
                         stroke: "var(--secondary-color-4)",
                     }
                 }
