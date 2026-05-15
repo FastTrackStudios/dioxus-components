@@ -261,8 +261,8 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
     let src = props.src.clone();
     let mut effect_ctx = ctx.clone();
 
-    // Track the image source independently from the rendered <img> so cached images cannot miss
-    // the browser load event and leave the avatar stuck in loading.
+    // Track the image source independently so source changes reset loading state before the
+    // browser's image events report the final result.
     use_effect(use_reactive!(|src| {
         effect_ctx.has_image_child.set(true);
 
@@ -276,43 +276,6 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
             current_src.set(Some(src.clone()));
             set_avatar_state(effect_ctx.clone(), AvatarState::Loading);
         }
-
-        spawn({
-            let request_src = src.clone();
-            let ctx = effect_ctx.clone();
-            async move {
-                let mut eval = document::eval(
-                    r#"
-                    let src = await dioxus.recv();
-                    let image = new Image();
-
-                    image.onload = () => dioxus.send("loaded");
-                    image.onerror = () => dioxus.send("error");
-                    image.src = src;
-
-                    if (image.complete) {
-                        dioxus.send(image.naturalWidth > 0 ? "loaded" : "error");
-                    }
-                    "#,
-                );
-
-                let _ = eval.send(request_src.clone());
-
-                let Ok(status) = eval.recv::<String>().await else {
-                    return;
-                };
-
-                if current_src.peek().as_ref() != Some(&request_src) {
-                    return;
-                }
-
-                match status.as_str() {
-                    "loaded" => mark_avatar_loaded(ctx),
-                    "error" => mark_avatar_error(ctx),
-                    _ => {}
-                }
-            }
-        });
     }));
 
     let load_src = props.src.clone();
@@ -320,6 +283,10 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
     let mut load_current_src = current_src;
 
     let handle_load = move |_| {
+        if load_src.is_empty() {
+            return;
+        }
+
         let matches_current_src = load_current_src
             .peek()
             .as_ref()
@@ -337,6 +304,10 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
     let mut error_current_src = current_src;
 
     let handle_error = move |_| {
+        if error_src.is_empty() {
+            return;
+        }
+
         let matches_current_src = error_current_src
             .peek()
             .as_ref()
@@ -349,7 +320,7 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
         }
     };
 
-    let show_image = (ctx.state)() != AvatarState::Error;
+    let show_image = !props.src.is_empty() && (ctx.state)() != AvatarState::Error;
     if !show_image {
         return rsx!({});
     }
