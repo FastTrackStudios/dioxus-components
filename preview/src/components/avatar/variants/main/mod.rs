@@ -12,7 +12,8 @@ pub fn Demo() -> Element {
             display: "flex",
             flex_direction: "row",
             align_items: "center",
-            justify_content: "between",
+            justify_content: "center",
+            flex_wrap: "wrap",
             gap: "1rem",
             div { class: Styles::dx_avatar_item,
                 p { class: Styles::dx_avatar_label, "Basic Usage" }
@@ -42,6 +43,15 @@ pub fn Demo() -> Element {
                 }
             }
             div { class: Styles::dx_avatar_item,
+                p { class: Styles::dx_avatar_label, "Loading" }
+                Avatar {
+                    size: AvatarImageSize::Small,
+                    aria_label: "Loading avatar",
+                    "data-state": "loading",
+                    AvatarFallback { "LD" }
+                }
+            }
+            div { class: Styles::dx_avatar_item,
                 p { class: Styles::dx_avatar_label, "Error State" }
                 ImageAvatar {
                     size: AvatarImageSize::Medium,
@@ -65,14 +75,6 @@ pub fn Demo() -> Element {
                     },
                     aria_label: "Large avatar",
                     "DX"
-                }
-            }
-            div { class: Styles::dx_avatar_item,
-                p { class: Styles::dx_avatar_label, "Composable" }
-                Avatar {
-                    size: AvatarImageSize::Small,
-                    aria_label: "Fallback-only avatar",
-                    AvatarFallback { "CN" }
                 }
             }
         }
