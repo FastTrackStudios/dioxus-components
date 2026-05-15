@@ -1,5 +1,4 @@
 use crate::components::{
-    avatar::{Avatar, AvatarImageSize},
     badge::{Badge, BadgeVariant, VerifiedIcon},
     button::{Button, ButtonVariant},
     checkbox::Checkbox,
@@ -26,6 +25,9 @@ use dioxus_i18n::prelude::{use_init_i18n, I18nConfig};
 use dioxus_icons::lucide::{
     ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronUp, Copy, ExternalLink, Mail,
     Menu, Pause, Play, SkipBack, SkipForward, X,
+};
+use dioxus_primitives::avatar::{
+    Avatar as PrimitiveAvatar, AvatarFallback as PrimitiveAvatarFallback,
 };
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
@@ -1358,6 +1360,15 @@ fn MasonryCard(component: fn() -> Element, #[props(default)] popout: bool) -> El
 }
 
 #[component]
+fn HomeGradientCover(label: String, tone: String) -> Element {
+    let class = format!("dx-home-gradient-cover dx-home-gradient-{tone}");
+
+    rsx! {
+        div { class, role: "img", aria_label: "{label}" }
+    }
+}
+
+#[component]
 fn BlockSignIn() -> Element {
     rsx! {
         div { style: "display: grid; gap: 0.3rem; margin-bottom: 1.1rem;",
@@ -1390,12 +1401,10 @@ fn BlockSignIn() -> Element {
 fn BlockProfile() -> Element {
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.75rem;",
-            Avatar {
-                size: AvatarImageSize::Medium,
-                src: "https://avatar.vercel.sh/avery-lin",
-                alt: "Avery Lin",
-                aria_label: "Avatar",
-                "AL"
+            PrimitiveAvatar {
+                class: "dx-home-gradient-avatar dx-home-gradient-avatar-md dx-home-gradient-blue",
+                aria_label: "Avery Lin",
+                PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "AL" }
             }
             div { style: "flex: 1; display: grid; gap: 0.1rem; min-width: 0;",
                 div { style: "display: flex; align-items: center; gap: 0.4rem;",
@@ -1489,10 +1498,48 @@ fn NotificationRow(id: String, name: String, description: String, default_on: bo
 
 #[component]
 fn BlockPlayer() -> Element {
+    const TRACK_DURATION_SECONDS: f64 = 212.0;
+    const TRACK_START_SECONDS: f64 = 84.0;
+
     let mut playing = use_signal(|| true);
+    let mut progress_seconds = use_signal(|| Some(TRACK_START_SECONDS));
+    let current_time = use_memo(move || format_track_time(progress_seconds().unwrap_or(0.0)));
+    let duration_time = format_track_time(TRACK_DURATION_SECONDS);
+
+    use_effect(move || {
+        let mut timer = document::eval(
+            "setInterval(() => {
+                dioxus.send(performance.now());
+            }, 100);",
+        );
+
+        spawn(async move {
+            let mut last_tick_ms: Option<f64> = None;
+
+            while let Ok(now_ms) = timer.recv::<f64>().await {
+                let elapsed_seconds = last_tick_ms
+                    .map(|last_ms| ((now_ms - last_ms) / 1000.0).clamp(0.0, 0.25))
+                    .unwrap_or(0.0);
+                last_tick_ms = Some(now_ms);
+
+                if !playing() {
+                    continue;
+                }
+
+                let current = progress_seconds().unwrap_or(0.0);
+                let next = if current >= TRACK_DURATION_SECONDS {
+                    0.0
+                } else {
+                    (current + elapsed_seconds).min(TRACK_DURATION_SECONDS)
+                };
+                progress_seconds.set(Some(next));
+            }
+        });
+    });
+
     rsx! {
         div { style: "display: flex; gap: 0.85rem; align-items: center;",
-            div { style: "width: 64px; height: 64px; border-radius: 0.45rem; background: linear-gradient(135deg, #ff6b6b 0%, #845ec2 60%, #5e8bdf 100%); flex-shrink: 0; box-shadow: 0 6px 18px -8px rgba(0,0,0,0.35);" }
+            HomeGradientCover { label: "Midnight City album art", tone: "midnight" }
             div { style: "flex: 1; min-width: 0;",
                 p { style: "margin: 0; font-weight: 600; color: var(--secondary-color-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
                     "Midnight City"
@@ -1506,18 +1553,22 @@ fn BlockPlayer() -> Element {
             Slider {
                 horizontal: true,
                 min: 0.0,
-                max: 100.0,
+                max: TRACK_DURATION_SECONDS,
                 step: 1.0,
-                default_value: 38.0,
+                value: progress_seconds,
+                on_value_change: move |value| progress_seconds.set(Some(value)),
                 label: "Track progress",
             }
             div { style: "display: flex; justify-content: space-between; margin-top: 0.45rem; color: var(--secondary-color-5); font-size: 0.78rem;",
-                span { "1:24" }
-                span { "3:32" }
+                span { "{current_time}" }
+                span { "{duration_time}" }
             }
         }
         div { style: "display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.6rem;",
-            Button { variant: ButtonVariant::Ghost, aria_label: "Previous",
+            Button {
+                variant: ButtonVariant::Ghost,
+                aria_label: "Previous",
+                onclick: move |_| progress_seconds.set(Some(0.0)),
                 SkipBack { size: "18", fill: "currentColor", stroke_width: "1.5" }
             }
             Button {
@@ -1529,11 +1580,20 @@ fn BlockPlayer() -> Element {
                     Play { size: "18", fill: "currentColor", stroke_width: "1.5" }
                 }
             }
-            Button { variant: ButtonVariant::Ghost, aria_label: "Next",
+            Button {
+                variant: ButtonVariant::Ghost,
+                aria_label: "Next",
+                onclick: move |_| progress_seconds.set(Some(0.0)),
                 SkipForward { size: "18", fill: "currentColor", stroke_width: "1.5" }
             }
         }
     }
+}
+
+fn format_track_time(seconds: f64) -> String {
+    let seconds = if seconds.is_finite() { seconds } else { 0.0 };
+    let seconds = seconds.max(0.0).floor() as u64;
+    format!("{}:{:02}", seconds / 60, seconds % 60)
 }
 
 #[component]
@@ -1636,10 +1696,10 @@ fn BlockColorPalette() -> Element {
 
 #[component]
 fn BlockTabs() -> Element {
-    let members: &[(&str, &str, &str, &str)] = &[
-        ("Avery Lin", "Eng lead", "online", "AL"),
-        ("Casey Park", "Design", "away", "CP"),
-        ("Robin Hayes", "PM", "offline", "RH"),
+    let members: &[(&str, &str, &str, &str, &str)] = &[
+        ("Avery Lin", "Eng lead", "online", "AL", "blue"),
+        ("Casey Park", "Design", "away", "CP", "lilac"),
+        ("Robin Hayes", "PM", "offline", "RH", "green"),
     ];
     let activity: &[(&str, &str, &str)] = &[
         ("Casey", "shipped v2.4.1", "12m ago"),
@@ -1664,12 +1724,10 @@ fn BlockTabs() -> Element {
                 div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.85rem;",
                     for member in members.iter() {
                         div { style: "display: flex; align-items: center; gap: 0.7rem;",
-                            Avatar {
-                                size: AvatarImageSize::Small,
-                                src: "https://avatar.vercel.sh/{member.0}",
-                                alt: "{member.0}",
-                                aria_label: "{member.0}",
-                                "{member.3}"
+                            PrimitiveAvatar {
+                                class: format!("dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-{}", member.4),
+                                aria_label: member.0,
+                                PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "{member.3}" }
                             }
                             div { style: "flex: 1; min-width: 0;",
                                 div { style: "font-weight: 540; color: var(--secondary-color-3); font-size: 0.9rem;", "{member.0}" }
@@ -1728,7 +1786,9 @@ fn BlockSchedule() -> Element {
             }
             Badge { variant: BadgeVariant::Outline, "Mar 2026" }
         }
-        components::calendar::variants::main::Demo {}
+        div { style: "display: grid; justify-items: center;",
+            components::calendar::variants::main::Demo {}
+        }
     }
 }
 
@@ -1769,10 +1829,28 @@ fn BlockCommand() -> Element {
 
 #[component]
 fn BlockInbox() -> Element {
-    let messages: &[(&str, &str, &str)] = &[
-        ("Sarah Chen", "Left 3 comments on the auth flow", "2m"),
-        ("Marcus Wright", "Roadmap sync notes attached", "1h"),
-        ("Lena Park", "Refactored the sidebar layout", "4h"),
+    let messages: &[(&str, &str, &str, &str, &str)] = &[
+        (
+            "Sarah Chen",
+            "S",
+            "green",
+            "Left 3 comments on the auth flow",
+            "2m",
+        ),
+        (
+            "Marcus Wright",
+            "M",
+            "amber",
+            "Roadmap sync notes attached",
+            "1h",
+        ),
+        (
+            "Lena Park",
+            "L",
+            "rose",
+            "Refactored the sidebar layout",
+            "4h",
+        ),
     ];
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.85rem;",
@@ -1783,15 +1861,13 @@ fn BlockInbox() -> Element {
             Badge { variant: BadgeVariant::Secondary, "3" }
         }
         div { style: "display: grid; gap: 0.5rem;",
-            for (sender , preview , time) in messages.iter() {
+            for (sender , initials , tone , preview , time) in messages.iter() {
                 Item { variant: ItemVariant::Outline,
                     ItemMedia { variant: ItemMediaVariant::Icon,
-                        Avatar {
-                            size: AvatarImageSize::Small,
-                            src: "https://avatar.vercel.sh/{sender}",
-                            alt: "{sender}",
-                            aria_label: "{sender}",
-                            "{sender.chars().next().unwrap_or('?')}"
+                        PrimitiveAvatar {
+                            class: format!("dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-{tone}"),
+                            aria_label: *sender,
+                            PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "{initials}" }
                         }
                     }
                     ItemContent {
@@ -1809,11 +1885,29 @@ fn BlockInbox() -> Element {
 
 #[component]
 fn BlockTasks() -> Element {
-    let tasks: &[(&str, &str, &str, &str)] = &[
-        ("LNC-128", "Ship Q2 product roadmap", "Today", "AL"),
-        ("LNC-142", "Redesign onboarding flow", "Apr 24", "CP"),
-        ("LNC-147", "Audit payment webhook logs", "Apr 29", "RH"),
-        ("LNC-151", "Draft changelog for v2.4", "May 02", "AL"),
+    let tasks: &[(&str, &str, &str, &str, &str)] = &[
+        ("LNC-128", "Ship Q2 product roadmap", "Today", "AL", "blue"),
+        (
+            "LNC-142",
+            "Redesign onboarding flow",
+            "Apr 24",
+            "CP",
+            "lilac",
+        ),
+        (
+            "LNC-147",
+            "Audit payment webhook logs",
+            "Apr 29",
+            "RH",
+            "green",
+        ),
+        (
+            "LNC-151",
+            "Draft changelog for v2.4",
+            "May 02",
+            "AL",
+            "blue",
+        ),
     ];
     let items: Vec<Element> = tasks
         .iter()
@@ -1830,12 +1924,10 @@ fn BlockTasks() -> Element {
                             span { "{t.2}" }
                         }
                     }
-                    Avatar {
-                        size: AvatarImageSize::Small,
-                        src: "https://avatar.vercel.sh/{t.3}",
-                        alt: "{t.3}",
+                    PrimitiveAvatar {
+                        class: format!("dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-{}", t.4),
                         aria_label: "Assignee {t.3}",
-                        "{t.3}"
+                        PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "{t.3}" }
                     }
                 }
             }
@@ -1861,12 +1953,10 @@ fn BlockComposer() -> Element {
     });
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.65rem; margin-bottom: 1rem;",
-            Avatar {
-                size: AvatarImageSize::Small,
-                src: "https://avatar.vercel.sh/avery-lin",
-                alt: "Avery Lin",
+            PrimitiveAvatar {
+                class: "dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-blue",
                 aria_label: "Avery Lin",
-                "AL"
+                PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "AL" }
             }
             div { style: "flex: 1; display: grid; gap: 0.1rem;",
                 span { style: "font-weight: 600; color: var(--secondary-color-3); font-size: 0.9rem;", "Reply to roadmap thread" }
