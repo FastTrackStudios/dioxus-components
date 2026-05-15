@@ -95,6 +95,9 @@ pub fn Avatar(props: AvatarProps) -> Element {
 
 #[derive(Props, Clone, PartialEq)]
 pub struct AvatarImageProps {
+    #[props(default)]
+    pub id: ReadSignal<Option<String>>,
+
     pub src: String,
 
     #[props(default)]
@@ -114,6 +117,7 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
 
     rsx! {
         avatar::AvatarImage {
+            id: props.id,
             src: props.src,
             alt: props.alt,
             attributes: merged,
