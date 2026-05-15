@@ -1,5 +1,5 @@
 use crate::components::{
-    avatar::Avatar,
+    avatar::{AvatarImageSize, ImageAvatar},
     badge::{Badge, BadgeVariant, VerifiedIcon},
     button::{Button, ButtonVariant},
     checkbox::Checkbox,
@@ -24,8 +24,8 @@ use dioxus::prelude::{dioxus_router::LinkProps, *};
 use dioxus_code::{advanced::HighlightedSource, Code, CodeTheme, Theme};
 use dioxus_i18n::prelude::{use_init_i18n, I18nConfig};
 use dioxus_icons::lucide::{
-    ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Copy, ExternalLink, Mail, Menu, Pause,
-    Play, SkipBack, SkipForward, X,
+    ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Copy, ExternalLink, Mail, Menu,
+    Pause, Play, SkipBack, SkipForward, X,
 };
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
@@ -1283,29 +1283,6 @@ fn MasonryCard(component: fn() -> Element, #[props(default)] popout: bool) -> El
 }
 
 #[component]
-fn HomeGradientCover(label: String, tone: String) -> Element {
-    let class = format!("dx-home-gradient-cover dx-home-gradient-{tone}");
-
-    rsx! {
-        div { class, role: "img", aria_label: "{label}" }
-    }
-}
-
-#[component]
-fn HomeGradientAvatar(label: String, initials: String, tone: String, size: String) -> Element {
-    let class =
-        format!("dx-home-gradient-avatar dx-home-gradient-avatar-{size} dx-home-gradient-{tone}");
-
-    rsx! {
-        Avatar {
-            class,
-            aria_label: "{label}",
-            span { class: "dx-home-gradient-avatar-initials", "{initials}" }
-        }
-    }
-}
-
-#[component]
 fn BlockSignIn() -> Element {
     rsx! {
         div { style: "display: grid; gap: 0.3rem; margin-bottom: 1.1rem;",
@@ -1338,7 +1315,13 @@ fn BlockSignIn() -> Element {
 fn BlockProfile() -> Element {
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.75rem;",
-            HomeGradientAvatar { label: "Avery Lin", initials: "AL", tone: "blue", size: "md" }
+            ImageAvatar {
+                size: AvatarImageSize::Medium,
+                src: "https://avatar.vercel.sh/avery-lin",
+                alt: "Avery Lin",
+                aria_label: "Avatar",
+                "AL"
+            }
             div { style: "flex: 1; display: grid; gap: 0.1rem; min-width: 0;",
                 div { style: "display: flex; align-items: center; gap: 0.4rem;",
                     span { style: "font-weight: 600; color: var(--secondary-color-3);", "Avery Lin" }
@@ -1472,7 +1455,13 @@ fn BlockPlayer() -> Element {
 
     rsx! {
         div { style: "display: flex; gap: 0.85rem; align-items: center;",
-            HomeGradientCover { label: "Midnight City album art", tone: "midnight" }
+            img {
+                src: "https://avatar.vercel.sh/midnight-city",
+                alt: "Midnight City album art",
+                width: "64",
+                height: "64",
+                style: "width: 64px; height: 64px; border-radius: 0.45rem; object-fit: cover; flex-shrink: 0; box-shadow: 0 6px 18px -8px rgba(0,0,0,0.35);",
+            }
             div { style: "flex: 1; min-width: 0;",
                 p { style: "margin: 0; font-weight: 600; color: var(--secondary-color-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;",
                     "Midnight City"
@@ -1629,10 +1618,10 @@ fn BlockColorPalette() -> Element {
 
 #[component]
 fn BlockTabs() -> Element {
-    let members: &[(&str, &str, &str, &str, &str)] = &[
-        ("Avery Lin", "Eng lead", "online", "AL", "blue"),
-        ("Casey Park", "Design", "away", "CP", "lilac"),
-        ("Robin Hayes", "PM", "offline", "RH", "green"),
+    let members: &[(&str, &str, &str, &str)] = &[
+        ("Avery Lin", "Eng lead", "online", "AL"),
+        ("Casey Park", "Design", "away", "CP"),
+        ("Robin Hayes", "PM", "offline", "RH"),
     ];
     let activity: &[(&str, &str, &str)] = &[
         ("Casey", "shipped v2.4.1", "12m ago"),
@@ -1657,7 +1646,13 @@ fn BlockTabs() -> Element {
                 div { style: "display: grid; gap: 0.85rem;",
                     for member in members.iter() {
                         div { style: "display: flex; align-items: center; gap: 0.7rem;",
-                            HomeGradientAvatar { label: member.0, initials: member.3, tone: member.4, size: "sm" }
+                            ImageAvatar {
+                                size: AvatarImageSize::Small,
+                                src: "https://avatar.vercel.sh/{member.0}",
+                                alt: "{member.0}",
+                                aria_label: "{member.0}",
+                                "{member.3}"
+                            }
                             div { style: "flex: 1; min-width: 0;",
                                 div { style: "font-weight: 540; color: var(--secondary-color-3); font-size: 0.9rem;", "{member.0}" }
                                 div { style: "color: var(--secondary-color-5); font-size: 0.78rem;", "{member.1}" }
@@ -1758,28 +1753,10 @@ fn BlockCommand() -> Element {
 
 #[component]
 fn BlockInbox() -> Element {
-    let messages: &[(&str, &str, &str, &str, &str)] = &[
-        (
-            "Sarah Chen",
-            "S",
-            "green",
-            "Left 3 comments on the auth flow",
-            "2m",
-        ),
-        (
-            "Marcus Wright",
-            "M",
-            "amber",
-            "Roadmap sync notes attached",
-            "1h",
-        ),
-        (
-            "Lena Park",
-            "L",
-            "rose",
-            "Refactored the sidebar layout",
-            "4h",
-        ),
+    let messages: &[(&str, &str, &str)] = &[
+        ("Sarah Chen", "Left 3 comments on the auth flow", "2m"),
+        ("Marcus Wright", "Roadmap sync notes attached", "1h"),
+        ("Lena Park", "Refactored the sidebar layout", "4h"),
     ];
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.85rem;",
@@ -1790,10 +1767,16 @@ fn BlockInbox() -> Element {
             Badge { variant: BadgeVariant::Secondary, "3" }
         }
         div { style: "display: grid; gap: 0.5rem;",
-            for (sender , initials , tone , preview , time) in messages.iter() {
+            for (sender , preview , time) in messages.iter() {
                 Item { variant: ItemVariant::Outline,
                     ItemMedia { variant: ItemMediaVariant::Icon,
-                        HomeGradientAvatar { label: *sender, initials: *initials, tone: *tone, size: "sm" }
+                        ImageAvatar {
+                            size: AvatarImageSize::Small,
+                            src: "https://avatar.vercel.sh/{sender}",
+                            alt: "{sender}",
+                            aria_label: "{sender}",
+                            "{sender.chars().next().unwrap_or('?')}"
+                        }
                     }
                     ItemContent {
                         ItemTitle { "{sender}" }
@@ -1810,29 +1793,11 @@ fn BlockInbox() -> Element {
 
 #[component]
 fn BlockTasks() -> Element {
-    let tasks: &[(&str, &str, &str, &str, &str)] = &[
-        ("LNC-128", "Ship Q2 product roadmap", "Today", "AL", "blue"),
-        (
-            "LNC-142",
-            "Redesign onboarding flow",
-            "Apr 24",
-            "CP",
-            "lilac",
-        ),
-        (
-            "LNC-147",
-            "Audit payment webhook logs",
-            "Apr 29",
-            "RH",
-            "green",
-        ),
-        (
-            "LNC-151",
-            "Draft changelog for v2.4",
-            "May 02",
-            "AL",
-            "blue",
-        ),
+    let tasks: &[(&str, &str, &str, &str)] = &[
+        ("LNC-128", "Ship Q2 product roadmap", "Today", "AL"),
+        ("LNC-142", "Redesign onboarding flow", "Apr 24", "CP"),
+        ("LNC-147", "Audit payment webhook logs", "Apr 29", "RH"),
+        ("LNC-151", "Draft changelog for v2.4", "May 02", "AL"),
     ];
     let items: Vec<Element> = tasks
         .iter()
@@ -1849,7 +1814,13 @@ fn BlockTasks() -> Element {
                             span { "{t.2}" }
                         }
                     }
-                    HomeGradientAvatar { label: format!("Assignee {}", t.3), initials: t.3, tone: t.4, size: "sm" }
+                    ImageAvatar {
+                        size: AvatarImageSize::Small,
+                        src: "https://avatar.vercel.sh/{t.3}",
+                        alt: "{t.3}",
+                        aria_label: "Assignee {t.3}",
+                        "{t.3}"
+                    }
                 }
             }
         })
@@ -1874,7 +1845,13 @@ fn BlockComposer() -> Element {
     });
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.65rem; margin-bottom: 1rem;",
-            HomeGradientAvatar { label: "Avery Lin", initials: "AL", tone: "blue", size: "sm" }
+            ImageAvatar {
+                size: AvatarImageSize::Small,
+                src: "https://avatar.vercel.sh/avery-lin",
+                alt: "Avery Lin",
+                aria_label: "Avery Lin",
+                "AL"
+            }
             div { style: "flex: 1; display: grid; gap: 0.1rem;",
                 span { style: "font-weight: 600; color: var(--secondary-color-3); font-size: 0.9rem;", "Reply to roadmap thread" }
                 span { style: "color: var(--secondary-color-5); font-size: 0.78rem;", "Posting as @averylin · #product" }
