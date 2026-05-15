@@ -1,6 +1,8 @@
 //! Defines the [`Avatar`] component and its subcomponents, which manage user profile images with fallback options.
 
-use dioxus::prelude::*;
+use dioxus::{document, prelude::*};
+
+use crate::{use_id_or, use_unique_id};
 
 /// Represents the different states an Avatar can be in
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -216,6 +218,10 @@ pub fn AvatarFallback(props: AvatarFallbackProps) -> Element {
 /// The props for the [`AvatarImage`] component.
 #[derive(Props, Clone, PartialEq)]
 pub struct AvatarImageProps {
+    /// The id of the image element.
+    #[props(default)]
+    pub id: ReadSignal<Option<String>>,
+
     /// The image source URL
     pub src: String,
 
@@ -257,6 +263,7 @@ pub struct AvatarImageProps {
 pub fn AvatarImage(props: AvatarImageProps) -> Element {
     let ctx: AvatarCtx = use_context();
     let mut current_src = use_signal(|| None::<String>);
+    let image_id = use_id_or(use_unique_id(), props.id);
     let src = props.src.clone();
     let mut effect_ctx = ctx.clone();
 
@@ -275,6 +282,70 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
             current_src.set(Some(src.clone()));
             set_avatar_state(effect_ctx.clone(), AvatarState::Loading);
         }
+    }));
+
+    let watcher_src = props.src.clone();
+    let watcher_ctx = ctx.clone();
+    let watcher_current_src = current_src;
+    // Reconcile cached or very fast image loads that can complete before Dioxus
+    // delivers the synthetic load/error event.
+    use_effect(use_reactive!(|watcher_src| {
+        if watcher_src.is_empty() {
+            return;
+        }
+
+        let image_id_value = image_id();
+        let mut eval = document::eval(
+            r#"
+            const imageId = await dioxus.recv();
+            const expectedSrc = await dioxus.recv();
+            const image = document.getElementById(imageId);
+
+            const matchesExpectedSrc = image && (
+                image.getAttribute("src") === expectedSrc ||
+                image.currentSrc === expectedSrc ||
+                image.src === expectedSrc
+            );
+
+            if (!matchesExpectedSrc || !image.complete) {
+                dioxus.send("pending");
+            } else {
+                dioxus.send(image.naturalWidth > 0 ? "loaded" : "error");
+            }
+            "#,
+        );
+        let _ = eval.send(image_id_value);
+        let _ = eval.send(watcher_src.clone());
+
+        let event_ctx = watcher_ctx.clone();
+        let mut event_current_src = watcher_current_src;
+        spawn(async move {
+            let Ok(state) = eval.recv::<String>().await else {
+                return;
+            };
+
+            let matches_current_src = event_current_src
+                .peek()
+                .as_ref()
+                .map(|src| src == &watcher_src)
+                .unwrap_or(true);
+
+            if !matches_current_src {
+                return;
+            }
+
+            match state.as_str() {
+                "loaded" => {
+                    event_current_src.set(Some(watcher_src.clone()));
+                    mark_avatar_loaded(event_ctx.clone());
+                }
+                "error" => {
+                    event_current_src.set(Some(watcher_src.clone()));
+                    mark_avatar_error(event_ctx.clone());
+                }
+                _ => {}
+            }
+        });
     }));
 
     let load_src = props.src.clone();
@@ -326,6 +397,7 @@ pub fn AvatarImage(props: AvatarImageProps) -> Element {
 
     rsx! {
         img {
+            id: image_id,
             src: props.src.clone(),
             alt: props.alt.clone().unwrap_or_default(),
             onload: handle_load,

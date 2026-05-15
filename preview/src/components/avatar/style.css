@@ -61,6 +61,7 @@
 
 .dx-avatar[data-state="loading"] {
     animation: dx-pulse 1.5s infinite ease-in-out;
+    background: var(--primary-color-5);
 }
 
 .dx-avatar[data-state="empty"] {
