@@ -1,6 +1,7 @@
 .dx-progress {
     position: relative;
     overflow: hidden;
+    min-width: 200px;
     height: .5rem;
     box-sizing: border-box;
     border-radius: 9999px;
