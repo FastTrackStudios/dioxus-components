@@ -43,9 +43,9 @@
     position: absolute;
     top: 50%;
     display: block;
-    box-sizing: border-box;
     width: 16px;
     height: 16px;
+    box-sizing: border-box;
     border: 0;
     border-radius: 50%;
     background-color: var(--primary-color-1);
