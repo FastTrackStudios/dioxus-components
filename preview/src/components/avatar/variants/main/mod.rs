@@ -5,8 +5,7 @@ use dioxus::prelude::*;
 struct Styles;
 
 // Keep this request pending so the example uses the real avatar loading state.
-const LOADING_AVATAR_SRC: &str =
-    "https://httpbin.org/drip?duration=3600&numbytes=1&delay=0&code=200";
+const LOADING_AVATAR_SRC: &str = "https://httpbin.org/delay/3600";
 
 #[component]
 pub fn Demo() -> Element {
@@ -54,7 +53,6 @@ pub fn Demo() -> Element {
                     AvatarImage {
                         src: LOADING_AVATAR_SRC,
                         alt: "",
-                        "loading": "lazy",
                     }
                 }
             }
