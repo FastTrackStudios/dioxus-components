@@ -588,6 +588,7 @@ fn ComponentCode(
                 align_items: "center",
                 TabContent {
                     index: 0usize,
+                    padding: 0,
                     value: "main.rs",
                     width: "100%",
                     position: "relative",
@@ -595,6 +596,7 @@ fn ComponentCode(
                 }
                 TabContent {
                     index: 1usize,
+                    padding: 0,
                     value: "style.css",
                     width: "100%",
                     position: "relative",
@@ -603,6 +605,7 @@ fn ComponentCode(
                 if component_type != ComponentType::Block {
                     TabContent {
                         index: 2usize,
+                        padding: 0,
                         value: "dx-components-theme.css",
                         width: "100%",
                         position: "relative",
@@ -1651,7 +1654,7 @@ fn BlockTabs() -> Element {
                 TabTrigger { value: "files".to_string(), index: 2usize, "Files" }
             }
             TabContent { index: 0usize, value: "members".to_string(),
-                div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.85rem;",
+                div { style: "display: grid; gap: 0.85rem;",
                     for member in members.iter() {
                         div { style: "display: flex; align-items: center; gap: 0.7rem;",
                             HomeGradientAvatar { label: member.0, initials: member.3, tone: member.4, size: "sm" }
@@ -1671,7 +1674,7 @@ fn BlockTabs() -> Element {
                 }
             }
             TabContent { index: 1usize, value: "activity".to_string(),
-                div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.85rem;",
+                div { style: "display: grid; gap: 0.85rem;",
                     for entry in activity.iter() {
                         div { style: "display: flex; align-items: baseline; gap: 0.45rem; font-size: 0.88rem;",
                             span { style: "font-weight: 600; color: var(--secondary-color-3);", "{entry.0}" }
@@ -1682,7 +1685,7 @@ fn BlockTabs() -> Element {
                 }
             }
             TabContent { index: 2usize, value: "files".to_string(),
-                div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.6rem; color: var(--secondary-color-4); font-size: 0.88rem;",
+                div { style: "display: grid; gap: 0.6rem; color: var(--secondary-color-4); font-size: 0.88rem;",
                     div { style: "display: flex; align-items: center; gap: 0.5rem;",
                         span { style: "font-family: monospace; color: var(--secondary-color-5);", "/" }
                         span { "Roadmap Q2.md" }
