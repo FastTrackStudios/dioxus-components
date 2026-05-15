@@ -1,4 +1,5 @@
 use crate::components::{
+    avatar::Avatar,
     badge::{Badge, BadgeVariant, VerifiedIcon},
     button::{Button, ButtonVariant},
     checkbox::Checkbox,
@@ -23,11 +24,8 @@ use dioxus::prelude::{dioxus_router::LinkProps, *};
 use dioxus_code::{advanced::HighlightedSource, Code, CodeTheme, Theme};
 use dioxus_i18n::prelude::{use_init_i18n, I18nConfig};
 use dioxus_icons::lucide::{
-    ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, ChevronUp, Copy, ExternalLink, Mail,
-    Menu, Pause, Play, SkipBack, SkipForward, X,
-};
-use dioxus_primitives::avatar::{
-    Avatar as PrimitiveAvatar, AvatarFallback as PrimitiveAvatarFallback,
+    ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Copy, ExternalLink, Mail, Menu, Pause,
+    Play, SkipBack, SkipForward, X,
 };
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
@@ -412,12 +410,11 @@ pub struct HighlightedCode {
 }
 
 #[component]
-fn CodeBlock(source: HighlightedCode, collapsed: bool) -> Element {
+fn CodeBlock(source: HighlightedCode) -> Element {
     rsx! {
         div {
             class: "dx-code-block",
             tabindex: "0",
-            "data-collapsed": "{collapsed}",
             PreviewCode { source: source.source }
         }
         CopyButton { position: "absolute", top: "0.5em", right: "0.5em" }
@@ -568,36 +565,6 @@ fn ComponentCode(
     css_highlighted: HighlightedCode,
     #[props(default = ComponentType::Normal)] component_type: ComponentType,
 ) -> Element {
-    let mut collapsed = use_signal(|| true);
-
-    let expand = rsx! {
-        button {
-            aria_label: if collapsed() { "Expand code" } else { "Collapse code" },
-            width: "100%",
-            height: "2rem",
-            color: "var(--secondary-color-4)",
-            background_color: "rgba(0, 0, 0, 0)",
-            border_radius: "0 0 0.5rem 0.5rem",
-            border: "none",
-            text_align: "center",
-            r#type: "button",
-            onclick: move |_| {
-                collapsed.toggle();
-            },
-            if collapsed() {
-                ChevronDown {
-                    size: "20px",
-                    stroke: "var(--secondary-color-4)",
-                }
-            } else {
-                ChevronUp {
-                    size: "20px",
-                    stroke: "var(--secondary-color-4)",
-                }
-            }
-        }
-    };
-
     rsx! {
         Tabs {
             default_value: "main.rs",
@@ -624,16 +591,14 @@ fn ComponentCode(
                     value: "main.rs",
                     width: "100%",
                     position: "relative",
-                    CodeBlock { source: rs_highlighted, collapsed: collapsed() }
-                    {expand.clone()}
+                    CodeBlock { source: rs_highlighted }
                 }
                 TabContent {
                     index: 1usize,
                     value: "style.css",
                     width: "100%",
                     position: "relative",
-                    CodeBlock { source: css_highlighted, collapsed: collapsed() }
-                    {expand.clone()}
+                    CodeBlock { source: css_highlighted }
                 }
                 if component_type != ComponentType::Block {
                     TabContent {
@@ -641,59 +606,10 @@ fn ComponentCode(
                         value: "dx-components-theme.css",
                         width: "100%",
                         position: "relative",
-                        CodeBlock { source: THEME_CSS, collapsed: collapsed() }
-                        {expand.clone()}
+                        CodeBlock { source: THEME_CSS }
                     }
                 }
             }
-        }
-    }
-}
-
-#[component]
-fn CollapsibleCodeBlock(highlighted: HighlightedCode) -> Element {
-    let mut collapsed = use_signal(|| true);
-
-    let expand = rsx! {
-        button {
-            aria_label: if collapsed() { "Expand code" } else { "Collapse code" },
-            width: "100%",
-            height: "2rem",
-            color: "var(--secondary-color-4)",
-            background_color: "rgba(0, 0, 0, 0)",
-            border_radius: "0 0 0.5rem 0.5rem",
-            border: "none",
-            text_align: "center",
-            r#type: "button",
-            onclick: move |_| {
-                collapsed.toggle();
-            },
-            if collapsed() {
-                ChevronDown {
-                    size: "20px",
-                    stroke: "var(--secondary-color-4)",
-                }
-            } else {
-                ChevronUp {
-                    size: "20px",
-                    stroke: "var(--secondary-color-4)",
-                }
-            }
-        }
-    };
-
-    rsx! {
-        div {
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flex_direction: "column",
-            justify_content: "center",
-            align_items: "center",
-            border_bottom_left_radius: "0.5rem",
-            border_bottom_right_radius: "0.5rem",
-            CodeBlock { source: highlighted, collapsed: collapsed() }
-            {expand.clone()}
         }
     }
 }
@@ -960,7 +876,7 @@ fn ComponentHighlight(demo: ComponentDemoData) -> Element {
                         h2 { "Installation" }
                         p { "Use the CLI command for the common path, or copy the component files manually." }
                     }
-                    details { class: "dx-component-manual-install",
+                    details { class: "dx-component-manual-install dx-component-manual-install-code",
                         summary { "Manual installation files" }
                         ManualComponentInstallation { component, style }
                     }
@@ -1013,13 +929,17 @@ fn ComponentInstallCommand(name: &'static str) -> Element {
 #[component]
 fn ManualComponentInstallation(component: HighlightedCode, style: HighlightedCode) -> Element {
     rsx! {
-        p { class: "dx-docs-muted",
-            "Copy the component source and CSS into your app. Import the shared theme CSS once near your app root."
+        div { class: "dx-component-manual-copy",
+            p { class: "dx-docs-muted",
+                "Copy the component source and CSS into your app. Import the shared theme CSS once near your app root."
+            }
         }
-        ComponentCode {
-            rs_highlighted: component,
-            css_highlighted: style,
-            component_type: ComponentType::Normal,
+        div { class: "dx-component-manual-code",
+            ComponentCode {
+                rs_highlighted: component,
+                css_highlighted: style,
+                component_type: ComponentType::Normal,
+            }
         }
     }
 }
@@ -1078,7 +998,7 @@ fn ComponentVariantHighlight(
                     value: "Code",
                     width: "100%",
                     position: "relative",
-                    CollapsibleCodeBlock { highlighted }
+                    CodeBlock { source: highlighted }
                 }
             }
         }
@@ -1164,7 +1084,7 @@ fn BlockComponentVariantHighlight(
                             component_type: ComponentType::Block,
                         }
                     } else {
-                        CollapsibleCodeBlock { highlighted }
+                        CodeBlock { source: highlighted }
                     }
                 }
             }
@@ -1369,6 +1289,20 @@ fn HomeGradientCover(label: String, tone: String) -> Element {
 }
 
 #[component]
+fn HomeGradientAvatar(label: String, initials: String, tone: String, size: String) -> Element {
+    let class =
+        format!("dx-home-gradient-avatar dx-home-gradient-avatar-{size} dx-home-gradient-{tone}");
+
+    rsx! {
+        Avatar {
+            class,
+            aria_label: "{label}",
+            span { class: "dx-home-gradient-avatar-initials", "{initials}" }
+        }
+    }
+}
+
+#[component]
 fn BlockSignIn() -> Element {
     rsx! {
         div { style: "display: grid; gap: 0.3rem; margin-bottom: 1.1rem;",
@@ -1401,11 +1335,7 @@ fn BlockSignIn() -> Element {
 fn BlockProfile() -> Element {
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.75rem;",
-            PrimitiveAvatar {
-                class: "dx-home-gradient-avatar dx-home-gradient-avatar-md dx-home-gradient-blue",
-                aria_label: "Avery Lin",
-                PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "AL" }
-            }
+            HomeGradientAvatar { label: "Avery Lin", initials: "AL", tone: "blue", size: "md" }
             div { style: "flex: 1; display: grid; gap: 0.1rem; min-width: 0;",
                 div { style: "display: flex; align-items: center; gap: 0.4rem;",
                     span { style: "font-weight: 600; color: var(--secondary-color-3);", "Avery Lin" }
@@ -1724,11 +1654,7 @@ fn BlockTabs() -> Element {
                 div { style: "padding: 1.25rem 0.1rem 0.25rem; display: grid; gap: 0.85rem;",
                     for member in members.iter() {
                         div { style: "display: flex; align-items: center; gap: 0.7rem;",
-                            PrimitiveAvatar {
-                                class: format!("dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-{}", member.4),
-                                aria_label: member.0,
-                                PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "{member.3}" }
-                            }
+                            HomeGradientAvatar { label: member.0, initials: member.3, tone: member.4, size: "sm" }
                             div { style: "flex: 1; min-width: 0;",
                                 div { style: "font-weight: 540; color: var(--secondary-color-3); font-size: 0.9rem;", "{member.0}" }
                                 div { style: "color: var(--secondary-color-5); font-size: 0.78rem;", "{member.1}" }
@@ -1864,11 +1790,7 @@ fn BlockInbox() -> Element {
             for (sender , initials , tone , preview , time) in messages.iter() {
                 Item { variant: ItemVariant::Outline,
                     ItemMedia { variant: ItemMediaVariant::Icon,
-                        PrimitiveAvatar {
-                            class: format!("dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-{tone}"),
-                            aria_label: *sender,
-                            PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "{initials}" }
-                        }
+                        HomeGradientAvatar { label: *sender, initials: *initials, tone: *tone, size: "sm" }
                     }
                     ItemContent {
                         ItemTitle { "{sender}" }
@@ -1924,11 +1846,7 @@ fn BlockTasks() -> Element {
                             span { "{t.2}" }
                         }
                     }
-                    PrimitiveAvatar {
-                        class: format!("dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-{}", t.4),
-                        aria_label: "Assignee {t.3}",
-                        PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "{t.3}" }
-                    }
+                    HomeGradientAvatar { label: format!("Assignee {}", t.3), initials: t.3, tone: t.4, size: "sm" }
                 }
             }
         })
@@ -1953,11 +1871,7 @@ fn BlockComposer() -> Element {
     });
     rsx! {
         div { style: "display: flex; align-items: center; gap: 0.65rem; margin-bottom: 1rem;",
-            PrimitiveAvatar {
-                class: "dx-home-gradient-avatar dx-home-gradient-avatar-sm dx-home-gradient-blue",
-                aria_label: "Avery Lin",
-                PrimitiveAvatarFallback { class: "dx-home-gradient-avatar-fallback", "AL" }
-            }
+            HomeGradientAvatar { label: "Avery Lin", initials: "AL", tone: "blue", size: "sm" }
             div { style: "flex: 1; display: grid; gap: 0.1rem;",
                 span { style: "font-weight: 600; color: var(--secondary-color-3); font-size: 0.9rem;", "Reply to roadmap thread" }
                 span { style: "color: var(--secondary-color-5); font-size: 0.78rem;", "Posting as @averylin · #product" }

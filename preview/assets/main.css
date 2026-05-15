@@ -11,7 +11,6 @@
   --dx-home-gradient-light-end: 60%;
   --dx-home-gradient-chroma: 0.15;
   --dx-home-gradient-ink: oklch(22% 0.035 260);
-  --dx-home-gradient-border: oklch(62% 0.08 260 / 72%);
   --dx-home-gradient-fallback-start: #ff9a8f;
   --dx-home-gradient-fallback-mid: #b084ef;
   --dx-home-gradient-fallback-end: #78a4f3;
@@ -23,7 +22,6 @@
     --dx-home-gradient-light-end: 38%;
     --dx-home-gradient-chroma: 0.15;
     --dx-home-gradient-ink: oklch(91% 0.018 260);
-    --dx-home-gradient-border: oklch(62% 0.08 260 / 58%);
     --dx-home-gradient-fallback-start: #a04549;
     --dx-home-gradient-fallback-mid: #6740a5;
     --dx-home-gradient-fallback-end: #36568f;
@@ -35,7 +33,6 @@ html[data-theme="light"] {
   --dx-home-gradient-light-end: 60%;
   --dx-home-gradient-chroma: 0.15;
   --dx-home-gradient-ink: oklch(22% 0.035 260);
-  --dx-home-gradient-border: oklch(62% 0.08 260 / 72%);
   --dx-home-gradient-fallback-start: #ff9a8f;
   --dx-home-gradient-fallback-mid: #b084ef;
   --dx-home-gradient-fallback-end: #78a4f3;
@@ -46,7 +43,6 @@ html[data-theme="dark"] {
   --dx-home-gradient-light-end: 38%;
   --dx-home-gradient-chroma: 0.15;
   --dx-home-gradient-ink: oklch(91% 0.018 260);
-  --dx-home-gradient-border: oklch(62% 0.08 260 / 58%);
   --dx-home-gradient-fallback-start: #a04549;
   --dx-home-gradient-fallback-mid: #6740a5;
   --dx-home-gradient-fallback-end: #36568f;
@@ -192,16 +188,6 @@ body {
   height: 100%;
   max-height: 80vh;
   box-sizing: border-box;
-}
-
-.dx-code-block[data-collapsed="true"] {
-  height: 20em;
-  backdrop-filter: blur(1px);
-  mask: linear-gradient(to bottom,
-      rgb(0 0 0 / 100%) 0%,
-      rgb(0 0 0 / 100%) 60%,
-      rgb(0 0 0 / 0%) 100%);
-  user-select: none;
 }
 
 .dx-dark-mode-toggle {
@@ -684,10 +670,57 @@ body {
   background-color: var(--primary-color-2);
 }
 
-.dx-component-manual-install > p {
+.dx-component-manual-copy {
   padding: 0 1rem 1rem;
+}
+
+.dx-component-manual-copy p {
   margin: 0;
   color: var(--secondary-color-5);
+}
+
+.dx-component-manual-code {
+  width: 100%;
+}
+
+.dx-component-manual-install-code {
+  overflow: visible;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+}
+
+.dx-component-manual-install-code summary {
+  padding: 0 0 0.75rem;
+}
+
+.dx-component-manual-install-code summary:hover {
+  background-color: transparent;
+  color: var(--highlight-color-tertiary);
+}
+
+.dx-component-manual-install-code .dx-component-manual-copy {
+  padding: 0 0 0.75rem;
+}
+
+.dx-component-manual-install-code .dx-component-manual-code {
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.dx-component-manual-install-code .dx-tabs-content {
+  padding: 0;
+}
+
+.dx-component-manual-install-code .dx-tabs-content-themed {
+  border: none;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.dx-component-manual-install-code .dx-code-block {
+  max-width: 100%;
+  border-radius: 0.5rem;
 }
 
 .dx-component-description {
@@ -849,14 +882,6 @@ body {
   --dx-home-gradient-hue-mid: 258;
   --dx-home-gradient-hue-end: 244;
   box-sizing: border-box;
-  border: 1px solid var(--dx-home-gradient-border);
-  background-color: var(--primary-color-3);
-  background-image: linear-gradient(
-    135deg,
-    var(--dx-home-gradient-fallback-start) 0%,
-    var(--dx-home-gradient-fallback-mid) 58%,
-    var(--dx-home-gradient-fallback-end) 100%
-  );
   background-image: linear-gradient(
     135deg,
     oklch(
@@ -878,88 +903,7 @@ body {
     )
       100%
   );
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%),
-    0 6px 18px -12px rgb(0 0 0 / 30%);
   color: var(--dx-home-gradient-ink);
-}
-
-.dx-home-gradient-avatar {
-  display: inline-flex;
-  overflow: hidden;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  font-weight: 650;
-  line-height: 1;
-}
-
-.dx-home-gradient-avatar.dx-home-gradient-avatar-sm {
-  width: 2rem;
-  height: 2rem;
-  font-size: 0.78rem;
-}
-
-.dx-home-gradient-avatar.dx-home-gradient-avatar-md {
-  width: 3rem;
-  height: 3rem;
-  font-size: 0.95rem;
-}
-
-.dx-home-gradient-avatar.dx-home-gradient-avatar-lg {
-  width: 4rem;
-  height: 4rem;
-  font-size: 1.25rem;
-}
-
-.dx-home-gradient-avatar.dx-home-gradient-avatar[data-state="empty"],
-.dx-home-gradient-avatar.dx-home-gradient-avatar[data-state="error"] {
-  background-color: var(--primary-color-3);
-  background-image: linear-gradient(
-    135deg,
-    var(--dx-home-gradient-fallback-start) 0%,
-    var(--dx-home-gradient-fallback-mid) 58%,
-    var(--dx-home-gradient-fallback-end) 100%
-  );
-  background-image: linear-gradient(
-    135deg,
-    oklch(
-      var(--dx-home-gradient-light-start)
-      var(--dx-home-gradient-chroma)
-      var(--dx-home-gradient-hue-start)
-    )
-      0%,
-    oklch(
-      calc((var(--dx-home-gradient-light-start) + var(--dx-home-gradient-light-end)) / 2)
-      var(--dx-home-gradient-chroma)
-      var(--dx-home-gradient-hue-mid)
-    )
-      58%,
-    oklch(
-      var(--dx-home-gradient-light-end)
-      var(--dx-home-gradient-chroma)
-      var(--dx-home-gradient-hue-end)
-    )
-      100%
-  );
-}
-
-.dx-home-gradient-avatar-fallback {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  color: inherit;
-  font-size: inherit;
-}
-
-.dx-home-gradient-cover {
-  width: 64px;
-  height: 64px;
-  flex-shrink: 0;
-  border-radius: 0.45rem;
 }
 
 .dx-home-gradient-amber {

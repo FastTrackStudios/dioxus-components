@@ -16,7 +16,7 @@ pub fn Demo() -> Element {
             gap: "1rem",
             div { class: Styles::dx_avatar_item,
                 p { class: Styles::dx_avatar_label, "Basic Usage" }
-                Avatar {
+                ImageAvatar {
                     size: AvatarImageSize::Small,
                     src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
                     alt: "User avatar",
@@ -29,7 +29,7 @@ pub fn Demo() -> Element {
             }
             div { class: Styles::dx_avatar_item,
                 p { class: Styles::dx_avatar_label, "Rounded" }
-                Avatar {
+                ImageAvatar {
                     size: AvatarImageSize::Small,
                     shape: AvatarShape::Rounded,
                     src: "https://avatars.githubusercontent.com/u/66571940?s=96&v=4",
@@ -43,7 +43,7 @@ pub fn Demo() -> Element {
             }
             div { class: Styles::dx_avatar_item,
                 p { class: Styles::dx_avatar_label, "Error State" }
-                Avatar {
+                ImageAvatar {
                     size: AvatarImageSize::Medium,
                     src: "https://invalid-url.example/image.jpg",
                     alt: "Invalid image",
@@ -56,7 +56,7 @@ pub fn Demo() -> Element {
             }
             div { class: Styles::dx_avatar_item,
                 p { class: Styles::dx_avatar_label, "Large Size" }
-                Avatar {
+                ImageAvatar {
                     size: AvatarImageSize::Large,
                     src: asset!("/assets/dioxus-logo.png", ImageAssetOptions::new().with_avif()).to_string(),
                     alt: "Large avatar",
@@ -65,6 +65,14 @@ pub fn Demo() -> Element {
                     },
                     aria_label: "Large avatar",
                     "DX"
+                }
+            }
+            div { class: Styles::dx_avatar_item,
+                p { class: Styles::dx_avatar_label, "Composable" }
+                Avatar {
+                    size: AvatarImageSize::Small,
+                    aria_label: "Fallback-only avatar",
+                    AvatarFallback { "CN" }
                 }
             }
         }
