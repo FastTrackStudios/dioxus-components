@@ -462,7 +462,7 @@ pub fn ContextMenuContent(props: ContextMenuContentProps) -> Element {
     // A `position: fixed` menu pinned to a click point drifts away from the
     // click target as soon as the page scrolls. Native context menus block
     // scroll while open; match that by suppressing wheel/touchmove outside
-    // the menu and locking the document's overflow.
+    // the menu without mutating page-level overflow styles.
     use_effect_with_cleanup(move || {
         if !open() {
             return Box::new(|| {}) as Box<dyn FnOnce()>;
@@ -470,10 +470,6 @@ pub fn ContextMenuContent(props: ContextMenuContentProps) -> Element {
         let root = ctx.root_id;
         let eval = dioxus::document::eval(
             "const id = await dioxus.recv(); \
-             const prevOverflow = document.documentElement.style.overflow; \
-             const prevBodyOverflow = document.body.style.overflow; \
-             document.documentElement.style.overflow = 'hidden'; \
-             document.body.style.overflow = 'hidden'; \
              const f = (e) => { \
                  const r = document.getElementById(id); \
                  if (!r || !r.contains(e.target)) e.preventDefault(); \
@@ -481,8 +477,6 @@ pub fn ContextMenuContent(props: ContextMenuContentProps) -> Element {
              window.addEventListener('wheel', f, { capture: true, passive: false }); \
              window.addEventListener('touchmove', f, { capture: true, passive: false }); \
              await dioxus.recv(); \
-             document.documentElement.style.overflow = prevOverflow; \
-             document.body.style.overflow = prevBodyOverflow; \
              window.removeEventListener('wheel', f, true); \
              window.removeEventListener('touchmove', f, true);",
         );
