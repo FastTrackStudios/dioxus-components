@@ -4,6 +4,10 @@ use dioxus::prelude::*;
 #[css_module("/src/components/avatar/style.css")]
 struct Styles;
 
+// Keep this request pending so the example uses the real avatar loading state.
+const LOADING_AVATAR_SRC: &str =
+    "https://httpbin.org/drip?duration=3600&numbytes=1&delay=0&code=200";
+
 #[component]
 pub fn Demo() -> Element {
     let mut avatar_state = use_signal(|| "No state yet".to_string());
@@ -47,8 +51,11 @@ pub fn Demo() -> Element {
                 Avatar {
                     size: AvatarImageSize::Small,
                     aria_label: "Loading avatar",
-                    "data-state": "loading",
-                    AvatarFallback { "LD" }
+                    AvatarImage {
+                        src: LOADING_AVATAR_SRC,
+                        alt: "",
+                        "loading": "lazy",
+                    }
                 }
             }
             div { class: Styles::dx_avatar_item,
