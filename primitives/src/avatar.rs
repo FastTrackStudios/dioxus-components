@@ -25,6 +25,7 @@ struct AvatarCtx {
     // Callbacks
     on_load: Option<EventHandler<()>>,
     on_error: Option<EventHandler<()>>,
+    on_state_change: Option<EventHandler<AvatarState>>,
 }
 
 fn set_avatar_state(mut ctx: AvatarCtx, state: AvatarState) -> bool {
@@ -33,6 +34,10 @@ fn set_avatar_state(mut ctx: AvatarCtx, state: AvatarState) -> bool {
     }
 
     ctx.state.set(state);
+    if let Some(handler) = &ctx.on_state_change {
+        handler.call(state);
+    }
+
     true
 }
 
@@ -111,13 +116,6 @@ pub fn Avatar(props: AvatarProps) -> Element {
     let has_fallback_child = use_signal(|| false);
     let has_image_child = use_signal(|| false);
 
-    // Notify about initial state
-    use_effect(move || {
-        if let Some(handler) = &props.on_state_change {
-            handler.call(state());
-        }
-    });
-
     // Create context for child components
     use_context_provider(|| AvatarCtx {
         state,
@@ -125,6 +123,7 @@ pub fn Avatar(props: AvatarProps) -> Element {
         has_image_child,
         on_load: props.on_load,
         on_error: props.on_error,
+        on_state_change: props.on_state_change,
     });
 
     // Determine if fallback should be shown
