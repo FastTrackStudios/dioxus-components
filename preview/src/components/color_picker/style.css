@@ -86,13 +86,6 @@
     transform: translate(-50%, -50%) scale(1.15);
 }
 
-.dx-color-slider-thumb:focus-visible {
-    box-shadow:
-        black 0 0 0 1px,
-        black 0 0 0 1px inset,
-        0 0 0 4px color-mix(in oklab, var(--focused-border-color) 50%, transparent);
-}
-
 .dx-color-slider-thumb[data-dragging="true"] {
     box-shadow: black 0 0 0 1px, black 0 0 0 1px inset, rgb(0 0 0 / 30%) 0 2px 6px;
     transform: translate(-50%, -50%) scale(1.25);
@@ -134,14 +127,6 @@
 .dx-color-area-thumb:focus-visible,
 .dx-color-area-thumb:has(:focus-visible) {
     transform: translate(-50%, -50%) scale(1.15);
-}
-
-.dx-color-area-thumb:focus-visible,
-.dx-color-area-thumb:has(:focus-visible) {
-    box-shadow:
-        black 0 0 0 1px,
-        black 0 0 0 1px inset,
-        0 0 0 4px color-mix(in oklab, var(--focused-border-color) 50%, transparent);
 }
 
 .dx-color-area-thumb[data-dragging="true"] {
