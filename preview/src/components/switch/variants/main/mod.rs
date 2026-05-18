@@ -8,7 +8,6 @@ struct Styles;
 pub fn Demo() -> Element {
     let mut checked = use_signal(|| false);
     rsx! {
-
         div { class: Styles::dx_switch_example,
             Switch {
                 checked: checked(),
@@ -16,7 +15,6 @@ pub fn Demo() -> Element {
                 on_checked_change: move |new_checked| {
                     checked.set(new_checked);
                 },
-                SwitchThumb {}
             }
         }
     }

@@ -5,6 +5,8 @@ const PAGE_TIMEOUT = 20 * 60 * 1000;
 
 async function openPicker(page: Page) {
   await page.goto(PAGE_URL, { timeout: PAGE_TIMEOUT });
+  await page.waitForLoadState('networkidle');
+
   // The color picker button's aria-label contains the current hex.
   const button = page.getByRole('button', { name: /Color picker/i }).first();
   await expect(button).toBeVisible();
@@ -124,6 +126,13 @@ test('color area thumb keyboard navigation updates saturation/value', async ({ p
 test('escape closes the color picker popover', async ({ page }) => {
   const { popover } = await openPicker(page);
   await page.keyboard.press('Escape');
+  await expect(popover).toHaveCount(0);
+});
+
+test('clicking outside closes the color picker popover', async ({ page }) => {
+  const { popover } = await openPicker(page);
+  // Click far outside the popover.
+  await page.mouse.click(2, 2);
   await expect(popover).toHaveCount(0);
 });
 

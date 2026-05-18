@@ -17,16 +17,15 @@ Combobox::<String> {
     },
     query: Some(query()),
     on_query_change: move |next| query.set(next),
-    ComboboxInput { placeholder: "Select a framework..." }
-    ComboboxList {
-        ComboboxEmpty { "No framework found." }
-        ComboboxOption::<String> {
-            index: 0usize,
-            value: "next".to_string(),
-            text_value: "Next.js",
-            "Next.js"
-            ComboboxItemIndicator { "✔" }
-        }
+    placeholder: "Select framework...",
+    aria_label: "Select framework",
+    list_aria_label: "Frameworks",
+    ComboboxEmpty { "No framework found." }
+    ComboboxOption::<String> {
+        index: 0usize,
+        value: "next".to_string(),
+        text_value: "Next.js",
+        "Next.js"
     }
 }
 ```

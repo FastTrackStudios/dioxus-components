@@ -29,7 +29,6 @@ pub fn Demo() -> Element {
         rsx! {
             SelectOption::<Topping> { index: i, value: t, text_value: "{t}",
                 "{t.emoji()} {t}"
-                SelectItemIndicator {}
             }
         }
     });
@@ -37,14 +36,10 @@ pub fn Demo() -> Element {
     rsx! {
         SelectMulti::<Topping> {
             default_values: vec![Topping::Pepperoni, Topping::Mushroom],
-            SelectTrigger { aria_label: "Select Trigger", width: "16rem",
-                SelectValue { placeholder: "Pick toppings..." }
-            }
-            SelectList { aria_label: "Topping Picker",
-                SelectGroup {
-                    SelectGroupLabel { "Toppings" }
-                    {toppings}
-                }
+            width: "16rem",
+            SelectGroup {
+                SelectGroupLabel { "Toppings" }
+                {toppings}
             }
         }
     }

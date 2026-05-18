@@ -1,8 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::components::avatar::{
-    Avatar, AvatarFallback, AvatarImage, AvatarImageSize, AvatarShape,
-};
+use crate::components::avatar::{AvatarImageSize, AvatarShape, ImageAvatar};
 use crate::components::sidebar::{
     Sidebar, SidebarCollapsible, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel,
     SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuButtonSize, SidebarMenuItem,
@@ -60,14 +58,12 @@ pub(super) fn EmailSidebar(mut state: Store<EmailClientState>) -> Element {
                         SidebarMenuButton {
                             size: SidebarMenuButtonSize::Lg,
                             tooltip: rsx! { "You" },
-                            Avatar {
+                            ImageAvatar {
                                 size: AvatarImageSize::Small,
                                 shape: AvatarShape::Rounded,
-                                AvatarImage {
-                                    src: "{AVATAR_PROFILE_OPTIONS[0].src}",
-                                    alt: "You",
-                                }
-                                AvatarFallback { "Y" }
+                                src: "{AVATAR_PROFILE_OPTIONS[0].src}",
+                                alt: "You",
+                                "Y"
                             }
                             div { class: "dx-sidebar-info-block",
                                 span { class: "dx-sidebar-info-title", "You" }

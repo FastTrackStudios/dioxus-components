@@ -26,11 +26,6 @@ pub fn Demo() -> Element {
             on_value_change: move |value: Range<f64>| {
                 current_value.set(value);
             },
-            SliderTrack {
-                SliderRange {}
-                SliderThumb { index: 0 }
-                SliderThumb { index: 1 }
-            }
         }
     }
 }

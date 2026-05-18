@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_primitives::switch::{self, SwitchProps, SwitchThumbProps};
+use dioxus_primitives::switch::{self, SwitchProps};
 
 #[css_module("/src/components/switch/style.css")]
 struct Styles;
@@ -17,14 +17,7 @@ pub fn Switch(props: SwitchProps) -> Element {
             value: props.value,
             on_checked_change: props.on_checked_change,
             attributes: props.attributes,
-            {props.children}
+            switch::SwitchThumb { class: Styles::dx_switch_thumb }
         }
-    }
-}
-
-#[component]
-pub fn SwitchThumb(props: SwitchThumbProps) -> Element {
-    rsx! {
-        switch::SwitchThumb { class: Styles::dx_switch_thumb, attributes: props.attributes, {props.children} }
     }
 }

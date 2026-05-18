@@ -1,15 +1,11 @@
 use dioxus::prelude::*;
+use dioxus_icons::lucide::{Check, ChevronDown};
+use dioxus_primitives::select as primitive_select;
 
-use crate::components::avatar::{
-    Avatar, AvatarFallback, AvatarImage, AvatarImageSize, AvatarShape,
-};
+use crate::components::avatar::{AvatarImageSize, AvatarShape, ImageAvatar};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::item::{
     Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle,
-};
-use crate::components::select::{
-    SelectGroup, SelectGroupLabel, SelectItemIndicator, SelectList, SelectMulti, SelectOption,
-    SelectTrigger,
 };
 use crate::components::tabs::component::{TabList, TabTrigger, Tabs};
 use crate::components::virtual_list::VirtualList;
@@ -20,6 +16,9 @@ use crate::dashboard::common::{
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
+
+#[css_module("/src/components/select/style.css")]
+struct SelectStyles;
 
 #[derive(Clone, PartialEq)]
 pub(super) enum ListRow {
@@ -84,31 +83,45 @@ pub(super) fn ListPane(
                         }
                     }
                 }
-                SelectMulti::<MessageTag> {
+                primitive_select::SelectMulti::<MessageTag> {
+                    class: SelectStyles::dx_select,
                     values: Some(tags.clone()),
                     default_values: vec![],
                     on_values_change: move |values| {
                         state.set_selected_tags(values);
                     },
-                    SelectTrigger {
-                        class: "ec-filter-trigger",
+                    primitive_select::SelectTrigger {
+                        class: format!("{} ec-filter-trigger", SelectStyles::dx_select_trigger),
                         aria_label: "Filter by tag",
                         LucideIcon { kind: IconKind::Filter }
                         if !tags.is_empty() {
                             span { class: "ec-filter-count", "{tags.len()}" }
                         }
+                        ChevronDown {
+                            class: "dx-select-expand-icon",
+                            size: "20px",
+                            stroke: "var(--primary-color-7)",
+                        }
                     }
-                    SelectList { class: "ec-filter-list", aria_label: "Filter by tag",
-                        SelectGroup {
-                            SelectGroupLabel { "Tags" }
+                    primitive_select::SelectList {
+                        class: format!("{} ec-filter-list", SelectStyles::dx_select_list),
+                        aria_label: "Filter by tag",
+                        primitive_select::SelectGroup {
+                            primitive_select::SelectGroupLabel { class: SelectStyles::dx_select_group_label, "Tags" }
                             for (index, tag) in MessageTag::ALL.iter().enumerate() {
-                                SelectOption::<MessageTag> {
+                                primitive_select::SelectOption::<MessageTag> {
+                                    class: SelectStyles::dx_select_option,
                                     key: "{tag.label()}",
                                     index,
                                     value: *tag,
                                     text_value: "{tag.label()}",
                                     {tag.label()}
-                                    SelectItemIndicator {}
+                                    primitive_select::SelectItemIndicator {
+                                        Check {
+                                            size: "1rem",
+                                            stroke: "var(--secondary-color-5)",
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -196,12 +209,12 @@ fn MessageRow(
             "data-selected": is_selected,
 
             ItemMedia { variant: ItemMediaVariant::Icon,
-                Avatar { size: AvatarImageSize::Small, shape: AvatarShape::Circle,
-                    AvatarImage {
-                        src: "{avatar_profile_for_key(m.sender.addr).src}",
-                        alt: "{m.sender.name}",
-                    }
-                    AvatarFallback { {m.sender.initials} }
+                ImageAvatar {
+                    size: AvatarImageSize::Small,
+                    shape: AvatarShape::Circle,
+                    src: "{avatar_profile_for_key(m.sender.addr).src}",
+                    alt: "{m.sender.name}",
+                    {m.sender.initials}
                 }
             }
             ItemContent {

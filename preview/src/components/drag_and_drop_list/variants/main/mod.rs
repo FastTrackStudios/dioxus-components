@@ -1,5 +1,5 @@
 use super::super::component::*;
-use crate::components::avatar::{Avatar, AvatarFallback, AvatarImage, AvatarImageSize};
+use crate::components::avatar::{ImageAvatar, AvatarImageSize};
 use dioxus::prelude::*;
 
 const INLINE_STYLE: &str = r#".dx-tasks-demo {
@@ -220,20 +220,13 @@ fn task_item(t: TaskView) -> Element {
                     }
                 }
             }
-            Avatar {
+            ImageAvatar {
                 size: AvatarImageSize::Small,
                 aria_label: "{avatar_label}",
                 style: "user-select: none;",
-                AvatarImage {
-                    class: "dx-avatar-image",
-                    src: "{t.avatar}",
-                    alt: "{avatar_label}",
-                    // Block the browser's native image drag so the LI can claim
-                    // the gesture; without this, mouse-dragging the portrait
-                    // starts an image drag instead of reordering the task.
-                    draggable: "false",
-                }
-                AvatarFallback { class: "dx-avatar-fallback", "{t.assignee}" }
+                src: "{t.avatar}",
+                alt: "{avatar_label}",
+                "{t.assignee}"
             }
         }
     }

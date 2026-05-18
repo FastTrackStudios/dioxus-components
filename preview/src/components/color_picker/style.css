@@ -164,6 +164,12 @@
     gap: 8px;
     line-height: 1.5;
     outline: 0 solid;
+    transition: box-shadow 150ms, background-color 150ms, color 150ms;
+}
+
+.dx-color-picker-button:focus-visible {
+    box-shadow: 0 0 0 3px
+        color-mix(in oklab, var(--focused-border-color) 50%, transparent);
 }
 
 .dx-color-picker-popover {
@@ -171,6 +177,7 @@
     z-index: 1000;
     top: 100%;
     left: 0;
+    display: block;
     border-radius: 0.5rem;
     margin-top: 4px;
     background: var(--light, var(--primary-color))
@@ -180,13 +187,13 @@
         0 4px 16px rgb(0 0 0 / 15%);
 }
 
-.dx-color-picker-popover[data-state="closed"] {
-    display: none;
+.dx-color-picker-popover[data-state="open"] {
+    animation: dx-color-picker-popover-fade-in .15s ease-out;
 }
 
-.dx-color-picker-popover[data-state="open"] {
-    display: block;
-    animation: dx-color-picker-popover-fade-in .15s ease-out;
+.dx-color-picker-popover[data-state="closed"] {
+    animation: dx-color-picker-popover-fade-out .15s ease-out forwards;
+    pointer-events: none;
 }
 
 @keyframes dx-color-picker-popover-fade-in {
@@ -198,6 +205,18 @@
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes dx-color-picker-popover-fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-4px);
     }
 }
 
