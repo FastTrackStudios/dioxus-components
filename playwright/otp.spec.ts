@@ -5,9 +5,28 @@ const otpUrl = new URL('/component/?name=otp&', previewUrl).toString();
 
 async function waitForOtpLayout(page: Page) {
   const input = page.getByRole('textbox', { name: 'One-time password' });
+  const frame = page.locator('#component-preview-frame').first();
   await expect
-    .poll(async () => (await input.boundingBox())?.width ?? Number.POSITIVE_INFINITY)
-    .toBeLessThan(400);
+    .poll(async () => {
+      const [inputBox, frameBox] = await Promise.all([
+        input.boundingBox(),
+        frame.boundingBox(),
+      ]);
+
+      if (!inputBox || !frameBox) {
+        return false;
+      }
+
+      return (
+        inputBox.width < 400 &&
+        frameBox.width < 900 &&
+        inputBox.x >= frameBox.x &&
+        inputBox.x + inputBox.width <= frameBox.x + frameBox.width
+      );
+    })
+    .toBe(true);
+  await input.scrollIntoViewIfNeeded();
+  await expect(input).toBeInViewport();
 }
 
 test('otp typing, backspace, and rejection', async ({ page }) => {
@@ -93,47 +112,50 @@ test('otp keeps visual focus visible at the end', async ({ page }) => {
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
+  const otp = input.locator('xpath=..');
   await input.focus();
   await page.keyboard.type('123456');
 
-  await expect(page.locator('[data-active="true"]')).toHaveCount(1);
-  await expect(page.locator('[data-char="6"]')).toHaveAttribute('data-active', 'true');
+  await expect(otp.locator('[data-active="true"]')).toHaveCount(1);
+  await expect(otp.locator('[data-char="6"]')).toHaveAttribute('data-active', 'true');
 
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('End');
-  await expect(page.locator('[data-active="true"]')).toHaveCount(1);
-  await expect(page.locator('[data-char="6"]')).toHaveAttribute('data-active', 'true');
-  await expect(page.locator('[data-char="6"]')).toHaveCSS('border-left-width', '1px');
-  await expect(page.locator('[data-char="6"]')).toHaveCSS('border-left-style', 'solid');
+  await expect(otp.locator('[data-active="true"]')).toHaveCount(1);
+  await expect(otp.locator('[data-char="6"]')).toHaveAttribute('data-active', 'true');
+  await expect(otp.locator('[data-char="6"]')).toHaveCSS('border-left-width', '1px');
+  await expect(otp.locator('[data-char="6"]')).toHaveCSS('border-left-style', 'solid');
 });
 
 test('otp renders its own selection highlight', async ({ page }) => {
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
+  const otp = input.locator('xpath=..');
   await input.focus();
   await page.keyboard.type('123456');
 
   await page.keyboard.press('ControlOrMeta+A');
-  await expect(page.locator('[data-selected="true"]')).toHaveCount(6);
+  await expect(otp.locator('[data-selected="true"]')).toHaveCount(6);
 
   await page.keyboard.type('9');
   await expect(page.locator('#otp-value')).toHaveText('9');
-  await expect(page.locator('[data-selected="true"]')).toHaveCount(0);
+  await expect(otp.locator('[data-selected="true"]')).toHaveCount(0);
 });
 
 test('otp pointer selection highlights slots', async ({ page }) => {
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
+  const otp = input.locator('xpath=..');
   await input.focus();
   await page.keyboard.type('123456');
   await page.locator('#otp-toggle-disabled').focus();
   await expect(input).not.toBeFocused();
   await waitForOtpLayout(page);
 
-  const start = await page.locator('[data-char="2"]').boundingBox();
-  const end = await page.locator('[data-char="5"]').boundingBox();
+  const start = await otp.locator('[data-char="2"]').boundingBox();
+  const end = await otp.locator('[data-char="5"]').boundingBox();
   expect(start).not.toBeNull();
   expect(end).not.toBeNull();
 
@@ -142,7 +164,7 @@ test('otp pointer selection highlights slots', async ({ page }) => {
   await page.mouse.move(end!.x + end!.width / 2 + 1, end!.y + end!.height / 2, { steps: 5 });
   await page.mouse.up();
 
-  await expect(page.locator('[data-selected="true"]')).toHaveCount(3);
+  await expect(otp.locator('[data-selected="true"]')).toHaveCount(3);
 
   await page.keyboard.type('9');
   await expect(page.locator('#otp-value')).toHaveText('1296');
@@ -152,12 +174,13 @@ test('otp backward pointer selection includes the slot under the pointer', async
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
+  const otp = input.locator('xpath=..');
   await input.focus();
   await page.keyboard.type('123456');
   await waitForOtpLayout(page);
 
-  const start = await page.locator('[data-char="5"]').boundingBox();
-  const end = await page.locator('[data-char="2"]').boundingBox();
+  const start = await otp.locator('[data-char="5"]').boundingBox();
+  const end = await otp.locator('[data-char="2"]').boundingBox();
   expect(start).not.toBeNull();
   expect(end).not.toBeNull();
 
@@ -166,11 +189,11 @@ test('otp backward pointer selection includes the slot under the pointer', async
   await page.mouse.move(end!.x + end!.width / 2, end!.y + end!.height / 2, { steps: 5 });
   await page.mouse.up();
 
-  await expect(page.locator('[data-selected="true"]')).toHaveCount(4);
-  await expect(page.locator('[data-char="5"]')).toHaveAttribute('data-selected', 'true');
-  await expect(page.locator('[data-char="2"]')).toHaveAttribute('data-selection-start', 'true');
-  await expect(page.locator('[data-char="2"]')).toHaveCSS('border-left-width', '1px');
-  await expect(page.locator('[data-char="2"]')).toHaveCSS('border-left-style', 'solid');
+  await expect(otp.locator('[data-selected="true"]')).toHaveCount(4);
+  await expect(otp.locator('[data-char="5"]')).toHaveAttribute('data-selected', 'true');
+  await expect(otp.locator('[data-char="2"]')).toHaveAttribute('data-selection-start', 'true');
+  await expect(otp.locator('[data-char="2"]')).toHaveCSS('border-left-width', '1px');
+  await expect(otp.locator('[data-char="2"]')).toHaveCSS('border-left-style', 'solid');
 
   await page.keyboard.type('9');
   await expect(page.locator('#otp-value')).toHaveText('196');
@@ -187,11 +210,12 @@ test('otp copy cut and paste use the visible selection', async ({
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
+  const otp = input.locator('xpath=..');
   await input.focus();
   await page.keyboard.type('123456');
 
   await page.keyboard.press('ControlOrMeta+A');
-  await expect(page.locator('[data-selected="true"]')).toHaveCount(6);
+  await expect(otp.locator('[data-selected="true"]')).toHaveCount(6);
 
   await page.keyboard.press('ControlOrMeta+C');
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('123456');

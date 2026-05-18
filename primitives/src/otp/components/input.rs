@@ -7,13 +7,34 @@ fn input_value_and_cursor(
     current_value: &str,
     raw_value: &str,
     max: usize,
+    cursor: usize,
+    selected_range: Option<SelectionRange>,
 ) -> (String, usize, bool) {
     if max == 0 {
         return (String::new(), 0, false);
     }
 
-    let next: String = raw_value.chars().take(max).collect();
-    let next_cursor = next.chars().count();
+    let current_chars: Vec<char> = current_value.chars().collect();
+    let next_chars: Vec<char> = raw_value.chars().take(max).collect();
+    let current_len = current_chars.len();
+    let next_len = next_chars.len();
+    let cursor = cursor.min(current_len);
+    let (start, end) = selected_range
+        .map(|range| (range.start.min(current_len), range.end.min(current_len)))
+        .unwrap_or((cursor, cursor));
+    let replaced_len = end.saturating_sub(start);
+    let base_len = current_len.saturating_sub(replaced_len);
+    let next_cursor = if next_len >= base_len {
+        start + (next_len - base_len)
+    } else {
+        current_chars
+            .iter()
+            .zip(&next_chars)
+            .take_while(|(a, b)| a == b)
+            .count()
+    }
+    .min(next_len);
+    let next: String = next_chars.into_iter().collect();
     let changed = next != current_value;
 
     (next, next_cursor, changed)
@@ -297,15 +318,31 @@ mod tests {
     #[test]
     fn input_change_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("12", "129", 6),
+            input_value_and_cursor("12", "129", 6, 2, None),
             ("129".to_string(), 3, true)
+        );
+    }
+
+    #[test]
+    fn input_change_uses_visible_cursor_for_middle_insert() {
+        assert_eq!(
+            input_value_and_cursor("12", "192", 6, 1, None),
+            ("192".to_string(), 2, true)
+        );
+    }
+
+    #[test]
+    fn consecutive_input_change_keeps_cursor_after_inserted_text() {
+        assert_eq!(
+            input_value_and_cursor("192", "1982", 6, 2, None),
+            ("1982".to_string(), 3, true)
         );
     }
 
     #[test]
     fn unchanged_input_is_not_reported_as_changed() {
         assert_eq!(
-            input_value_and_cursor("192", "192", 6),
+            input_value_and_cursor("192", "192", 6, 3, None),
             ("192".to_string(), 3, false)
         );
     }
@@ -313,7 +350,7 @@ mod tests {
     #[test]
     fn input_change_truncates_to_maxlength() {
         assert_eq!(
-            input_value_and_cursor("123456", "1234569", 6),
+            input_value_and_cursor("123456", "1234569", 6, 6, None),
             ("123456".to_string(), 6, false)
         );
     }
@@ -321,7 +358,7 @@ mod tests {
     #[test]
     fn input_deletion_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("12", "1", 6),
+            input_value_and_cursor("12", "1", 6, 2, None),
             ("1".to_string(), 1, true)
         );
     }
@@ -329,7 +366,7 @@ mod tests {
     #[test]
     fn full_input_replacement_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("12", "987654", 6),
+            input_value_and_cursor("12", "987654", 6, 0, SelectionRange::new(0, 2, 2)),
             ("987654".to_string(), 6, true)
         );
     }
@@ -337,7 +374,7 @@ mod tests {
     #[test]
     fn full_input_replacement_with_shared_prefix_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("123456", "123999", 6),
+            input_value_and_cursor("123456", "123999", 6, 0, SelectionRange::new(0, 6, 6)),
             ("123999".to_string(), 6, true)
         );
     }
@@ -345,7 +382,7 @@ mod tests {
     #[test]
     fn shorter_full_input_replacement_with_shared_prefix_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("123456", "1239", 6),
+            input_value_and_cursor("123456", "1239", 6, 0, SelectionRange::new(0, 6, 6)),
             ("1239".to_string(), 4, true)
         );
     }
@@ -353,7 +390,7 @@ mod tests {
     #[test]
     fn full_input_replacement_truncates_to_maxlength() {
         assert_eq!(
-            input_value_and_cursor("123456", "9876543", 6),
+            input_value_and_cursor("123456", "9876543", 6, 0, SelectionRange::new(0, 6, 6)),
             ("987654".to_string(), 6, true)
         );
     }
@@ -361,8 +398,8 @@ mod tests {
     #[test]
     fn selected_range_replacement_with_shared_digits_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("123456", "123996", 6),
-            ("123996".to_string(), 6, true)
+            input_value_and_cursor("123456", "123996", 6, 3, SelectionRange::new(3, 5, 6)),
+            ("123996".to_string(), 5, true)
         );
     }
 
@@ -758,9 +795,6 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     if selecting_with_pointer() {
                         e.prevent_default();
                     }
-                    if selection_range().is_some() {
-                        pointer_focus_x.set(None);
-                    }
                     selecting_with_pointer.set(false);
                 },
 
@@ -945,13 +979,13 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     let max = maxlength();
                     let current_value = value.read().clone();
                     let selected = selection_range();
+                    let current_cursor = cursor().min(current_value.chars().count());
                     let (next_value, next_cursor, inserted) =
-                        input_value_and_cursor(&current_value, &raw, max);
+                        input_value_and_cursor(&current_value, &raw, max, current_cursor, selected);
                     if inserted {
                         if let Some(validate) = validate {
                             if !validate.call(next_value.clone()) {
                                 let id = input_id();
-                                let current_cursor = cursor().min(current_value.chars().count());
                                 let (start, end) = selected
                                     .map(|range| (range.start, range.end))
                                     .unwrap_or((current_cursor, current_cursor));
@@ -979,6 +1013,11 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 next_cursor,
                             )
                             .await;
+                        });
+                    } else {
+                        let id = input_id();
+                        spawn(async move {
+                            sync_input_selection(id, next_cursor, next_cursor).await;
                         });
                     }
                     apply_value_change(

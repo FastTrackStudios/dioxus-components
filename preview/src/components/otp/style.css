@@ -2,6 +2,7 @@
 
 .dx-otp {
   display: flex;
+  width: fit-content;
   align-items: center;
   font-family: inherit;
   gap: 0.5rem;
