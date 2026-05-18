@@ -446,5 +446,4 @@ mod tests {
         assert!(html.contains("11"));
         assert!(html.contains("Show Calendar"));
     }
-
 }

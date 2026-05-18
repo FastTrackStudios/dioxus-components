@@ -1,5 +1,5 @@
-//! Dioxus Kit — a shadcn-styled component library for Dioxus built on top
-//! of [`dioxus-kit-core`].
+//! Dioxus Kit, a shadcn-styled component library for Dioxus built on top
+//! of `dioxus-kit-core`.
 
 use dioxus::prelude::{asset, manganis, Asset};
 

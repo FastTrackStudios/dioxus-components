@@ -1,7 +1,5 @@
 use dioxus::prelude::*;
-use dioxus_kit_core::popover::{
-    self, PopoverContentProps, PopoverRootProps, PopoverTriggerProps,
-};
+use dioxus_kit_core::popover::{self, PopoverContentProps, PopoverRootProps, PopoverTriggerProps};
 use dioxus_kit_core::{dioxus_attributes::attributes, merge_attributes};
 
 #[css_module("/src/popover/style.css")]

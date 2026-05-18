@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - /**
+      - preview/**/*.css
       - preview/**/*.rs
       - preview/**/*.css
       - preview/**/Cargo.toml
@@ -23,6 +24,7 @@ on:
       - main
     paths:
       - /**
+      - preview/**/*.css
       - preview/**/*.rs
       - preview/**/*.css
       - preview/**/Cargo.toml

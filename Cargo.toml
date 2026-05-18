@@ -7,8 +7,10 @@ exclude = ["test-harness"]
 dioxus-kit-core = { path = "dioxus-kit-core" }
 dioxus-kit = { path = "dioxus-kit" }
 
-dioxus = "0.7.0"
 tracing = { version = "0.1", features = ["std"] }
+
+dioxus = "0.7.8"
+dioxus-rsx = "0.7.8"
 
 [profile.release]
 opt-level = "z"
@@ -17,3 +19,10 @@ lto = true
 codegen-units = 1
 strip = true
 incremental = false
+
+[profile.dev]
+debug = 0
+
+[profile.dev.build-override]
+opt-level = 3
+codegen-units = 1

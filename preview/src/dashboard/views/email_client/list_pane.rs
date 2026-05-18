@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_icons::lucide::{Check, ChevronDown};
 use dioxus_kit_core::select as primitive_select;
 
-use crate::components::avatar::{Avatar, AvatarImageSize, AvatarShape};
+use crate::components::avatar::{AvatarImageSize, AvatarShape, ImageAvatar};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::item::{
     Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle,
@@ -16,7 +16,6 @@ use crate::dashboard::common::{
 
 use super::avatars::avatar_profile_for_key;
 use super::state::{EmailClientState, EmailClientStateStoreExt, EmailClientStateStoreImplExt};
-
 
 #[derive(Clone, PartialEq)]
 pub(super) enum ListRow {
@@ -207,7 +206,7 @@ fn MessageRow(
             "data-selected": is_selected,
 
             ItemMedia { variant: ItemMediaVariant::Icon,
-                Avatar {
+                ImageAvatar {
                     size: AvatarImageSize::Small,
                     shape: AvatarShape::Circle,
                     src: "{avatar_profile_for_key(m.sender.addr).src}",

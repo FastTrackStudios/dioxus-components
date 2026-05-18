@@ -83,7 +83,9 @@ pub fn SelectMulti<T: Clone + PartialEq + 'static>(props: SelectMultiProps<T>) -
 
 #[component]
 pub fn SelectGroupLabel(props: SelectGroupLabelProps) -> Element {
-    let base = attributes!(div { class: "dx-select-group-label" });
+    let base = attributes!(div {
+        class: "dx-select-group-label"
+    });
     let merged = merge_attributes(vec![base, props.attributes]);
 
     rsx! {
@@ -97,7 +99,9 @@ pub fn SelectGroupLabel(props: SelectGroupLabelProps) -> Element {
 
 #[component]
 pub fn SelectOption<T: Clone + PartialEq + 'static>(props: SelectOptionProps<T>) -> Element {
-    let base = attributes!(div { class: "dx-select-option" });
+    let base = attributes!(div {
+        class: "dx-select-option"
+    });
     let merged = merge_attributes(vec![base, props.attributes]);
 
     rsx! {

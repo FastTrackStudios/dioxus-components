@@ -1,11 +1,9 @@
 use dioxus::prelude::*;
-use dioxus_kit_core::color_picker::{
-    self, Color, ColorAreaProps, ColorPickerContext,
-};
-use dioxus_kit_core::popover;
-use dioxus_kit_core::use_controlled;
+use dioxus_kit_core::color_picker::{self, Color, ColorAreaProps, ColorPickerContext};
 use dioxus_kit_core::label::Label;
+use dioxus_kit_core::popover;
 use dioxus_kit_core::slider::*;
+use dioxus_kit_core::use_controlled;
 use palette::{encoding, FromColor, Hsv, IntoColor, RgbHue, Srgb};
 
 use crate::input::Input;
@@ -204,7 +202,7 @@ pub fn ColorPickerPopover(props: ColorPickerPopoverProps) -> Element {
     }
 }
 
-/// The props for the [`ColorField`] component.
+/// The props for the color field component.
 #[derive(Props, Clone, PartialEq)]
 pub struct ColorFieldProps {
     /// Optional label above the input field
@@ -299,7 +297,7 @@ fn ColorField(props: ColorFieldProps) -> Element {
     }
 }
 
-/// The props for the [`ColorSwatch`] component.
+/// The props for the color swatch component.
 #[derive(Props, Clone, PartialEq)]
 pub struct ColorSwatchProps {
     /// The selected color
@@ -336,7 +334,7 @@ fn ColorSwatch(props: ColorSwatchProps) -> Element {
     }
 }
 
-/// The props for the [`ColorSlider`] component.
+/// The props for the color slider component.
 #[derive(Props, Clone, PartialEq)]
 pub struct ColorSliderProps {
     pub title: ReadSignal<String>,

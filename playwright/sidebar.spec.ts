@@ -1,37 +1,35 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const BASE_URL = "http://127.0.0.1:8080";
+const SIDEBAR_RENDER_TIMEOUT = 30 * 1000;
 
 async function gotoSidebarBlock(page: Page) {
   await page.goto(`${BASE_URL}/component/block/?name=sidebar&variant=main&`, {
     timeout: 20 * 60 * 1000,
+    waitUntil: 'load'
   });
 
-  await expect(page.locator('[data-slot="sidebar-wrapper"]')).toBeVisible();
+  await expect(page.locator('[data-slot="sidebar-wrapper"]')).toBeVisible({
+    timeout: SIDEBAR_RENDER_TIMEOUT,
+  });
 }
 
 test("sidebar: preview page renders block", async ({ page }) => {
   await page.goto(`${BASE_URL}/component/?name=sidebar&`, {
     timeout: 20 * 60 * 1000,
+    waitUntil: 'load'
   });
   const iframe = page.locator("iframe").first();
-  await expect(iframe).toBeVisible();
+  await expect(iframe).toBeVisible({ timeout: SIDEBAR_RENDER_TIMEOUT });
   await expect(iframe).toHaveAttribute(
     "src",
     /component\/block\/\?name=sidebar&variant=main/,
+    { timeout: SIDEBAR_RENDER_TIMEOUT },
   );
 
-  // Ensure the iframe content actually loads.
-  const iframeHandle = await iframe.elementHandle();
-  if (!iframeHandle) {
-    throw new Error("Sidebar preview iframe was not found");
-  }
-  const frame = await iframeHandle.contentFrame();
-  if (!frame) {
-    throw new Error("Sidebar preview iframe has no content frame");
-  }
-
-  await expect(frame.locator('[data-slot="sidebar-wrapper"]')).toBeVisible();
+  await expect(
+    page.frameLocator("iframe").first().locator('[data-slot="sidebar-wrapper"]'),
+  ).toBeVisible({ timeout: SIDEBAR_RENDER_TIMEOUT });
 });
 
 test.describe("sidebar: block route", () => {

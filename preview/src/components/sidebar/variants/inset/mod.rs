@@ -1,4 +1,4 @@
-use crate::components::avatar::{Avatar, AvatarImageSize};
+use crate::components::avatar::{ImageAvatar, AvatarImageSize};
 use crate::components::button::{Button, ButtonVariant};
 use crate::components::collapsible::{Collapsible, CollapsibleContent, CollapsibleTrigger};
 use crate::components::dropdown_menu::{
@@ -377,7 +377,7 @@ fn NavUser() -> Element {
                     DropdownMenuTrigger { class: "dx-sidebar-dropdown-menu-trigger",
                         as: move |attributes: Vec<Attribute>| rsx! {
                             SidebarMenuButton { class: DemoStyles::dx_sidebar_menu_disclosure_button, size: SidebarMenuButtonSize::Lg, attributes,
-                                Avatar {
+                                ImageAvatar {
                                     size: AvatarImageSize::Small,
                                     style: "border-radius:0.5rem;",
                                     src: asset!("/assets/dioxus-logo.png", ImageAssetOptions::new().with_avif()).to_string(),
@@ -394,7 +394,7 @@ fn NavUser() -> Element {
                     }
                     DropdownMenuContent { class: "dx-sidebar-dropdown-menu-content",
                         div { style: "display:flex; align-items:center; gap:0.5rem; padding:0.375rem 0.25rem; text-align:left; font-size:0.875rem;",
-                            Avatar {
+                            ImageAvatar {
                                 size: AvatarImageSize::Small,
                                 style: "border-radius:0.5rem;",
                                 src: asset!("/assets/dioxus-logo.png", ImageAssetOptions::new().with_avif()).to_string(),

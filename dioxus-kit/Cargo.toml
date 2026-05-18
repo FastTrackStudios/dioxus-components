@@ -22,6 +22,9 @@ strum = { version = "0.27.2", features = ["derive"] }
 tracing.workspace = true
 time = { version = "0.3.44", features = ["std", "macros"] }
 
+[dev-dependencies]
+dioxus-ssr = "0.7.0"
+
 [features]
 default = []
 web = ["dioxus/web", "dioxus-kit-core/web"]
