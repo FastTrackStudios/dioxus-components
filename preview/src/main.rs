@@ -1,3 +1,5 @@
+#![allow(unpredictable_function_pointer_comparisons)]
+
 use crate::components::{
     avatar::{AvatarImageSize, ImageAvatar},
     badge::{Badge, BadgeVariant, VerifiedIcon},
@@ -28,7 +30,7 @@ use dioxus_code::{advanced::HighlightedSource, Code, CodeTheme, Theme};
 use dioxus_i18n::prelude::{use_init_i18n, I18nConfig};
 use dioxus_icons::lucide::{
     ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Copy, ExternalLink, KeyRound, Lock,
-    LockOpen, Mail, Menu, Pause, Play, RotateCcw, ShieldCheck, SkipBack, SkipForward, X,
+    Mail, Menu, Pause, Play, ShieldCheck, SkipBack, SkipForward, X,
 };
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
@@ -57,7 +59,6 @@ struct ComponentDemoData {
     variants: &'static [ComponentVariantDemoData],
 }
 
-#[allow(unpredictable_function_pointer_comparisons)]
 #[derive(Clone, PartialEq)]
 struct ComponentVariantDemoData {
     name: &'static str,
@@ -1273,7 +1274,6 @@ fn WidgetMasonry() -> Element {
     }
 }
 
-#[allow(unpredictable_function_pointer_comparisons)]
 #[component]
 fn MasonryCard(component: fn() -> Element, #[props(default)] popout: bool) -> Element {
     let Comp = component;
