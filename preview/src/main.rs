@@ -11,6 +11,9 @@ use crate::components::{
         Item, ItemContent, ItemDescription, ItemMedia, ItemMediaVariant, ItemTitle, ItemVariant,
     },
     label::Label,
+    otp::{
+        OneTimePasswordGroup, OneTimePasswordInput, OneTimePasswordSeparator, OneTimePasswordSlot,
+    },
     progress::Progress,
     radio_group::{RadioGroup, RadioItem},
     slider::Slider,
@@ -24,8 +27,8 @@ use dioxus::prelude::{dioxus_router::LinkProps, *};
 use dioxus_code::{advanced::HighlightedSource, Code, CodeTheme, Theme};
 use dioxus_i18n::prelude::{use_init_i18n, I18nConfig};
 use dioxus_icons::lucide::{
-    ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Copy, ExternalLink, Mail, Menu,
-    Pause, Play, SkipBack, SkipForward, X,
+    ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Copy, ExternalLink, KeyRound, Lock,
+    LockOpen, Mail, Menu, Pause, Play, RotateCcw, ShieldCheck, SkipBack, SkipForward, X,
 };
 use std::str::FromStr;
 use strum::{Display, EnumIter, EnumString, IntoEnumIterator};
@@ -1201,6 +1204,10 @@ const BLOCKS: &[MasonryEntry] = &[
         popout: false,
     },
     MasonryEntry {
+        component: BlockOtp,
+        popout: false,
+    },
+    MasonryEntry {
         component: BlockInbox,
         popout: false,
     },
@@ -1373,6 +1380,125 @@ fn BlockStats() -> Element {
         }
         p { style: "margin: 0.65rem 0 0; color: var(--secondary-color-5); font-size: 0.82rem;",
             "On track for the 36k Q2 target."
+        }
+    }
+}
+
+#[component]
+fn BlockOtp() -> Element {
+    let mut value = use_signal(String::new);
+    let mut last_complete = use_signal(String::new);
+    let mut disabled = use_signal(|| false);
+    let is_complete = value.read().chars().count() == 6;
+    let current_display = if value().is_empty() {
+        "------".to_string()
+    } else {
+        value()
+    };
+    let completed_display = if last_complete().is_empty() {
+        "------".to_string()
+    } else {
+        last_complete()
+    };
+
+    rsx! {
+        div { style: "display: grid; gap: 1rem;",
+            div { style: "display: grid; align-items: center; gap: 0.75rem; grid-template-columns: auto minmax(0, 1fr) auto;",
+                div { style: "display: flex; width: 2.25rem; height: 2.25rem; align-items: center; justify-content: center; border: 1px solid var(--primary-color-6); border-radius: 0.5rem; background: var(--primary-color-2); color: var(--highlight-color-tertiary);",
+                    ShieldCheck { size: 20, stroke_width: "1.75" }
+                }
+                div { style: "min-width: 0;",
+                    h3 { style: "margin: 0; color: var(--secondary-color-3); font-size: 1rem; font-weight: 660; line-height: 1.25;",
+                        "Verification"
+                    }
+                    p { style: "margin: 0; color: var(--secondary-color-5); font-size: 0.85rem; line-height: 1.4;",
+                        "Enter the 6-digit code"
+                    }
+                }
+                span {
+                    style: if is_complete {
+                        "display: inline-flex; min-width: 4.75rem; justify-content: center; padding: 0.25rem 0.5rem; border: 1px solid color-mix(in oklab, var(--secondary-success-color) 35%, var(--primary-color-6)); border-radius: 999px; background: color-mix(in oklab, var(--secondary-success-color) 14%, transparent); color: var(--secondary-success-color); font-size: 0.75rem; font-weight: 600; line-height: 1;"
+                    } else {
+                        "display: inline-flex; min-width: 4.75rem; justify-content: center; padding: 0.25rem 0.5rem; border: 1px solid var(--primary-color-6); border-radius: 999px; background: var(--primary-color-2); color: var(--secondary-color-5); font-size: 0.75rem; font-weight: 600; line-height: 1;"
+                    },
+                    if is_complete { "Complete" } else { "Pending" }
+                }
+            }
+
+            div { style: "display: grid; gap: 0.5rem; justify-items: start;",
+                label { r#for: "masonry-otp-input", style: "display: inline-flex; align-items: center; color: var(--secondary-color-4); font-size: 0.8rem; font-weight: 600; gap: 0.375rem; line-height: 1.25;",
+                    KeyRound { size: 14, stroke_width: "1.75" }
+                    "Security code"
+                }
+                OneTimePasswordInput {
+                    id: "masonry-otp-input",
+                    maxlength: 6usize,
+                    value: value(),
+                    disabled: disabled(),
+                    validate: |s: String| s.chars().all(|c| c.is_ascii_digit()),
+                    on_value_change: move |v| value.set(v),
+                    on_complete: move |v| last_complete.set(v),
+                    aria_label: "Verification code",
+                    OneTimePasswordGroup {
+                        OneTimePasswordSlot { index: 0usize }
+                        OneTimePasswordSlot { index: 1usize }
+                        OneTimePasswordSlot { index: 2usize }
+                    }
+                    OneTimePasswordSeparator {}
+                    OneTimePasswordGroup {
+                        OneTimePasswordSlot { index: 3usize }
+                        OneTimePasswordSlot { index: 4usize }
+                        OneTimePasswordSlot { index: 5usize }
+                    }
+                }
+            }
+
+            div { style: "display: grid; overflow: hidden; border: 1px solid var(--primary-color-6); border-radius: 0.5rem; background: var(--primary-color-1); grid-template-columns: repeat(2, minmax(0, 1fr));",
+                OtpMasonryMetric { label: "Current", value: current_display, border: false }
+                OtpMasonryMetric { label: "Completed", value: completed_display, border: true }
+            }
+
+            div { style: "display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;",
+                Button {
+                    variant: ButtonVariant::Outline,
+                    onclick: move |_| disabled.toggle(),
+                    if disabled() {
+                        LockOpen { size: 16, stroke_width: "1.75" }
+                        "Enable"
+                    } else {
+                        Lock { size: 16, stroke_width: "1.75" }
+                        "Disable"
+                    }
+                }
+                Button {
+                    variant: ButtonVariant::Ghost,
+                    onclick: move |_| {
+                        value.set(String::new());
+                        last_complete.set(String::new());
+                    },
+                    RotateCcw { size: 16, stroke_width: "1.75" }
+                    "Reset"
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn OtpMasonryMetric(label: &'static str, value: String, #[props(default)] border: bool) -> Element {
+    rsx! {
+        div {
+            style: if border {
+                "display: grid; min-width: 0; padding: 0.65rem 0.75rem; border-left: 1px solid var(--primary-color-6); gap: 0.25rem;"
+            } else {
+                "display: grid; min-width: 0; padding: 0.65rem 0.75rem; gap: 0.25rem;"
+            },
+            span { style: "color: var(--secondary-color-5); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; line-height: 1; text-transform: uppercase;",
+                "{label}"
+            }
+            code { style: "min-height: 1.25rem; overflow: hidden; color: var(--secondary-color-2); font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.95rem; font-variant-ligatures: none; font-variant-numeric: tabular-nums; font-weight: 600; line-height: 1.25rem; text-overflow: ellipsis; white-space: nowrap;",
+                "{value}"
+            }
         }
     }
 }

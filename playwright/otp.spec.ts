@@ -62,7 +62,7 @@ test('otp cursor does not drift past typed length', async ({ page }) => {
   await expect(page.locator('#otp-value')).toHaveText('123');
 });
 
-test('otp ArrowLeft inserts in the middle', async ({ page }) => {
+test('otp ArrowLeft replaces the active slot', async ({ page }) => {
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
@@ -70,10 +70,10 @@ test('otp ArrowLeft inserts in the middle', async ({ page }) => {
   await page.keyboard.type('12');
   await page.keyboard.press('ArrowLeft');
   await page.keyboard.type('9');
-  await expect(page.locator('#otp-value')).toHaveText('192');
+  await expect(page.locator('#otp-value')).toHaveText('19');
 });
 
-test('otp input events insert at the visible cursor', async ({ page }) => {
+test('otp input events replace the active slot', async ({ page }) => {
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
@@ -85,7 +85,7 @@ test('otp input events insert at the visible cursor', async ({ page }) => {
   // keydown event for the inserted text.
   await page.keyboard.insertText('9');
   await page.keyboard.insertText('8');
-  await expect(page.locator('#otp-value')).toHaveText('1982');
+  await expect(page.locator('#otp-value')).toHaveText('198');
 });
 
 test('otp does not let the native input grow past maxlength', async ({ page }) => {
@@ -94,18 +94,18 @@ test('otp does not let the native input grow past maxlength', async ({ page }) =
   const input = page.getByRole('textbox', { name: 'One-time password' });
   await input.focus();
   await page.keyboard.type('1234567');
-  await expect(page.locator('#otp-value')).toHaveText('123456');
-  await expect(input).toHaveValue('123456');
+  await expect(page.locator('#otp-value')).toHaveText('123457');
+  await expect(input).toHaveValue('123457');
 
   await page.keyboard.press('Home');
   await page.keyboard.type('9');
-  await expect(page.locator('#otp-value')).toHaveText('912345');
-  await expect(input).toHaveValue('912345');
+  await expect(page.locator('#otp-value')).toHaveText('923457');
+  await expect(input).toHaveValue('923457');
 
   await page.keyboard.press('End');
   await page.keyboard.type('8');
-  await expect(page.locator('#otp-value')).toHaveText('912345');
-  await expect(input).toHaveValue('912345');
+  await expect(page.locator('#otp-value')).toHaveText('923458');
+  await expect(input).toHaveValue('923458');
 });
 
 test('otp keeps visual focus visible at the end', async ({ page }) => {
@@ -150,7 +150,7 @@ test('otp pointer selection highlights slots', async ({ page }) => {
   const otp = input.locator('xpath=..');
   await input.focus();
   await page.keyboard.type('123456');
-  await page.locator('#otp-toggle-disabled').focus();
+  await input.evaluate((node: HTMLInputElement) => node.blur());
   await expect(input).not.toBeFocused();
   await waitForOtpLayout(page);
 
@@ -270,12 +270,12 @@ test('otp on_complete does not re-fire when editing a full buffer', async ({ pag
   await page.keyboard.type('123456');
   await expect(complete).toHaveText('123456');
 
-  // Move into the middle of the full buffer and type. The keydown handler inserts
-  // and truncates, keeping length at maxlength but changing the value. This is
+  // Move into the full buffer and type. The keydown handler replaces the active
+  // slot, keeping length at maxlength but changing the value. This is
   // NOT a transition to maxlength, so on_complete must not fire again.
   await page.keyboard.press('Home');
   await page.keyboard.press('9');
-  await expect(page.locator('#otp-value')).toHaveText('912345');
+  await expect(page.locator('#otp-value')).toHaveText('923456');
   await expect(complete).toHaveText('123456');
 });
 
@@ -283,7 +283,9 @@ test('otp disabled state blocks input', async ({ page }) => {
   await page.goto(otpUrl, { timeout: 20 * 60 * 1000 });
 
   const input = page.getByRole('textbox', { name: 'One-time password' });
-  await page.locator('#otp-toggle-disabled').click();
+  await page
+    .locator('#otp-toggle-disabled')
+    .evaluate((node: HTMLButtonElement) => node.click());
   await expect(input).toBeDisabled();
 
   // Typing into a disabled input is a no-op in the browser.
@@ -292,7 +294,9 @@ test('otp disabled state blocks input', async ({ page }) => {
   await expect(page.locator('#otp-value')).toHaveText('');
 
   // Re-enable and confirm input works again.
-  await page.locator('#otp-toggle-disabled').click();
+  await page
+    .locator('#otp-toggle-disabled')
+    .evaluate((node: HTMLButtonElement) => node.click());
   await expect(input).toBeEnabled();
   await input.focus();
   await page.keyboard.type('123');

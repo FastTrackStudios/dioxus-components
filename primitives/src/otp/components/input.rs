@@ -15,34 +15,103 @@ fn input_value_and_cursor(
     }
 
     let current_chars: Vec<char> = current_value.chars().collect();
-    let next_chars: Vec<char> = raw_value.chars().take(max).collect();
+    let raw_chars: Vec<char> = raw_value.chars().take(max).collect();
     let current_len = current_chars.len();
-    let next_len = next_chars.len();
     let cursor = cursor.min(current_len);
-    let (start, end) = selected_range
-        .map(|range| (range.start.min(current_len), range.end.min(current_len)))
-        .unwrap_or((cursor, cursor));
-    let replaced_len = end.saturating_sub(start);
-    let base_len = current_len.saturating_sub(replaced_len);
-    let next_cursor = if next_len >= base_len {
-        start + (next_len - base_len)
+    let (start, end) = edit_range_for_entry(cursor, current_len, max, selected_range);
+    let (next_chars, next_cursor) = if selected_range.is_none() && start < end {
+        if let Some(inserted_chars) = inserted_chars_at_cursor(&current_chars, &raw_chars, cursor) {
+            let mut replaced_chars = current_chars.clone();
+            replaced_chars.splice(start..end, inserted_chars.iter().copied());
+            replaced_chars.truncate(max);
+            let next_cursor = (start + inserted_chars.len()).min(replaced_chars.len());
+            (replaced_chars, next_cursor)
+        } else {
+            let next_cursor = raw_value_cursor(&current_chars, &raw_chars, start, end, current_len);
+            (raw_chars, next_cursor)
+        }
     } else {
-        current_chars
-            .iter()
-            .zip(&next_chars)
-            .take_while(|(a, b)| a == b)
-            .count()
-    }
-    .min(next_len);
+        let next_cursor = raw_value_cursor(&current_chars, &raw_chars, start, end, current_len);
+        (raw_chars, next_cursor)
+    };
     let next: String = next_chars.into_iter().collect();
     let changed = next != current_value;
 
     (next, next_cursor, changed)
 }
 
+fn edit_range_for_entry(
+    cursor: usize,
+    len: usize,
+    max: usize,
+    selected_range: Option<SelectionRange>,
+) -> (usize, usize) {
+    if let Some(range) = selected_range {
+        return (range.start.min(len), range.end.min(len));
+    }
+
+    let cursor = cursor.min(len);
+    if len == 0 || cursor == len && len < max {
+        (cursor, cursor)
+    } else {
+        let start = cursor.min(len.saturating_sub(1));
+        (start, (start + 1).min(len))
+    }
+}
+
+fn inserted_chars_at_cursor(
+    current_chars: &[char],
+    raw_chars: &[char],
+    cursor: usize,
+) -> Option<Vec<char>> {
+    if raw_chars.len() <= current_chars.len() || cursor > current_chars.len() {
+        return None;
+    }
+
+    let inserted_len = raw_chars.len() - current_chars.len();
+    if cursor + inserted_len > raw_chars.len()
+        || raw_chars[..cursor] != current_chars[..cursor]
+        || raw_chars[cursor + inserted_len..] != current_chars[cursor..]
+    {
+        return None;
+    }
+
+    Some(raw_chars[cursor..cursor + inserted_len].to_vec())
+}
+
+fn raw_value_cursor(
+    current_chars: &[char],
+    next_chars: &[char],
+    start: usize,
+    end: usize,
+    current_len: usize,
+) -> usize {
+    let replaced_len = end.saturating_sub(start);
+    let base_len = current_len.saturating_sub(replaced_len);
+    if next_chars.len() >= base_len {
+        (start + next_chars.len().saturating_sub(base_len)).min(next_chars.len())
+    } else {
+        current_chars
+            .iter()
+            .zip(next_chars)
+            .take_while(|(a, b)| a == b)
+            .count()
+    }
+}
+
+fn native_selection_for_cursor(
+    cursor: usize,
+    len: usize,
+    max: usize,
+    selected_range: Option<SelectionRange>,
+) -> (usize, usize) {
+    edit_range_for_entry(cursor, len, max, selected_range)
+}
+
 fn delete_backward(
     current_value: &str,
     cursor: usize,
+    max: usize,
     selected_range: Option<SelectionRange>,
 ) -> (String, usize) {
     let mut chars: Vec<char> = current_value.chars().collect();
@@ -53,6 +122,14 @@ fn delete_backward(
     }
 
     let cursor = cursor.min(chars.len());
+    if chars.is_empty() {
+        return (current_value.to_string(), 0);
+    }
+    if cursor < chars.len() || chars.len() == max {
+        let start = cursor.min(chars.len().saturating_sub(1));
+        chars.remove(start);
+        return (chars.into_iter().collect(), start);
+    }
     if cursor == 0 {
         return (current_value.to_string(), 0);
     }
@@ -64,6 +141,7 @@ fn delete_backward(
 fn delete_forward(
     current_value: &str,
     cursor: usize,
+    max: usize,
     selected_range: Option<SelectionRange>,
 ) -> (String, usize) {
     let mut chars: Vec<char> = current_value.chars().collect();
@@ -74,12 +152,16 @@ fn delete_forward(
     }
 
     let cursor = cursor.min(chars.len());
-    if cursor >= chars.len() {
+    if chars.is_empty() {
+        return (current_value.to_string(), cursor);
+    }
+    if cursor >= chars.len() && chars.len() < max {
         return (current_value.to_string(), cursor);
     }
 
-    chars.remove(cursor);
-    (chars.into_iter().collect(), cursor)
+    let start = cursor.min(chars.len().saturating_sub(1));
+    chars.remove(start);
+    (chars.into_iter().collect(), start)
 }
 
 fn active_slot_index(cursor: usize, len: usize, max: usize) -> Option<usize> {
@@ -324,18 +406,18 @@ mod tests {
     }
 
     #[test]
-    fn input_change_uses_visible_cursor_for_middle_insert() {
+    fn input_change_replaces_at_visible_cursor() {
         assert_eq!(
             input_value_and_cursor("12", "192", 6, 1, None),
-            ("192".to_string(), 2, true)
+            ("19".to_string(), 2, true)
         );
     }
 
     #[test]
-    fn consecutive_input_change_keeps_cursor_after_inserted_text() {
+    fn multi_character_input_change_replaces_active_slot() {
         assert_eq!(
-            input_value_and_cursor("192", "1982", 6, 2, None),
-            ("1982".to_string(), 3, true)
+            input_value_and_cursor("12", "1982", 6, 1, None),
+            ("198".to_string(), 3, true)
         );
     }
 
@@ -408,14 +490,33 @@ mod tests {
         let selected_range = SelectionRange::new(1, 4, 6);
 
         assert_eq!(
-            delete_backward("123456", 4, selected_range),
+            delete_backward("123456", 4, 6, selected_range),
             ("156".to_string(), 1)
         );
     }
 
     #[test]
     fn delete_forward_removes_after_cursor() {
-        assert_eq!(delete_forward("123456", 2, None), ("12456".to_string(), 2));
+        assert_eq!(
+            delete_forward("123456", 2, 6, None),
+            ("12456".to_string(), 2)
+        );
+    }
+
+    #[test]
+    fn delete_backward_removes_active_slot_in_middle() {
+        assert_eq!(
+            delete_backward("123456", 2, 6, None),
+            ("12456".to_string(), 2)
+        );
+    }
+
+    #[test]
+    fn delete_forward_removes_active_slot_at_full_end() {
+        assert_eq!(
+            delete_forward("123456", 6, 6, None),
+            ("12345".to_string(), 5)
+        );
     }
 
     #[test]
@@ -508,7 +609,7 @@ pub struct OneTimePasswordInputProps {
     #[props(default)]
     pub aria_labelledby: ReadSignal<Option<String>>,
 
-    /// Optional validator. Called with the prospective new value when inserting characters
+    /// Optional validator. Called with the prospective new value when entering characters
     /// (keystrokes and paste); return `false` to reject the change. `Backspace` and `Delete`
     /// bypass the validator and always shrink the value.
     #[props(default)]
@@ -600,8 +701,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         {
             (range.start, range.end)
         } else {
-            let c = cursor().min(len);
-            (c, c)
+            native_selection_for_cursor(cursor(), len, maxlength(), None)
         }
     });
 
@@ -888,7 +988,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                             } else {
                                 let current_value = value.read().clone();
                                 let (next_value, next_cursor) =
-                                    delete_backward(&current_value, new_cursor, selected);
+                                    delete_backward(&current_value, new_cursor, max, selected);
                                 apply_value_change(
                                     &current_value,
                                     next_value,
@@ -905,7 +1005,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                             e.prevent_default();
                             let current_value = value.read().clone();
                             let (next_value, next_cursor) =
-                                delete_forward(&current_value, new_cursor, selected);
+                                delete_forward(&current_value, new_cursor, max, selected);
                             apply_value_change(
                                 &current_value,
                                 next_value,
@@ -932,9 +1032,8 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 && !mods.alt() =>
                         {
                             e.prevent_default();
-                            let (start, end) = selected
-                                .map(|range| (range.start, range.end))
-                                .unwrap_or((new_cursor, new_cursor));
+                            let (start, end) =
+                                edit_range_for_entry(new_cursor, len, max, selected);
                             if let Some(c) = s.chars().next() {
                                 let mut next_chars = chars.clone();
                                 next_chars.splice(start..end, [c]);
@@ -980,15 +1079,19 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     let current_value = value.read().clone();
                     let selected = selection_range();
                     let current_cursor = cursor().min(current_value.chars().count());
-                    let (next_value, next_cursor, inserted) =
+                    let (next_value, next_cursor, changed) =
                         input_value_and_cursor(&current_value, &raw, max, current_cursor, selected);
-                    if inserted {
+                    if changed {
                         if let Some(validate) = validate {
                             if !validate.call(next_value.clone()) {
                                 let id = input_id();
-                                let (start, end) = selected
-                                    .map(|range| (range.start, range.end))
-                                    .unwrap_or((current_cursor, current_cursor));
+                                let current_len = current_value.chars().count();
+                                let (start, end) = native_selection_for_cursor(
+                                    current_cursor,
+                                    current_len,
+                                    max,
+                                    selected,
+                                );
                                 spawn(async move {
                                     sync_input_value_and_selection(
                                         id,
@@ -1005,19 +1108,20 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     if raw != next_value {
                         let id = input_id();
                         let value_to_sync = next_value.clone();
+                        let next_len = value_to_sync.chars().count();
+                        let (start, end) =
+                            native_selection_for_cursor(next_cursor, next_len, max, None);
                         spawn(async move {
-                            sync_input_value_and_selection(
-                                id,
-                                value_to_sync,
-                                next_cursor,
-                                next_cursor,
-                            )
+                            sync_input_value_and_selection(id, value_to_sync, start, end)
                             .await;
                         });
                     } else {
                         let id = input_id();
+                        let next_len = next_value.chars().count();
+                        let (start, end) =
+                            native_selection_for_cursor(next_cursor, next_len, max, None);
                         spawn(async move {
-                            sync_input_selection(id, next_cursor, next_cursor).await;
+                            sync_input_selection(id, start, end).await;
                         });
                     }
                     apply_value_change(
