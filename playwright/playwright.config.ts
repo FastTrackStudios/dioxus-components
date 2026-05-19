@@ -1,15 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 const path = require("path");
-const webServer = process.env.PREVIEW_URL
-  ? undefined
-  : {
-      cwd: path.join(process.cwd(), "../preview"),
-      command: "dx run --web --release",
-      port: 8080,
-      timeout: 50 * 60 * 1000,
-      reuseExistingServer: !process.env.CI,
-      stdout: "pipe" as const,
-    };
 
 /**
  * Read environment variables from file.
@@ -86,5 +76,12 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer,
+  webServer: {
+    cwd: path.join(process.cwd(), "../preview"),
+    command: "dx run --web --release",
+    port: 8080,
+    timeout: 50 * 60 * 1000,
+    reuseExistingServer: !process.env.CI,
+    stdout: "pipe",
+  },
 });
