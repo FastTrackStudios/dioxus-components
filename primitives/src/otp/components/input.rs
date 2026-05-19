@@ -100,12 +100,26 @@ fn raw_value_cursor(
 }
 
 fn native_selection_for_cursor(
+    value: &str,
     cursor: usize,
-    len: usize,
     max: usize,
     selected_range: Option<SelectionRange>,
 ) -> (usize, usize) {
-    edit_range_for_entry(cursor, len, max, selected_range)
+    let len = value.chars().count();
+    let (start, end) = edit_range_for_entry(cursor, len, max, selected_range);
+
+    (
+        utf16_offset_for_char(value, start),
+        utf16_offset_for_char(value, end),
+    )
+}
+
+fn utf16_offset_for_char(value: &str, index: usize) -> usize {
+    value
+        .chars()
+        .take(index)
+        .map(char::len_utf16)
+        .sum::<usize>()
 }
 
 fn delete_backward(
@@ -394,7 +408,10 @@ async fn sync_input_value_and_selection(input_id: String, value: String, start: 
 
 #[cfg(test)]
 mod tests {
-    use super::{active_slot_index, delete_backward, delete_forward, input_value_and_cursor};
+    use super::{
+        active_slot_index, delete_backward, delete_forward, input_value_and_cursor,
+        native_selection_for_cursor,
+    };
     use crate::otp::context::SelectionRange;
 
     #[test]
@@ -561,6 +578,15 @@ mod tests {
             2
         );
     }
+
+    #[test]
+    fn native_selection_uses_utf16_offsets() {
+        assert_eq!(native_selection_for_cursor("😀😃😄", 3, 4, None), (6, 6));
+        assert_eq!(
+            native_selection_for_cursor("😀😃😄", 1, 4, SelectionRange::new(1, 3, 3)),
+            (2, 6)
+        );
+    }
 }
 
 /// The props for the [`OneTimePasswordInput`] component.
@@ -695,13 +721,13 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
     let mut pointer_focus_pending = use_hook(|| CopyValue::new(false));
 
     let native_selection = use_memo(move || {
-        let len = value.read().chars().count();
-        if let Some(range) =
-            selection_range().and_then(|range| SelectionRange::new(range.start, range.end, len))
-        {
-            (range.start, range.end)
+        let current_value = value.read();
+        if let Some(range) = selection_range().and_then(|range| {
+            SelectionRange::new(range.start, range.end, current_value.chars().count())
+        }) {
+            native_selection_for_cursor(&current_value, cursor(), maxlength(), Some(range))
         } else {
-            native_selection_for_cursor(cursor(), len, maxlength(), None)
+            native_selection_for_cursor(&current_value, cursor(), maxlength(), None)
         }
     });
 
@@ -785,7 +811,6 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                 r#type: "text",
                 inputmode: props.inputmode,
                 autocomplete: props.autocomplete,
-                maxlength,
                 name: props.name,
                 disabled: props.disabled,
                 required: props.required,
@@ -1085,10 +1110,9 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                         if let Some(validate) = validate {
                             if !validate.call(next_value.clone()) {
                                 let id = input_id();
-                                let current_len = current_value.chars().count();
                                 let (start, end) = native_selection_for_cursor(
+                                    &current_value,
                                     current_cursor,
-                                    current_len,
                                     max,
                                     selected,
                                 );
@@ -1108,18 +1132,16 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     if raw != next_value {
                         let id = input_id();
                         let value_to_sync = next_value.clone();
-                        let next_len = value_to_sync.chars().count();
                         let (start, end) =
-                            native_selection_for_cursor(next_cursor, next_len, max, None);
+                            native_selection_for_cursor(&value_to_sync, next_cursor, max, None);
                         spawn(async move {
                             sync_input_value_and_selection(id, value_to_sync, start, end)
                             .await;
                         });
                     } else {
                         let id = input_id();
-                        let next_len = next_value.chars().count();
                         let (start, end) =
-                            native_selection_for_cursor(next_cursor, next_len, max, None);
+                            native_selection_for_cursor(&next_value, next_cursor, max, None);
                         spawn(async move {
                             sync_input_selection(id, start, end).await;
                         });

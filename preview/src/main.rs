@@ -1388,18 +1388,7 @@ fn BlockStats() -> Element {
 fn BlockOtp() -> Element {
     let mut value = use_signal(String::new);
     let mut last_complete = use_signal(String::new);
-    let mut disabled = use_signal(|| false);
     let is_complete = value.read().chars().count() == 6;
-    let current_display = if value().is_empty() {
-        "------".to_string()
-    } else {
-        value()
-    };
-    let completed_display = if last_complete().is_empty() {
-        "------".to_string()
-    } else {
-        last_complete()
-    };
 
     rsx! {
         div { style: "display: grid; gap: 1rem;",
@@ -1434,7 +1423,6 @@ fn BlockOtp() -> Element {
                     id: "masonry-otp-input",
                     maxlength: 6usize,
                     value: value(),
-                    disabled: disabled(),
                     validate: |s: String| s.chars().all(|c| c.is_ascii_digit()),
                     on_value_change: move |v| value.set(v),
                     on_complete: move |v| last_complete.set(v),
@@ -1451,53 +1439,6 @@ fn BlockOtp() -> Element {
                         OneTimePasswordSlot { index: 5usize }
                     }
                 }
-            }
-
-            div { style: "display: grid; overflow: hidden; border: 1px solid var(--primary-color-6); border-radius: 0.5rem; background: var(--primary-color-1); grid-template-columns: repeat(2, minmax(0, 1fr));",
-                OtpMasonryMetric { label: "Current", value: current_display, border: false }
-                OtpMasonryMetric { label: "Completed", value: completed_display, border: true }
-            }
-
-            div { style: "display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;",
-                Button {
-                    variant: ButtonVariant::Outline,
-                    onclick: move |_| disabled.toggle(),
-                    if disabled() {
-                        LockOpen { size: 16, stroke_width: "1.75" }
-                        "Enable"
-                    } else {
-                        Lock { size: 16, stroke_width: "1.75" }
-                        "Disable"
-                    }
-                }
-                Button {
-                    variant: ButtonVariant::Ghost,
-                    onclick: move |_| {
-                        value.set(String::new());
-                        last_complete.set(String::new());
-                    },
-                    RotateCcw { size: 16, stroke_width: "1.75" }
-                    "Reset"
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn OtpMasonryMetric(label: &'static str, value: String, #[props(default)] border: bool) -> Element {
-    rsx! {
-        div {
-            style: if border {
-                "display: grid; min-width: 0; padding: 0.65rem 0.75rem; border-left: 1px solid var(--primary-color-6); gap: 0.25rem;"
-            } else {
-                "display: grid; min-width: 0; padding: 0.65rem 0.75rem; gap: 0.25rem;"
-            },
-            span { style: "color: var(--secondary-color-5); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; line-height: 1; text-transform: uppercase;",
-                "{label}"
-            }
-            code { style: "min-height: 1.25rem; overflow: hidden; color: var(--secondary-color-2); font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.95rem; font-variant-ligatures: none; font-variant-numeric: tabular-nums; font-weight: 600; line-height: 1.25rem; text-overflow: ellipsis; white-space: nowrap;",
-                "{value}"
             }
         }
     }

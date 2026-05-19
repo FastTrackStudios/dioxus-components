@@ -2,6 +2,7 @@ import { test, expect, type Locator, type Page } from '@playwright/test';
 
 const previewUrl = process.env.PREVIEW_URL ?? 'http://127.0.0.1:8080';
 const otpUrl = new URL('/component/?name=otp&', previewUrl).toString();
+const nonAsciiOtpUrl = new URL('/component/?name=otp&variant=non_ascii&', previewUrl).toString();
 
 async function waitForOtpLayout(page: Page) {
   const input = page.getByRole('textbox', { name: 'One-time password' });
@@ -242,6 +243,23 @@ test('otp paste fills all slots', async ({ page }) => {
   // insertText simulates a paste / IME / on-screen-keyboard input event.
   await page.keyboard.insertText('987654');
   await expect(page.locator('#otp-value')).toHaveText('987654');
+});
+
+test('otp accepts emoji input in the non-ascii variant', async ({ page }) => {
+  await page.goto(nonAsciiOtpUrl, { timeout: 20 * 60 * 1000 });
+
+  const input = page.getByRole('textbox', { name: 'Emoji code' });
+  await expect(input).toBeVisible();
+  await input.focus();
+
+  for (const emoji of ['😀', '😃', '😄', '😁']) {
+    await page.keyboard.insertText(emoji);
+  }
+
+  const value = '😀😃😄😁';
+  await expect(page.locator('#otp-non-ascii-value')).toHaveText(value);
+  await expect(page.locator('#otp-non-ascii-complete')).toHaveText(value);
+  await expect(input).toHaveValue(value);
 });
 
 test('otp on_complete fires only when the value reaches maxlength', async ({ page }) => {
