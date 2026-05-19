@@ -1,7 +1,14 @@
-use super::super::context::{OtpCtx, SelectionRange, SlotBounds};
+use super::super::context::OtpCtx;
 use crate::{use_controlled, use_id_or, use_unique_id};
 use dioxus::prelude::*;
-use std::rc::Rc;
+use std::ops::Range;
+
+fn selection_range_for(anchor: usize, focus: usize, len: usize) -> Option<Range<usize>> {
+    let start = anchor.min(focus).min(len);
+    let end = anchor.max(focus).min(len);
+
+    (start < end).then_some(start..end)
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct InputValueChange {
@@ -16,7 +23,7 @@ impl InputValueChange {
         raw_value: &str,
         max: usize,
         cursor: usize,
-        selected_range: Option<SelectionRange>,
+        selected_range: Option<Range<usize>>,
     ) -> Self {
         if max == 0 {
             return Self {
@@ -30,7 +37,7 @@ impl InputValueChange {
         let raw_chars: Vec<char> = raw_value.chars().take(max).collect();
         let current_len = current_chars.len();
         let cursor = cursor.min(current_len);
-        let range = EditRange::for_entry(cursor, current_len, max, selected_range);
+        let range = edit_range_for_entry(cursor, current_len, max, selected_range.clone());
         let (next_chars, next_cursor) = if selected_range.is_none() && !range.is_empty() {
             if let Some(inserted_chars) =
                 inserted_chars_at_cursor(&current_chars, &raw_chars, cursor)
@@ -59,71 +66,35 @@ impl InputValueChange {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct EditRange {
-    start: usize,
-    end: usize,
-}
-
-impl EditRange {
-    fn for_entry(
-        cursor: usize,
-        len: usize,
-        max: usize,
-        selected_range: Option<SelectionRange>,
-    ) -> Self {
-        if let Some(range) = selected_range {
-            return Self {
-                start: range.start.min(len),
-                end: range.end.min(len),
-            };
-        }
-
-        let cursor = cursor.min(len);
-        if len == 0 || cursor == len && len < max {
-            Self {
-                start: cursor,
-                end: cursor,
-            }
-        } else {
-            let start = cursor.min(len.saturating_sub(1));
-            Self {
-                start,
-                end: (start + 1).min(len),
-            }
-        }
+fn edit_range_for_entry(
+    cursor: usize,
+    len: usize,
+    max: usize,
+    selected_range: Option<Range<usize>>,
+) -> Range<usize> {
+    if let Some(range) = selected_range {
+        return range.start.min(len)..range.end.min(len);
     }
 
-    fn len(self) -> usize {
-        self.end.saturating_sub(self.start)
-    }
-
-    fn is_empty(self) -> bool {
-        self.len() == 0
+    let cursor = cursor.min(len);
+    if len == 0 || cursor == len && len < max {
+        cursor..cursor
+    } else {
+        let start = cursor.min(len.saturating_sub(1));
+        start..(start + 1).min(len)
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct NativeSelection {
-    start: usize,
-    end: usize,
-}
+fn native_selection_for(
+    value: &str,
+    cursor: usize,
+    max: usize,
+    selected_range: Option<Range<usize>>,
+) -> Range<usize> {
+    let len = value.chars().count();
+    let range = edit_range_for_entry(cursor, len, max, selected_range);
 
-impl NativeSelection {
-    fn for_cursor(
-        value: &str,
-        cursor: usize,
-        max: usize,
-        selected_range: Option<SelectionRange>,
-    ) -> Self {
-        let len = value.chars().count();
-        let range = EditRange::for_entry(cursor, len, max, selected_range);
-
-        Self {
-            start: utf16_offset_for_char(value, range.start),
-            end: utf16_offset_for_char(value, range.end),
-        }
-    }
+    utf16_offset_for_char(value, range.start)..utf16_offset_for_char(value, range.end)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -137,7 +108,7 @@ impl ValueCursorChange {
         current_value: &str,
         cursor: usize,
         max: usize,
-        selected_range: Option<SelectionRange>,
+        selected_range: Option<Range<usize>>,
     ) -> Self {
         let mut chars: Vec<char> = current_value.chars().collect();
 
@@ -182,7 +153,7 @@ impl ValueCursorChange {
         current_value: &str,
         cursor: usize,
         max: usize,
-        selected_range: Option<SelectionRange>,
+        selected_range: Option<Range<usize>>,
     ) -> Self {
         let mut chars: Vec<char> = current_value.chars().collect();
 
@@ -240,7 +211,7 @@ fn inserted_chars_at_cursor(
 fn raw_value_cursor(
     current_chars: &[char],
     next_chars: &[char],
-    range: EditRange,
+    range: Range<usize>,
     current_len: usize,
 ) -> usize {
     let replaced_len = range.len();
@@ -272,80 +243,40 @@ fn active_slot_index(cursor: usize, len: usize, max: usize) -> Option<usize> {
     Some(cursor.min(len).min(max - 1))
 }
 
-fn cursor_from_slot_bounds(client_x: f64, len: usize, slot_bounds: &[Option<SlotBounds>]) -> usize {
-    for index in 0..len {
-        let Some(bounds) = slot_bounds.get(index).copied().flatten() else {
-            continue;
-        };
-
-        if client_x < bounds.center() {
-            return index;
-        }
+fn slot_selection_range(anchor_slot: usize, focus_slot: usize, len: usize) -> Option<Range<usize>> {
+    if len == 0 {
+        return None;
     }
 
-    len
+    let anchor_slot = anchor_slot.min(len - 1);
+    let focus_slot = focus_slot.min(len - 1);
+    let start = anchor_slot.min(focus_slot);
+    let end = anchor_slot.max(focus_slot) + 1;
+
+    Some(start..end.min(len))
 }
 
-fn cursor_from_input_bounds(client_x: f64, len: usize, input_bounds: Option<SlotBounds>) -> usize {
-    let Some(bounds) = input_bounds else {
-        return len;
-    };
-    let width = bounds.right - bounds.left;
-    if width <= 0.0 || len == 0 {
+fn slot_selection_anchor_cursor(anchor_slot: usize, focus_slot: usize, len: usize) -> usize {
+    if len == 0 {
         return 0;
     }
 
-    let offset = (client_x - bounds.left).clamp(0.0, width);
-    ((offset / width * len as f64) + 0.5).floor() as usize
-}
-
-fn cursor_from_bounds(
-    client_x: f64,
-    len: usize,
-    slot_bounds: &[Option<SlotBounds>],
-    input_bounds: Option<SlotBounds>,
-) -> usize {
-    if slot_bounds.iter().take(len).any(Option::is_some) {
-        cursor_from_slot_bounds(client_x, len, slot_bounds)
+    if focus_slot < anchor_slot {
+        (anchor_slot + 1).min(len)
     } else {
-        cursor_from_input_bounds(client_x, len, input_bounds).min(len)
+        anchor_slot.min(len)
     }
 }
 
-fn selection_focus_from_slot_bounds(
-    client_x: f64,
-    anchor: usize,
-    len: usize,
-    slot_bounds: &[Option<SlotBounds>],
-) -> usize {
-    for index in 0..len {
-        let Some(bounds) = slot_bounds.get(index).copied().flatten() else {
-            continue;
-        };
-
-        if bounds.left <= client_x && client_x <= bounds.right {
-            return if index < anchor {
-                index
-            } else {
-                (index + 1).min(len)
-            };
-        }
+fn slot_selection_focus_cursor(anchor_slot: usize, focus_slot: usize, len: usize) -> usize {
+    if len == 0 {
+        return 0;
     }
 
-    cursor_from_slot_bounds(client_x, len, slot_bounds)
-}
-
-fn selection_focus_from_bounds(
-    client_x: f64,
-    anchor: usize,
-    len: usize,
-    slot_bounds: &[Option<SlotBounds>],
-    input_bounds: Option<SlotBounds>,
-) -> usize {
-    if slot_bounds.iter().take(len).any(Option::is_some) {
-        selection_focus_from_slot_bounds(client_x, anchor, len, slot_bounds)
+    if focus_slot < anchor_slot {
+        focus_slot.min(len)
     } else {
-        cursor_from_input_bounds(client_x, len, input_bounds).min(len)
+        (focus_slot + 1).min(len)
     }
 }
 
@@ -383,73 +314,7 @@ fn focus_input(input_id: String) {
     });
 }
 
-async fn mounted_bounds(mounted: Rc<MountedData>) -> Option<SlotBounds> {
-    let Ok(rect) = mounted.get_client_rect().await else {
-        return None;
-    };
-
-    Some(SlotBounds {
-        left: rect.origin.x,
-        right: rect.origin.x + rect.size.width,
-    })
-}
-
-async fn sync_input_bounds(mut input_bounds: Signal<Option<SlotBounds>>, mounted: Rc<MountedData>) {
-    if let Some(bounds) = mounted_bounds(mounted).await {
-        input_bounds.set(Some(bounds));
-    }
-}
-
-async fn refresh_input_bounds(
-    mut input_bounds: Signal<Option<SlotBounds>>,
-    input_ref: Signal<Option<Rc<MountedData>>>,
-) -> Option<SlotBounds> {
-    let Some(mounted) = input_ref() else {
-        return input_bounds();
-    };
-
-    let Some(bounds) = mounted_bounds(mounted).await else {
-        return input_bounds();
-    };
-
-    input_bounds.set(Some(bounds));
-    Some(bounds)
-}
-
-async fn refresh_slot_bounds(
-    mut slot_bounds: Signal<Vec<Option<SlotBounds>>>,
-    slot_refs: Signal<Vec<Option<Rc<MountedData>>>>,
-    len: usize,
-) -> Vec<Option<SlotBounds>> {
-    let refs = {
-        let refs = slot_refs.read();
-        (0..len)
-            .map(|index| refs.get(index).cloned().flatten())
-            .collect::<Vec<_>>()
-    };
-    let previous = slot_bounds.read().clone();
-    let mut next = previous.clone();
-    if next.len() < len {
-        next.resize(len, None);
-    }
-
-    for (index, mounted) in refs.into_iter().enumerate() {
-        let Some(mounted) = mounted else {
-            continue;
-        };
-        if let Some(bounds) = mounted_bounds(mounted).await {
-            next[index] = Some(bounds);
-        }
-    }
-
-    if next != previous {
-        slot_bounds.set(next.clone());
-    }
-
-    next
-}
-
-async fn sync_input_selection(input_id: String, selection: NativeSelection) {
+async fn sync_input_selection(input_id: String, selection: Range<usize>) {
     let eval = document::eval(
         r#"
         const id = await dioxus.recv();
@@ -470,7 +335,7 @@ async fn sync_input_selection(input_id: String, selection: NativeSelection) {
 async fn sync_input_value_and_selection(
     input_id: String,
     value: String,
-    selection: NativeSelection,
+    selection: Range<usize>,
 ) {
     let eval = document::eval(
         r#"
@@ -498,8 +363,11 @@ async fn sync_input_value_and_selection(
 
 #[cfg(test)]
 mod tests {
-    use super::{active_slot_index, InputValueChange, NativeSelection, ValueCursorChange};
-    use crate::otp::context::SelectionRange;
+    use super::{
+        active_slot_index, native_selection_for, selection_range_for,
+        slot_selection_anchor_cursor, slot_selection_focus_cursor, slot_selection_range,
+        InputValueChange, ValueCursorChange,
+    };
 
     fn input_change(value: &str, cursor: usize, changed: bool) -> InputValueChange {
         InputValueChange {
@@ -567,7 +435,7 @@ mod tests {
     #[test]
     fn full_input_replacement_uses_raw_value() {
         assert_eq!(
-            InputValueChange::from_raw_input("12", "987654", 6, 0, SelectionRange::new(0, 2, 2)),
+            InputValueChange::from_raw_input("12", "987654", 6, 0, selection_range_for(0, 2, 2)),
             input_change("987654", 6, true)
         );
     }
@@ -580,7 +448,7 @@ mod tests {
                 "123999",
                 6,
                 0,
-                SelectionRange::new(0, 6, 6),
+                selection_range_for(0, 6, 6),
             ),
             input_change("123999", 6, true)
         );
@@ -589,7 +457,7 @@ mod tests {
     #[test]
     fn shorter_full_input_replacement_with_shared_prefix_uses_raw_value() {
         assert_eq!(
-            InputValueChange::from_raw_input("123456", "1239", 6, 0, SelectionRange::new(0, 6, 6),),
+            InputValueChange::from_raw_input("123456", "1239", 6, 0, selection_range_for(0, 6, 6),),
             input_change("1239", 4, true)
         );
     }
@@ -602,7 +470,7 @@ mod tests {
                 "9876543",
                 6,
                 0,
-                SelectionRange::new(0, 6, 6),
+                selection_range_for(0, 6, 6),
             ),
             input_change("987654", 6, true)
         );
@@ -616,7 +484,7 @@ mod tests {
                 "123996",
                 6,
                 3,
-                SelectionRange::new(3, 5, 6),
+                selection_range_for(3, 5, 6),
             ),
             input_change("123996", 5, true)
         );
@@ -624,7 +492,7 @@ mod tests {
 
     #[test]
     fn delete_backward_removes_selected_range() {
-        let selected_range = SelectionRange::new(1, 4, 6);
+        let selected_range = selection_range_for(1, 4, 6);
 
         assert_eq!(
             ValueCursorChange::delete_backward("123456", 4, 6, selected_range),
@@ -667,47 +535,27 @@ mod tests {
     }
 
     #[test]
-    fn backward_pointer_selection_includes_slot_under_pointer() {
-        use super::selection_focus_from_slot_bounds;
-        use crate::otp::context::SlotBounds;
-
-        let bounds = (0..6)
-            .map(|index| {
-                Some(SlotBounds {
-                    left: index as f64 * 10.0,
-                    right: index as f64 * 10.0 + 10.0,
-                })
-            })
-            .collect::<Vec<_>>();
-
-        assert_eq!(selection_focus_from_slot_bounds(15.0, 5, 6, &bounds), 1);
+    fn slot_selection_range_includes_starting_slot() {
+        assert_eq!(slot_selection_range(1, 4, 6), Some(1..5));
+        assert_eq!(slot_selection_range(4, 1, 6), Some(1..5));
+        assert_eq!(slot_selection_range(5, 5, 6), Some(5..6));
+        assert_eq!(slot_selection_range(5, 2, 2), Some(1..2));
     }
 
     #[test]
-    fn pointer_selection_falls_back_to_input_bounds() {
-        use super::selection_focus_from_bounds;
-        use crate::otp::context::SlotBounds;
-
-        let input_bounds = Some(SlotBounds {
-            left: 0.0,
-            right: 60.0,
-        });
-
-        assert_eq!(
-            selection_focus_from_bounds(15.0, 5, 6, &[], input_bounds),
-            2
-        );
+    fn slot_selection_cursors_track_drag_direction() {
+        assert_eq!(slot_selection_anchor_cursor(1, 4, 6), 1);
+        assert_eq!(slot_selection_focus_cursor(1, 4, 6), 5);
+        assert_eq!(slot_selection_anchor_cursor(4, 1, 6), 5);
+        assert_eq!(slot_selection_focus_cursor(4, 1, 6), 1);
     }
 
     #[test]
     fn native_selection_uses_utf16_offsets() {
+        assert_eq!(native_selection_for("😀😃😄", 3, 4, None), 6..6);
         assert_eq!(
-            NativeSelection::for_cursor("😀😃😄", 3, 4, None),
-            NativeSelection { start: 6, end: 6 }
-        );
-        assert_eq!(
-            NativeSelection::for_cursor("😀😃😄", 1, 4, SelectionRange::new(1, 3, 3)),
-            NativeSelection { start: 2, end: 6 }
+            native_selection_for("😀😃😄", 1, 4, selection_range_for(1, 3, 3)),
+            2..6
         );
     }
 }
@@ -834,24 +682,18 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
     let mut is_focused = use_signal(|| false);
     let mut cursor = use_signal(|| 0usize);
     let mut selection_anchor = use_signal(|| None::<usize>);
-    let mut selection_range = use_signal(|| None::<SelectionRange>);
+    let mut selection_range = use_signal(|| None::<Range<usize>>);
     let mut selecting_with_pointer = use_signal(|| false);
-    let mut pointer_focus_x = use_signal(|| None::<f64>);
-    let slot_bounds = use_signal(Vec::<Option<SlotBounds>>::new);
-    let slot_refs = use_signal(Vec::<Option<Rc<MountedData>>>::new);
-    let input_bounds = use_signal(|| None::<SlotBounds>);
-    let mut input_ref: Signal<Option<Rc<MountedData>>> = use_signal(|| None);
+    let mut pointer_selection_anchor_slot = use_signal(|| None::<usize>);
     let mut pointer_focus_pending = use_hook(|| CopyValue::new(false));
+    let disabled = props.disabled;
 
     let native_selection = use_memo(move || {
         let current_value = value.read();
-        if let Some(range) = selection_range().and_then(|range| {
-            SelectionRange::new(range.start, range.end, current_value.chars().count())
-        }) {
-            NativeSelection::for_cursor(&current_value, cursor(), maxlength(), Some(range))
-        } else {
-            NativeSelection::for_cursor(&current_value, cursor(), maxlength(), None)
-        }
+        let range = selection_range.cloned().and_then(|range| {
+            selection_range_for(range.start, range.end, current_value.chars().count())
+        });
+        native_selection_for(&current_value, cursor(), maxlength(), range)
     });
 
     let selected_range = use_memo(move || {
@@ -860,18 +702,67 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         }
 
         let len = value.read().chars().count();
-        selection_range().and_then(|range| SelectionRange::new(range.start, range.end, len))
+        selection_range
+            .cloned()
+            .and_then(|range| selection_range_for(range.start, range.end, len))
     });
 
     let active_index = use_memo(move || {
         if !is_focused() {
             return None;
         }
-        if selected_range().is_some() {
+        if selected_range.read().is_some() {
             return None;
         }
         let len = value.read().chars().count();
         active_slot_index(cursor(), len, maxlength())
+    });
+
+    let begin_slot_selection = use_callback(move |index: usize| {
+        if disabled() {
+            return;
+        }
+
+        let len = value.read().chars().count();
+        let next_cursor = (index + 1).min(len);
+
+        is_focused.set(true);
+        cursor.set(next_cursor);
+        selection_anchor.set(None);
+        selection_range.set(None);
+        pointer_selection_anchor_slot.set((index < len).then_some(index));
+        selecting_with_pointer.set(true);
+        pointer_focus_pending.set(true);
+        focus_input(input_id());
+    });
+
+    let extend_slot_selection = use_callback(move |index: usize| {
+        if !selecting_with_pointer() || disabled() {
+            return;
+        }
+
+        let len = value.read().chars().count();
+        let Some(anchor_slot) = pointer_selection_anchor_slot() else {
+            return;
+        };
+        let next_cursor = slot_selection_focus_cursor(anchor_slot, index, len);
+        let next_anchor = slot_selection_anchor_cursor(anchor_slot, index, len);
+
+        cursor.set(next_cursor);
+        selection_anchor.set(Some(next_anchor));
+        selection_range.set(slot_selection_range(anchor_slot, index, len));
+    });
+
+    let end_slot_selection = use_callback(move |index: Option<usize>| {
+        if let Some(index) = index {
+            if selecting_with_pointer() && selection_range.cloned().is_none() {
+                let len = value.read().chars().count();
+                cursor.set(index.min(len));
+                selection_anchor.set(None);
+            }
+        }
+        selecting_with_pointer.set(false);
+        pointer_selection_anchor_slot.set(None);
     });
 
     use_context_provider(|| OtpCtx {
@@ -879,8 +770,9 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         disabled: props.disabled,
         active_index,
         selected_range,
-        slot_bounds,
-        slot_refs,
+        begin_slot_selection,
+        extend_slot_selection,
+        end_slot_selection,
     });
 
     use_effect(move || {
@@ -896,35 +788,39 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         });
     });
 
-    use_effect(move || {
-        let Some(focus_x) = pointer_focus_x() else {
-            return;
-        };
-        let Some(anchor) = selection_anchor() else {
-            return;
-        };
-
-        let len = value.read().chars().count();
-        let next_cursor =
-            selection_focus_from_bounds(focus_x, anchor, len, &slot_bounds.read(), input_bounds());
-        let next_selection = SelectionRange::new(anchor, next_cursor, len);
-
-        if cursor() != next_cursor {
-            cursor.set(next_cursor);
-        }
-        if selection_range() != next_selection {
-            selection_range.set(next_selection);
-        }
-        if !selecting_with_pointer() && next_selection.is_some() {
-            pointer_focus_x.set(None);
-        }
-    });
-
     rsx! {
         div {
             role: "group",
             position: "relative",
             "data-disabled": props.disabled,
+            onpointerdown: move |event: Event<PointerData>| {
+                if disabled() {
+                    return;
+                }
+
+                event.prevent_default();
+                is_focused.set(true);
+                cursor.set(value.read().chars().count());
+                selection_anchor.set(None);
+                selection_range.set(None);
+                pointer_selection_anchor_slot.set(None);
+                selecting_with_pointer.set(false);
+                pointer_focus_pending.set(true);
+                focus_input(input_id());
+            },
+            onpointerup: move |_| {
+                selecting_with_pointer.set(false);
+                pointer_selection_anchor_slot.set(None);
+            },
+            onpointercancel: move |_| {
+                selecting_with_pointer.set(false);
+                pointer_selection_anchor_slot.set(None);
+                pointer_focus_pending.set(false);
+            },
+            onpointerleave: move |_| {
+                selecting_with_pointer.set(false);
+                pointer_selection_anchor_slot.set(None);
+            },
             ..props.attributes,
 
             {props.children}
@@ -941,116 +837,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                 aria_labelledby: props.aria_labelledby,
                 value,
 
-                style: "position:absolute;z-index:20;top:0;left:0;right:0;bottom:0;width:100%;height:100%;opacity:0;color:transparent;background:transparent;caret-color:transparent;outline:none;border:none;padding:0;margin:0;text-align:center;font-family:inherit;font-size:inherit;cursor:text;user-select:none;",
-
-                onmounted: move |event: Event<MountedData>| {
-                    let mounted = event.data();
-                    input_ref.set(Some(mounted.clone()));
-                    async move {
-                        sync_input_bounds(input_bounds, mounted).await;
-                    }
-                },
-
-                onresize: move |_| async move {
-                    let Some(mounted) = input_ref() else {
-                        return;
-                    };
-                    sync_input_bounds(input_bounds, mounted).await;
-                },
-
-                onpointerdown: move |e: Event<PointerData>| async move {
-                    if (props.disabled)() {
-                        return;
-                    }
-
-                    e.prevent_default();
-                    let focus_x = e.client_coordinates().x;
-                    is_focused.set(true);
-
-                    let len = value.read().chars().count();
-                    let next_cursor = cursor_from_bounds(
-                        focus_x,
-                        len,
-                        &slot_bounds.read(),
-                        input_bounds(),
-                    );
-
-                    cursor.set(next_cursor);
-                    selection_anchor.set(Some(next_cursor));
-                    selection_range.set(None);
-                    pointer_focus_x.set(None);
-                    selecting_with_pointer.set(true);
-                    pointer_focus_pending.set(true);
-                    focus_input(input_id());
-
-                    let fresh_input_bounds =
-                        refresh_input_bounds(input_bounds, input_ref).await;
-                    let fresh_slot_bounds =
-                        refresh_slot_bounds(slot_bounds, slot_refs, len).await;
-                    let next_anchor = cursor_from_bounds(
-                        focus_x,
-                        len,
-                        &fresh_slot_bounds,
-                        fresh_input_bounds,
-                    );
-
-                    selection_anchor.set(Some(next_anchor));
-                    if let Some(current_focus_x) = pointer_focus_x() {
-                        let next_cursor = selection_focus_from_bounds(
-                            current_focus_x,
-                            next_anchor,
-                            len,
-                            &fresh_slot_bounds,
-                            fresh_input_bounds,
-                        );
-
-                        cursor.set(next_cursor);
-                        selection_range.set(SelectionRange::new(next_anchor, next_cursor, len));
-                    } else {
-                        cursor.set(next_anchor);
-                    }
-                },
-
-                onpointermove: move |e: Event<PointerData>| {
-                    if !selecting_with_pointer() || (props.disabled)() {
-                        return;
-                    }
-
-                    e.prevent_default();
-                    let focus_x = e.client_coordinates().x;
-                    let len = value.read().chars().count();
-                    let fallback_cursor = cursor_from_bounds(
-                        focus_x,
-                        len,
-                        &slot_bounds.read(),
-                        input_bounds(),
-                    );
-                    let anchor = selection_anchor().unwrap_or(fallback_cursor);
-                    let next_cursor = selection_focus_from_bounds(
-                        focus_x,
-                        anchor,
-                        len,
-                        &slot_bounds.read(),
-                        input_bounds(),
-                    );
-
-                    pointer_focus_x.set(Some(focus_x));
-                    cursor.set(next_cursor);
-                    selection_range.set(SelectionRange::new(anchor, next_cursor, len));
-                },
-
-                onpointerup: move |e: Event<PointerData>| {
-                    if selecting_with_pointer() {
-                        e.prevent_default();
-                    }
-                    selecting_with_pointer.set(false);
-                },
-
-                onpointercancel: move |_| {
-                    selecting_with_pointer.set(false);
-                    pointer_focus_x.set(None);
-                    pointer_focus_pending.set(false);
-                },
+                style: "position:absolute;z-index:20;top:0;left:0;right:0;bottom:0;width:100%;height:100%;opacity:0;color:transparent;background:transparent;caret-color:transparent;outline:none;border:none;padding:0;margin:0;text-align:center;font-family:inherit;font-size:inherit;cursor:text;user-select:none;pointer-events:none;",
 
                 onkeydown: move |e: Event<KeyboardData>| {
                     if (props.disabled)() {
@@ -1064,9 +851,9 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     let mods = e.modifiers();
                     let chars: Vec<char> = value.read().chars().collect();
                     let len = chars.len();
-                    let selected = selection_range();
+                    let selected = selection_range.cloned();
                     let mut new_cursor = cursor().min(len);
-                    let mut next_selection = selected;
+                    let mut next_selection = selected.clone();
                     let mut next_anchor = selection_anchor();
 
                     match key {
@@ -1076,7 +863,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 let anchor = next_anchor.unwrap_or(new_cursor);
                                 new_cursor = new_cursor.saturating_sub(1);
                                 next_anchor = Some(anchor);
-                                next_selection = SelectionRange::new(anchor, new_cursor, len);
+                                next_selection = selection_range_for(anchor, new_cursor, len);
                             } else {
                                 new_cursor = selected
                                     .map(|range| range.start)
@@ -1091,7 +878,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 let anchor = next_anchor.unwrap_or(new_cursor);
                                 new_cursor = (new_cursor + 1).min(len);
                                 next_anchor = Some(anchor);
-                                next_selection = SelectionRange::new(anchor, new_cursor, len);
+                                next_selection = selection_range_for(anchor, new_cursor, len);
                             } else {
                                 new_cursor = selected
                                     .map(|range| range.end)
@@ -1106,7 +893,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 let anchor = next_anchor.unwrap_or(new_cursor);
                                 new_cursor = 0;
                                 next_anchor = Some(anchor);
-                                next_selection = SelectionRange::new(anchor, new_cursor, len);
+                                next_selection = selection_range_for(anchor, new_cursor, len);
                             } else {
                                 new_cursor = 0;
                                 next_anchor = None;
@@ -1119,7 +906,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 let anchor = next_anchor.unwrap_or(new_cursor);
                                 new_cursor = len;
                                 next_anchor = Some(anchor);
-                                next_selection = SelectionRange::new(anchor, new_cursor, len);
+                                next_selection = selection_range_for(anchor, new_cursor, len);
                             } else {
                                 new_cursor = len;
                                 next_anchor = None;
@@ -1179,7 +966,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                             e.prevent_default();
                             new_cursor = 0;
                             next_anchor = Some(0);
-                            next_selection = SelectionRange::new(0, len, len);
+                            next_selection = selection_range_for(0, len, len);
                         }
                         Key::Character(ref s)
                             if s.chars().count() == 1
@@ -1188,7 +975,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 && !mods.alt() =>
                         {
                             e.prevent_default();
-                            let range = EditRange::for_entry(new_cursor, len, max, selected);
+                            let range = edit_range_for_entry(new_cursor, len, max, selected);
                             if let Some(c) = s.chars().next() {
                                 let mut next_chars = chars.clone();
                                 next_chars.splice(range.start..range.end, [c]);
@@ -1222,30 +1009,30 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     if selection_anchor() != next_anchor {
                         selection_anchor.set(next_anchor);
                     }
-                    if selection_range() != next_selection {
+                    if selection_range.cloned() != next_selection {
                         selection_range.set(next_selection);
                     }
-                    pointer_focus_x.set(None);
+                    selecting_with_pointer.set(false);
                 },
 
                 oninput: move |e: FormEvent| {
                     let raw = e.value();
                     let max = maxlength();
                     let current_value = value.read().clone();
-                    let selected = selection_range();
+                    let selected = selection_range.cloned();
                     let current_cursor = cursor().min(current_value.chars().count());
                     let change = InputValueChange::from_raw_input(
                         &current_value,
                         &raw,
                         max,
                         current_cursor,
-                        selected,
+                        selected.clone(),
                     );
                     if change.changed {
                         if let Some(validate) = validate {
                             if !validate.call(change.value.clone()) {
                                 let id = input_id();
-                                let selection = NativeSelection::for_cursor(
+                                let selection = native_selection_for(
                                     &current_value,
                                     current_cursor,
                                     max,
@@ -1269,14 +1056,14 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                         let id = input_id();
                         let value_to_sync = next_value.clone();
                         let selection =
-                            NativeSelection::for_cursor(&value_to_sync, next_cursor, max, None);
+                            native_selection_for(&value_to_sync, next_cursor, max, None);
                         spawn(async move {
                             sync_input_value_and_selection(id, value_to_sync, selection).await;
                         });
                     } else {
                         let id = input_id();
                         let selection =
-                            NativeSelection::for_cursor(&next_value, next_cursor, max, None);
+                            native_selection_for(&next_value, next_cursor, max, None);
                         spawn(async move {
                             sync_input_selection(id, selection).await;
                         });
@@ -1291,7 +1078,8 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     cursor.set(next_cursor);
                     selection_anchor.set(None);
                     selection_range.set(None);
-                    pointer_focus_x.set(None);
+                    pointer_selection_anchor_slot.set(None);
+                    selecting_with_pointer.set(false);
                 },
 
                 onfocus: move |_| {
@@ -1303,20 +1091,18 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     if !selecting_with_pointer()
                         && selection_anchor().is_none()
                         && selection_range().is_none()
-                        && pointer_focus_x().is_none()
                     {
                         cursor.set(value.read().chars().count());
                         selection_anchor.set(None);
                         selection_range.set(None);
-                        pointer_focus_x.set(None);
                     }
                 },
                 onblur: move |_| {
                     is_focused.set(false);
                     selecting_with_pointer.set(false);
+                    pointer_selection_anchor_slot.set(None);
                     selection_anchor.set(None);
                     selection_range.set(None);
-                    pointer_focus_x.set(None);
                     pointer_focus_pending.set(false);
                 },
             }

@@ -169,10 +169,12 @@ test('otp pointer selection highlights slots', async ({ page }) => {
   await page.mouse.move(end!.x + end!.width / 2 + 1, end!.y + end!.height / 2, { steps: 5 });
   await page.mouse.up();
 
-  await expect(otp.locator('[data-selected="true"]')).toHaveCount(3);
+  await expect(otp.locator('[data-selected="true"]')).toHaveCount(4);
+  await expect(otpSlot(otp, 1)).toHaveAttribute('data-selection-start', 'true');
+  await expect(otpSlot(otp, 4)).toHaveAttribute('data-selection-end', 'true');
 
   await page.keyboard.type('9');
-  await expect(page.locator('#otp-value')).toHaveText('1296');
+  await expect(page.locator('#otp-value')).toHaveText('196');
 });
 
 test('otp backward pointer selection includes the slot under the pointer', async ({ page }) => {
