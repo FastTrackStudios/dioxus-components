@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page } from '@playwright/test';
 
 const previewUrl = process.env.PREVIEW_URL ?? 'http://127.0.0.1:8080';
 const otpUrl = new URL('/component/?name=otp&', previewUrl).toString();
@@ -27,6 +27,10 @@ async function waitForOtpLayout(page: Page) {
     .toBe(true);
   await input.scrollIntoViewIfNeeded();
   await expect(input).toBeInViewport();
+}
+
+function otpSlot(otp: Locator, index: number) {
+  return otp.locator('[data-empty]').nth(index);
 }
 
 test('otp typing, backspace, and rejection', async ({ page }) => {
@@ -117,14 +121,14 @@ test('otp keeps visual focus visible at the end', async ({ page }) => {
   await page.keyboard.type('123456');
 
   await expect(otp.locator('[data-active="true"]')).toHaveCount(1);
-  await expect(otp.locator('[data-char="6"]')).toHaveAttribute('data-active', 'true');
+  await expect(otpSlot(otp, 5)).toHaveAttribute('data-active', 'true');
 
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('End');
   await expect(otp.locator('[data-active="true"]')).toHaveCount(1);
-  await expect(otp.locator('[data-char="6"]')).toHaveAttribute('data-active', 'true');
-  await expect(otp.locator('[data-char="6"]')).toHaveCSS('border-left-width', '1px');
-  await expect(otp.locator('[data-char="6"]')).toHaveCSS('border-left-style', 'solid');
+  await expect(otpSlot(otp, 5)).toHaveAttribute('data-active', 'true');
+  await expect(otpSlot(otp, 5)).toHaveCSS('border-left-width', '1px');
+  await expect(otpSlot(otp, 5)).toHaveCSS('border-left-style', 'solid');
 });
 
 test('otp renders its own selection highlight', async ({ page }) => {
@@ -154,8 +158,8 @@ test('otp pointer selection highlights slots', async ({ page }) => {
   await expect(input).not.toBeFocused();
   await waitForOtpLayout(page);
 
-  const start = await otp.locator('[data-char="2"]').boundingBox();
-  const end = await otp.locator('[data-char="5"]').boundingBox();
+  const start = await otpSlot(otp, 1).boundingBox();
+  const end = await otpSlot(otp, 4).boundingBox();
   expect(start).not.toBeNull();
   expect(end).not.toBeNull();
 
@@ -179,8 +183,8 @@ test('otp backward pointer selection includes the slot under the pointer', async
   await page.keyboard.type('123456');
   await waitForOtpLayout(page);
 
-  const start = await otp.locator('[data-char="5"]').boundingBox();
-  const end = await otp.locator('[data-char="2"]').boundingBox();
+  const start = await otpSlot(otp, 4).boundingBox();
+  const end = await otpSlot(otp, 1).boundingBox();
   expect(start).not.toBeNull();
   expect(end).not.toBeNull();
 
@@ -190,10 +194,10 @@ test('otp backward pointer selection includes the slot under the pointer', async
   await page.mouse.up();
 
   await expect(otp.locator('[data-selected="true"]')).toHaveCount(4);
-  await expect(otp.locator('[data-char="5"]')).toHaveAttribute('data-selected', 'true');
-  await expect(otp.locator('[data-char="2"]')).toHaveAttribute('data-selection-start', 'true');
-  await expect(otp.locator('[data-char="2"]')).toHaveCSS('border-left-width', '1px');
-  await expect(otp.locator('[data-char="2"]')).toHaveCSS('border-left-style', 'solid');
+  await expect(otpSlot(otp, 4)).toHaveAttribute('data-selected', 'true');
+  await expect(otpSlot(otp, 1)).toHaveAttribute('data-selection-start', 'true');
+  await expect(otpSlot(otp, 1)).toHaveCSS('border-left-width', '1px');
+  await expect(otpSlot(otp, 1)).toHaveCSS('border-left-style', 'solid');
 
   await page.keyboard.type('9');
   await expect(page.locator('#otp-value')).toHaveText('196');

@@ -32,7 +32,6 @@ pub struct OneTimePasswordSlotProps {
     pub attributes: Vec<Attribute>,
 
     /// Optional children rendered after the character (for example, a custom caret element).
-    /// The current character is exposed via the `data-char` attribute.
     pub children: Element,
 }
 
@@ -50,7 +49,6 @@ pub struct OneTimePasswordSlotProps {
 /// - `data-selection-end`: `true` when this slot is the last selected slot.
 /// - `data-empty`: `true` when no character has been entered at this position.
 /// - `data-disabled`: mirrors the parent's disabled state.
-/// - `data-char`: the current character at this position (empty when none).
 #[component]
 pub fn OneTimePasswordSlot(props: OneTimePasswordSlotProps) -> Element {
     let mut ctx: OtpCtx = use_context();
@@ -93,7 +91,6 @@ pub fn OneTimePasswordSlot(props: OneTimePasswordSlotProps) -> Element {
             "data-selection-end": is_selection_end,
             "data-empty": is_empty,
             "data-disabled": ctx.disabled,
-            "data-char": char_at,
             onmounted: move |event: Event<MountedData>| {
                 let mounted = event.data();
                 let index = index();
