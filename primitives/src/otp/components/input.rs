@@ -3,59 +3,217 @@ use crate::{use_controlled, use_id_or, use_unique_id};
 use dioxus::prelude::*;
 use std::rc::Rc;
 
-fn input_value_and_cursor(
-    current_value: &str,
-    raw_value: &str,
-    max: usize,
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct InputValueChange {
+    value: String,
     cursor: usize,
-    selected_range: Option<SelectionRange>,
-) -> (String, usize, bool) {
-    if max == 0 {
-        return (String::new(), 0, false);
-    }
-
-    let current_chars: Vec<char> = current_value.chars().collect();
-    let raw_chars: Vec<char> = raw_value.chars().take(max).collect();
-    let current_len = current_chars.len();
-    let cursor = cursor.min(current_len);
-    let (start, end) = edit_range_for_entry(cursor, current_len, max, selected_range);
-    let (next_chars, next_cursor) = if selected_range.is_none() && start < end {
-        if let Some(inserted_chars) = inserted_chars_at_cursor(&current_chars, &raw_chars, cursor) {
-            let mut replaced_chars = current_chars.clone();
-            replaced_chars.splice(start..end, inserted_chars.iter().copied());
-            replaced_chars.truncate(max);
-            let next_cursor = (start + inserted_chars.len()).min(replaced_chars.len());
-            (replaced_chars, next_cursor)
-        } else {
-            let next_cursor = raw_value_cursor(&current_chars, &raw_chars, start, end, current_len);
-            (raw_chars, next_cursor)
-        }
-    } else {
-        let next_cursor = raw_value_cursor(&current_chars, &raw_chars, start, end, current_len);
-        (raw_chars, next_cursor)
-    };
-    let next: String = next_chars.into_iter().collect();
-    let changed = next != current_value;
-
-    (next, next_cursor, changed)
+    changed: bool,
 }
 
-fn edit_range_for_entry(
-    cursor: usize,
-    len: usize,
-    max: usize,
-    selected_range: Option<SelectionRange>,
-) -> (usize, usize) {
-    if let Some(range) = selected_range {
-        return (range.start.min(len), range.end.min(len));
+impl InputValueChange {
+    fn from_raw_input(
+        current_value: &str,
+        raw_value: &str,
+        max: usize,
+        cursor: usize,
+        selected_range: Option<SelectionRange>,
+    ) -> Self {
+        if max == 0 {
+            return Self {
+                value: String::new(),
+                cursor: 0,
+                changed: false,
+            };
+        }
+
+        let current_chars: Vec<char> = current_value.chars().collect();
+        let raw_chars: Vec<char> = raw_value.chars().take(max).collect();
+        let current_len = current_chars.len();
+        let cursor = cursor.min(current_len);
+        let range = EditRange::for_entry(cursor, current_len, max, selected_range);
+        let (next_chars, next_cursor) = if selected_range.is_none() && !range.is_empty() {
+            if let Some(inserted_chars) =
+                inserted_chars_at_cursor(&current_chars, &raw_chars, cursor)
+            {
+                let mut replaced_chars = current_chars.clone();
+                replaced_chars.splice(range.start..range.end, inserted_chars.iter().copied());
+                replaced_chars.truncate(max);
+                let next_cursor = (range.start + inserted_chars.len()).min(replaced_chars.len());
+                (replaced_chars, next_cursor)
+            } else {
+                let next_cursor = raw_value_cursor(&current_chars, &raw_chars, range, current_len);
+                (raw_chars, next_cursor)
+            }
+        } else {
+            let next_cursor = raw_value_cursor(&current_chars, &raw_chars, range, current_len);
+            (raw_chars, next_cursor)
+        };
+        let next: String = next_chars.into_iter().collect();
+        let changed = next != current_value;
+
+        Self {
+            value: next,
+            cursor: next_cursor,
+            changed,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct EditRange {
+    start: usize,
+    end: usize,
+}
+
+impl EditRange {
+    fn for_entry(
+        cursor: usize,
+        len: usize,
+        max: usize,
+        selected_range: Option<SelectionRange>,
+    ) -> Self {
+        if let Some(range) = selected_range {
+            return Self {
+                start: range.start.min(len),
+                end: range.end.min(len),
+            };
+        }
+
+        let cursor = cursor.min(len);
+        if len == 0 || cursor == len && len < max {
+            Self {
+                start: cursor,
+                end: cursor,
+            }
+        } else {
+            let start = cursor.min(len.saturating_sub(1));
+            Self {
+                start,
+                end: (start + 1).min(len),
+            }
+        }
     }
 
-    let cursor = cursor.min(len);
-    if len == 0 || cursor == len && len < max {
-        (cursor, cursor)
-    } else {
-        let start = cursor.min(len.saturating_sub(1));
-        (start, (start + 1).min(len))
+    fn len(self) -> usize {
+        self.end.saturating_sub(self.start)
+    }
+
+    fn is_empty(self) -> bool {
+        self.len() == 0
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct NativeSelection {
+    start: usize,
+    end: usize,
+}
+
+impl NativeSelection {
+    fn for_cursor(
+        value: &str,
+        cursor: usize,
+        max: usize,
+        selected_range: Option<SelectionRange>,
+    ) -> Self {
+        let len = value.chars().count();
+        let range = EditRange::for_entry(cursor, len, max, selected_range);
+
+        Self {
+            start: utf16_offset_for_char(value, range.start),
+            end: utf16_offset_for_char(value, range.end),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ValueCursorChange {
+    value: String,
+    cursor: usize,
+}
+
+impl ValueCursorChange {
+    fn delete_backward(
+        current_value: &str,
+        cursor: usize,
+        max: usize,
+        selected_range: Option<SelectionRange>,
+    ) -> Self {
+        let mut chars: Vec<char> = current_value.chars().collect();
+
+        if let Some(range) = selected_range {
+            chars.drain(range.start..range.end);
+            return Self {
+                value: chars.into_iter().collect(),
+                cursor: range.start,
+            };
+        }
+
+        let cursor = cursor.min(chars.len());
+        if chars.is_empty() {
+            return Self {
+                value: current_value.to_string(),
+                cursor: 0,
+            };
+        }
+        if cursor < chars.len() || chars.len() == max {
+            let start = cursor.min(chars.len().saturating_sub(1));
+            chars.remove(start);
+            return Self {
+                value: chars.into_iter().collect(),
+                cursor: start,
+            };
+        }
+        if cursor == 0 {
+            return Self {
+                value: current_value.to_string(),
+                cursor: 0,
+            };
+        }
+
+        chars.remove(cursor - 1);
+        Self {
+            value: chars.into_iter().collect(),
+            cursor: cursor - 1,
+        }
+    }
+
+    fn delete_forward(
+        current_value: &str,
+        cursor: usize,
+        max: usize,
+        selected_range: Option<SelectionRange>,
+    ) -> Self {
+        let mut chars: Vec<char> = current_value.chars().collect();
+
+        if let Some(range) = selected_range {
+            chars.drain(range.start..range.end);
+            return Self {
+                value: chars.into_iter().collect(),
+                cursor: range.start,
+            };
+        }
+
+        let cursor = cursor.min(chars.len());
+        if chars.is_empty() {
+            return Self {
+                value: current_value.to_string(),
+                cursor,
+            };
+        }
+        if cursor >= chars.len() && chars.len() < max {
+            return Self {
+                value: current_value.to_string(),
+                cursor,
+            };
+        }
+
+        let start = cursor.min(chars.len().saturating_sub(1));
+        chars.remove(start);
+        Self {
+            value: chars.into_iter().collect(),
+            cursor: start,
+        }
     }
 }
 
@@ -82,14 +240,13 @@ fn inserted_chars_at_cursor(
 fn raw_value_cursor(
     current_chars: &[char],
     next_chars: &[char],
-    start: usize,
-    end: usize,
+    range: EditRange,
     current_len: usize,
 ) -> usize {
-    let replaced_len = end.saturating_sub(start);
+    let replaced_len = range.len();
     let base_len = current_len.saturating_sub(replaced_len);
     if next_chars.len() >= base_len {
-        (start + next_chars.len().saturating_sub(base_len)).min(next_chars.len())
+        (range.start + next_chars.len().saturating_sub(base_len)).min(next_chars.len())
     } else {
         current_chars
             .iter()
@@ -99,83 +256,12 @@ fn raw_value_cursor(
     }
 }
 
-fn native_selection_for_cursor(
-    value: &str,
-    cursor: usize,
-    max: usize,
-    selected_range: Option<SelectionRange>,
-) -> (usize, usize) {
-    let len = value.chars().count();
-    let (start, end) = edit_range_for_entry(cursor, len, max, selected_range);
-
-    (
-        utf16_offset_for_char(value, start),
-        utf16_offset_for_char(value, end),
-    )
-}
-
 fn utf16_offset_for_char(value: &str, index: usize) -> usize {
     value
         .chars()
         .take(index)
         .map(char::len_utf16)
         .sum::<usize>()
-}
-
-fn delete_backward(
-    current_value: &str,
-    cursor: usize,
-    max: usize,
-    selected_range: Option<SelectionRange>,
-) -> (String, usize) {
-    let mut chars: Vec<char> = current_value.chars().collect();
-
-    if let Some(range) = selected_range {
-        chars.drain(range.start..range.end);
-        return (chars.into_iter().collect(), range.start);
-    }
-
-    let cursor = cursor.min(chars.len());
-    if chars.is_empty() {
-        return (current_value.to_string(), 0);
-    }
-    if cursor < chars.len() || chars.len() == max {
-        let start = cursor.min(chars.len().saturating_sub(1));
-        chars.remove(start);
-        return (chars.into_iter().collect(), start);
-    }
-    if cursor == 0 {
-        return (current_value.to_string(), 0);
-    }
-
-    chars.remove(cursor - 1);
-    (chars.into_iter().collect(), cursor - 1)
-}
-
-fn delete_forward(
-    current_value: &str,
-    cursor: usize,
-    max: usize,
-    selected_range: Option<SelectionRange>,
-) -> (String, usize) {
-    let mut chars: Vec<char> = current_value.chars().collect();
-
-    if let Some(range) = selected_range {
-        chars.drain(range.start..range.end);
-        return (chars.into_iter().collect(), range.start);
-    }
-
-    let cursor = cursor.min(chars.len());
-    if chars.is_empty() {
-        return (current_value.to_string(), cursor);
-    }
-    if cursor >= chars.len() && chars.len() < max {
-        return (current_value.to_string(), cursor);
-    }
-
-    let start = cursor.min(chars.len().saturating_sub(1));
-    chars.remove(start);
-    (chars.into_iter().collect(), start)
 }
 
 fn active_slot_index(cursor: usize, len: usize, max: usize) -> Option<usize> {
@@ -363,7 +449,7 @@ async fn refresh_slot_bounds(
     next
 }
 
-async fn sync_input_selection(input_id: String, start: usize, end: usize) {
+async fn sync_input_selection(input_id: String, selection: NativeSelection) {
     let eval = document::eval(
         r#"
         const id = await dioxus.recv();
@@ -377,11 +463,15 @@ async fn sync_input_selection(input_id: String, start: usize, end: usize) {
         "#,
     );
     let _ = eval.send(input_id);
-    let _ = eval.send(start);
-    let _ = eval.send(end);
+    let _ = eval.send(selection.start);
+    let _ = eval.send(selection.end);
 }
 
-async fn sync_input_value_and_selection(input_id: String, value: String, start: usize, end: usize) {
+async fn sync_input_value_and_selection(
+    input_id: String,
+    value: String,
+    selection: NativeSelection,
+) {
     let eval = document::eval(
         r#"
         const id = await dioxus.recv();
@@ -402,103 +492,133 @@ async fn sync_input_value_and_selection(input_id: String, value: String, start: 
     );
     let _ = eval.send(input_id);
     let _ = eval.send(value);
-    let _ = eval.send(start);
-    let _ = eval.send(end);
+    let _ = eval.send(selection.start);
+    let _ = eval.send(selection.end);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        active_slot_index, delete_backward, delete_forward, input_value_and_cursor,
-        native_selection_for_cursor,
-    };
+    use super::{active_slot_index, InputValueChange, NativeSelection, ValueCursorChange};
     use crate::otp::context::SelectionRange;
+
+    fn input_change(value: &str, cursor: usize, changed: bool) -> InputValueChange {
+        InputValueChange {
+            value: value.to_string(),
+            cursor,
+            changed,
+        }
+    }
+
+    fn value_cursor(value: &str, cursor: usize) -> ValueCursorChange {
+        ValueCursorChange {
+            value: value.to_string(),
+            cursor,
+        }
+    }
 
     #[test]
     fn input_change_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("12", "129", 6, 2, None),
-            ("129".to_string(), 3, true)
+            InputValueChange::from_raw_input("12", "129", 6, 2, None),
+            input_change("129", 3, true)
         );
     }
 
     #[test]
     fn input_change_replaces_at_visible_cursor() {
         assert_eq!(
-            input_value_and_cursor("12", "192", 6, 1, None),
-            ("19".to_string(), 2, true)
+            InputValueChange::from_raw_input("12", "192", 6, 1, None),
+            input_change("19", 2, true)
         );
     }
 
     #[test]
     fn multi_character_input_change_replaces_active_slot() {
         assert_eq!(
-            input_value_and_cursor("12", "1982", 6, 1, None),
-            ("198".to_string(), 3, true)
+            InputValueChange::from_raw_input("12", "1982", 6, 1, None),
+            input_change("198", 3, true)
         );
     }
 
     #[test]
     fn unchanged_input_is_not_reported_as_changed() {
         assert_eq!(
-            input_value_and_cursor("192", "192", 6, 3, None),
-            ("192".to_string(), 3, false)
+            InputValueChange::from_raw_input("192", "192", 6, 3, None),
+            input_change("192", 3, false)
         );
     }
 
     #[test]
     fn input_change_truncates_to_maxlength() {
         assert_eq!(
-            input_value_and_cursor("123456", "1234569", 6, 6, None),
-            ("123456".to_string(), 6, false)
+            InputValueChange::from_raw_input("123456", "1234569", 6, 6, None),
+            input_change("123456", 6, false)
         );
     }
 
     #[test]
     fn input_deletion_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("12", "1", 6, 2, None),
-            ("1".to_string(), 1, true)
+            InputValueChange::from_raw_input("12", "1", 6, 2, None),
+            input_change("1", 1, true)
         );
     }
 
     #[test]
     fn full_input_replacement_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("12", "987654", 6, 0, SelectionRange::new(0, 2, 2)),
-            ("987654".to_string(), 6, true)
+            InputValueChange::from_raw_input("12", "987654", 6, 0, SelectionRange::new(0, 2, 2)),
+            input_change("987654", 6, true)
         );
     }
 
     #[test]
     fn full_input_replacement_with_shared_prefix_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("123456", "123999", 6, 0, SelectionRange::new(0, 6, 6)),
-            ("123999".to_string(), 6, true)
+            InputValueChange::from_raw_input(
+                "123456",
+                "123999",
+                6,
+                0,
+                SelectionRange::new(0, 6, 6),
+            ),
+            input_change("123999", 6, true)
         );
     }
 
     #[test]
     fn shorter_full_input_replacement_with_shared_prefix_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("123456", "1239", 6, 0, SelectionRange::new(0, 6, 6)),
-            ("1239".to_string(), 4, true)
+            InputValueChange::from_raw_input("123456", "1239", 6, 0, SelectionRange::new(0, 6, 6),),
+            input_change("1239", 4, true)
         );
     }
 
     #[test]
     fn full_input_replacement_truncates_to_maxlength() {
         assert_eq!(
-            input_value_and_cursor("123456", "9876543", 6, 0, SelectionRange::new(0, 6, 6)),
-            ("987654".to_string(), 6, true)
+            InputValueChange::from_raw_input(
+                "123456",
+                "9876543",
+                6,
+                0,
+                SelectionRange::new(0, 6, 6),
+            ),
+            input_change("987654", 6, true)
         );
     }
 
     #[test]
     fn selected_range_replacement_with_shared_digits_uses_raw_value() {
         assert_eq!(
-            input_value_and_cursor("123456", "123996", 6, 3, SelectionRange::new(3, 5, 6)),
-            ("123996".to_string(), 5, true)
+            InputValueChange::from_raw_input(
+                "123456",
+                "123996",
+                6,
+                3,
+                SelectionRange::new(3, 5, 6),
+            ),
+            input_change("123996", 5, true)
         );
     }
 
@@ -507,32 +627,32 @@ mod tests {
         let selected_range = SelectionRange::new(1, 4, 6);
 
         assert_eq!(
-            delete_backward("123456", 4, 6, selected_range),
-            ("156".to_string(), 1)
+            ValueCursorChange::delete_backward("123456", 4, 6, selected_range),
+            value_cursor("156", 1)
         );
     }
 
     #[test]
     fn delete_forward_removes_after_cursor() {
         assert_eq!(
-            delete_forward("123456", 2, 6, None),
-            ("12456".to_string(), 2)
+            ValueCursorChange::delete_forward("123456", 2, 6, None),
+            value_cursor("12456", 2)
         );
     }
 
     #[test]
     fn delete_backward_removes_active_slot_in_middle() {
         assert_eq!(
-            delete_backward("123456", 2, 6, None),
-            ("12456".to_string(), 2)
+            ValueCursorChange::delete_backward("123456", 2, 6, None),
+            value_cursor("12456", 2)
         );
     }
 
     #[test]
     fn delete_forward_removes_active_slot_at_full_end() {
         assert_eq!(
-            delete_forward("123456", 6, 6, None),
-            ("12345".to_string(), 5)
+            ValueCursorChange::delete_forward("123456", 6, 6, None),
+            value_cursor("12345", 5)
         );
     }
 
@@ -581,10 +701,13 @@ mod tests {
 
     #[test]
     fn native_selection_uses_utf16_offsets() {
-        assert_eq!(native_selection_for_cursor("😀😃😄", 3, 4, None), (6, 6));
         assert_eq!(
-            native_selection_for_cursor("😀😃😄", 1, 4, SelectionRange::new(1, 3, 3)),
-            (2, 6)
+            NativeSelection::for_cursor("😀😃😄", 3, 4, None),
+            NativeSelection { start: 6, end: 6 }
+        );
+        assert_eq!(
+            NativeSelection::for_cursor("😀😃😄", 1, 4, SelectionRange::new(1, 3, 3)),
+            NativeSelection { start: 2, end: 6 }
         );
     }
 }
@@ -725,9 +848,9 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         if let Some(range) = selection_range().and_then(|range| {
             SelectionRange::new(range.start, range.end, current_value.chars().count())
         }) {
-            native_selection_for_cursor(&current_value, cursor(), maxlength(), Some(range))
+            NativeSelection::for_cursor(&current_value, cursor(), maxlength(), Some(range))
         } else {
-            native_selection_for_cursor(&current_value, cursor(), maxlength(), None)
+            NativeSelection::for_cursor(&current_value, cursor(), maxlength(), None)
         }
     });
 
@@ -766,10 +889,10 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
         }
 
         let id = input_id();
-        let (start, end) = native_selection();
+        let selection = native_selection();
 
         spawn(async move {
-            sync_input_selection(id, start, end).await;
+            sync_input_selection(id, selection).await;
         });
     });
 
@@ -1012,16 +1135,20 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 }
                             } else {
                                 let current_value = value.read().clone();
-                                let (next_value, next_cursor) =
-                                    delete_backward(&current_value, new_cursor, max, selected);
+                                let change = ValueCursorChange::delete_backward(
+                                    &current_value,
+                                    new_cursor,
+                                    max,
+                                    selected,
+                                );
                                 apply_value_change(
                                     &current_value,
-                                    next_value,
+                                    change.value,
                                     max,
                                     set_value,
                                     on_complete,
                                 );
-                                new_cursor = next_cursor;
+                                new_cursor = change.cursor;
                             }
                             next_anchor = None;
                             next_selection = None;
@@ -1029,16 +1156,20 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                         Key::Delete => {
                             e.prevent_default();
                             let current_value = value.read().clone();
-                            let (next_value, next_cursor) =
-                                delete_forward(&current_value, new_cursor, max, selected);
+                            let change = ValueCursorChange::delete_forward(
+                                &current_value,
+                                new_cursor,
+                                max,
+                                selected,
+                            );
                             apply_value_change(
                                 &current_value,
-                                next_value,
+                                change.value,
                                 max,
                                 set_value,
                                 on_complete,
                             );
-                            new_cursor = next_cursor;
+                            new_cursor = change.cursor;
                             next_anchor = None;
                             next_selection = None;
                         }
@@ -1057,11 +1188,10 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                 && !mods.alt() =>
                         {
                             e.prevent_default();
-                            let (start, end) =
-                                edit_range_for_entry(new_cursor, len, max, selected);
+                            let range = EditRange::for_entry(new_cursor, len, max, selected);
                             if let Some(c) = s.chars().next() {
                                 let mut next_chars = chars.clone();
-                                next_chars.splice(start..end, [c]);
+                                next_chars.splice(range.start..range.end, [c]);
                                 next_chars.truncate(max);
                                 let next_value: String =
                                     next_chars.iter().copied().collect();
@@ -1078,7 +1208,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                     set_value,
                                     on_complete,
                                 );
-                                new_cursor = (start + 1).min(next_chars.len());
+                                new_cursor = (range.start + 1).min(next_chars.len());
                                 next_anchor = None;
                                 next_selection = None;
                             }
@@ -1104,13 +1234,18 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                     let current_value = value.read().clone();
                     let selected = selection_range();
                     let current_cursor = cursor().min(current_value.chars().count());
-                    let (next_value, next_cursor, changed) =
-                        input_value_and_cursor(&current_value, &raw, max, current_cursor, selected);
-                    if changed {
+                    let change = InputValueChange::from_raw_input(
+                        &current_value,
+                        &raw,
+                        max,
+                        current_cursor,
+                        selected,
+                    );
+                    if change.changed {
                         if let Some(validate) = validate {
-                            if !validate.call(next_value.clone()) {
+                            if !validate.call(change.value.clone()) {
                                 let id = input_id();
-                                let (start, end) = native_selection_for_cursor(
+                                let selection = NativeSelection::for_cursor(
                                     &current_value,
                                     current_cursor,
                                     max,
@@ -1120,8 +1255,7 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                                     sync_input_value_and_selection(
                                         id,
                                         current_value,
-                                        start,
-                                        end,
+                                        selection,
                                     )
                                     .await;
                                 });
@@ -1129,21 +1263,22 @@ pub fn OneTimePasswordInput(props: OneTimePasswordInputProps) -> Element {
                             }
                         }
                     }
+                    let next_cursor = change.cursor;
+                    let next_value = change.value;
                     if raw != next_value {
                         let id = input_id();
                         let value_to_sync = next_value.clone();
-                        let (start, end) =
-                            native_selection_for_cursor(&value_to_sync, next_cursor, max, None);
+                        let selection =
+                            NativeSelection::for_cursor(&value_to_sync, next_cursor, max, None);
                         spawn(async move {
-                            sync_input_value_and_selection(id, value_to_sync, start, end)
-                            .await;
+                            sync_input_value_and_selection(id, value_to_sync, selection).await;
                         });
                     } else {
                         let id = input_id();
-                        let (start, end) =
-                            native_selection_for_cursor(&next_value, next_cursor, max, None);
+                        let selection =
+                            NativeSelection::for_cursor(&next_value, next_cursor, max, None);
                         spawn(async move {
-                            sync_input_selection(id, start, end).await;
+                            sync_input_selection(id, selection).await;
                         });
                     }
                     apply_value_change(
