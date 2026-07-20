@@ -14,7 +14,7 @@ repository = "https://github.com/DioxusLabs/components"
 [dependencies]
 dioxus.workspace = true
 dioxus-attributes = { path = "../dioxus-attributes" }
-dioxus-sdk-time = "0.7.0"
+dioxus-sdk-time = { git = "https://github.com/FastTrackStudios/sdk", branch = "dioxus-0.8" }
 time = { version = "0.3.44", features = ["std", "macros", "parsing", "local-offset"] }
 num-integer = "0.1.46"
 tracing.workspace = true
@@ -25,7 +25,7 @@ palette = "0.7.6"
 lazy-js-bundle = "0.7.9"
 
 [dev-dependencies]
-dioxus-ssr = "0.7.0"
+dioxus-ssr = { git = "https://github.com/DioxusLabs/dioxus", rev = "f717a8e184a522d078b70bb4b4d62a5f9a99ddfc" }
 
 [features]
 default = ["router"]
