@@ -33,6 +33,53 @@ impl ToastType {
     }
 }
 
+/// A button on a toast that does something about it — "Undo" after a
+/// delete, "View" after a save, "Retry" after a failure.
+///
+/// The action is a plain shared closure rather than a [`Callback`]: a
+/// toast routinely outlives the component that raised it (the deleted
+/// row is gone; the user may have navigated away), and a `Callback` is
+/// owned by its creating scope. Capture long-lived handles (signals
+/// from app-level contexts, stores) in the closure, not a component's
+/// event handlers.
+///
+/// Pressing the button runs the action and closes the toast.
+#[derive(Clone)]
+pub struct ToastAction {
+    /// The button's text. Name the action: "Undo", not "OK".
+    pub label: String,
+    run: std::rc::Rc<dyn Fn()>,
+}
+
+impl ToastAction {
+    /// An action labelled `label` that runs `run` when pressed.
+    pub fn new(label: impl ToString, run: impl Fn() + 'static) -> Self {
+        Self {
+            label: label.to_string(),
+            run: std::rc::Rc::new(run),
+        }
+    }
+
+    /// Run the action.
+    pub fn run(&self) {
+        (self.run)();
+    }
+}
+
+impl PartialEq for ToastAction {
+    fn eq(&self, other: &Self) -> bool {
+        self.label == other.label && std::rc::Rc::ptr_eq(&self.run, &other.run)
+    }
+}
+
+impl std::fmt::Debug for ToastAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ToastAction")
+            .field("label", &self.label)
+            .finish_non_exhaustive()
+    }
+}
+
 // A single toast item
 #[derive(Debug, Clone, PartialEq)]
 struct ToastRecord {
@@ -42,10 +89,21 @@ struct ToastRecord {
     toast_type: ToastType,
     duration: Option<Duration>,
     permanent: bool,
+    action: Option<ToastAction>,
 }
 
-// Type alias for the complex callback type
-type AddToastCallback = Callback<(String, Option<String>, ToastType, Option<Duration>, bool)>;
+// What `Toasts::show` hands the provider.
+#[derive(Clone)]
+struct NewToast {
+    title: String,
+    description: Option<String>,
+    toast_type: ToastType,
+    duration: Option<Duration>,
+    permanent: bool,
+    action: Option<ToastAction>,
+}
+
+type AddToastCallback = Callback<NewToast>;
 
 // Context for managing toasts
 #[derive(Clone)]
@@ -164,13 +222,14 @@ pub fn ToastProvider(props: ToastProviderProps) -> Element {
 
     // Add toast callback
     let add_toast = use_callback(
-        move |(title, description, toast_type, duration, permanent): (
-            String,
-            Option<String>,
-            ToastType,
-            Option<Duration>,
-            bool,
-        )| {
+        move |NewToast {
+                  title,
+                  description,
+                  toast_type,
+                  duration,
+                  permanent,
+                  action,
+              }: NewToast| {
             // Generate a unique ID for the toast
             // Use a static atomic counter to ensure unique IDs
             use std::sync::atomic::{AtomicUsize, Ordering};
@@ -193,6 +252,7 @@ pub fn ToastProvider(props: ToastProviderProps) -> Element {
                 toast_type,
                 duration,
                 permanent,
+                action,
             };
 
             // Add the toast directly to the queue
@@ -273,6 +333,7 @@ pub fn ToastProvider(props: ToastProviderProps) -> Element {
                                     .description(toast.description.clone())
                                     .toast_type(toast.toast_type)
                                     .permanent(toast.permanent)
+                                    .action(toast.action.clone())
                                     .on_close({
                                         let toast_id = toast.id;
                                         let remove_toast = ctx.remove_toast;
@@ -341,11 +402,27 @@ pub struct ToastProps {
     /// The duration for which the toast is displayed.
     pub duration: Option<Duration>,
 
+    /// The toast's action button, if it has one (see [`ToastAction`]).
+    #[props(default)]
+    pub action: Option<ToastAction>,
+
     /// Additional attributes to apply to the toast element.
     #[props(extends = GlobalAttributes)]
     pub attributes: Vec<Attribute>,
 
     /// The children of the toast element.
+    #[props(default)]
+    pub children: Option<Element>,
+}
+
+/// The props for the [`ToastActionButton`] component.
+#[derive(Props, Clone, PartialEq)]
+pub struct ToastActionButtonProps {
+    /// Additional attributes to apply to the action button.
+    #[props(extends = GlobalAttributes)]
+    pub attributes: Vec<Attribute>,
+
+    /// Replaces the action's label as the button's content.
     #[props(default)]
     pub children: Option<Element>,
 }
@@ -404,6 +481,7 @@ struct ToastRenderCtx {
     title: String,
     description: Option<String>,
     on_close: Callback<MouseEvent>,
+    action: Option<ToastAction>,
 }
 
 /// # Toast
@@ -477,6 +555,7 @@ pub fn Toast(props: ToastProps) -> Element {
         title: props.title.clone(),
         description: props.description.clone(),
         on_close: props.on_close,
+        action: props.action.clone(),
     });
 
     // Handle auto-dismissal for non-permanent toasts with a duration
@@ -504,6 +583,7 @@ pub fn Toast(props: ToastProps) -> Element {
                 ToastTitle {}
                 ToastDescription {}
             }
+            ToastActionButton {}
             ToastCloseButton {}
         }
     });
@@ -582,6 +662,34 @@ pub fn ToastDescription(props: ToastDescriptionProps) -> Element {
     }
 }
 
+/// The action button inside a toast — renders nothing when the toast
+/// has no [`ToastAction`]. Pressing it runs the action, then closes the
+/// toast the same way the close button does.
+#[component]
+pub fn ToastActionButton(props: ToastActionButtonProps) -> Element {
+    let ctx = use_context::<ToastCtx>();
+    let render_ctx = use_context::<ToastRenderCtx>();
+    let Some(action) = render_ctx.action.clone() else {
+        return rsx! {};
+    };
+    let label = action.label.clone();
+    let children = props.children.unwrap_or_else(|| rsx! { {label} });
+
+    rsx! {
+        button {
+            type: "button",
+            "data-toast-action": "true",
+            onclick: move |e| {
+                action.run();
+                ctx.focus_region.call(());
+                render_ctx.on_close.call(e);
+            },
+            ..props.attributes,
+            {children}
+        }
+    }
+}
+
 /// The close button inside a toast.
 #[component]
 pub fn ToastCloseButton(props: ToastCloseButtonProps) -> Element {
@@ -610,6 +718,7 @@ pub struct ToastOptions {
     description: Option<String>,
     duration: Option<Duration>,
     permanent: bool,
+    action: Option<ToastAction>,
 }
 
 impl ToastOptions {
@@ -619,7 +728,15 @@ impl ToastOptions {
             description: None,
             duration: None,
             permanent: false,
+            action: None,
         }
+    }
+
+    /// Give the toast an action button labelled `label` that runs `run`
+    /// and closes the toast. See [`ToastAction`] for what to capture.
+    pub fn action(mut self, label: impl ToString, run: impl Fn() + 'static) -> Self {
+        self.action = Some(ToastAction::new(label, run));
+        self
     }
 
     /// Set the description for the toast.
@@ -653,18 +770,19 @@ pub struct Toasts {
 impl Toasts {
     /// Send a toast to the associated [`ToastProvider`] with the given title, type, and options.
     pub fn show(&self, title: String, toast_type: ToastType, options: ToastOptions) {
-        self.add_toast.call((
+        self.add_toast.call(NewToast {
             title,
-            options.description,
+            description: options.description,
             toast_type,
             // If permanent, force duration to None
-            if options.permanent {
+            duration: if options.permanent {
                 None
             } else {
                 options.duration
             },
-            options.permanent,
-        ));
+            permanent: options.permanent,
+            action: options.action,
+        });
     }
 
     /// Create a new success toast with the given title and options.
